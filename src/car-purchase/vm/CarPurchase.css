@@ -1,0 +1,88 @@
+#app-root {
+    display: grid;
+    grid-template-columns:  1fr 16em 12em 12em 1fr;
+    grid-template-rows:  5em 2em 5em 2em 2em 2em 2em 2em auto;
+}
+
+#app-root>* {
+    margin: 2px;
+}
+
+.car-purchase-main-logo {
+    font-size: 2em;
+    font-weight: bold;
+    grid-row: 1;
+    grid-column: 2/ span 3;
+}
+
+.car-purchase-model-selector-label {
+    grid-row: 2;
+    grid-column: 2;
+}
+
+.car-model-selector-select,
+.car-model-selector-loading {
+    grid-row: 2;
+    grid-column: 3;
+}
+
+.car-model-selector-refresh-btn {
+    grid-row: 2;
+    grid-column: 4;
+}
+
+.car-purchase-ensurance-selector-label {
+    grid-row: 3;
+    grid-column: 2;
+}
+
+.ensurance-plan-selector-select,
+.ensurance-plan-selector-loading {
+    grid-row: 3;
+    grid-column: 3;
+} 
+
+.ensurance-plan-selector-refresh-btn {
+    grid-row: 3;
+    grid-column: 4;
+}
+
+.car-purchase-downpayment-label {
+    grid-row:4;
+    grid-column:2;
+}
+
+.car-purchase-downpayment {
+    grid-row: 4;
+    grid-column: 3;
+} 
+
+.car-purchase-final-price-label {
+    grid-row:5;
+    grid-column:2;
+}
+
+.car-final-price {
+    grid-row:5;
+    grid-column:3;
+}
+
+.car-purchase-deal-state {
+    grid-row:6;
+    grid-column: 2 / span 3;
+}
+
+.button-request-approval {
+    grid-row:7;
+    grid-column: 3;
+}
+
+.button-finalzie-deal {
+    grid-row:7;
+    grid-column: 4;
+}
+
+.car-purchase-messages {
+    grid-row:8;
+    grid-column: 2/ span 3;
+}
