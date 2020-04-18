@@ -74,7 +74,7 @@ export class CarPurchaseModel {
                 this.downpayment);
 
             if (result.isApproved === false) {
-                this.messages.push("Approval denied. Downpayment should be over 20%, or use 'asset protection' ensurance.");
+                this.messages.push(result.message);
                 return;
             }
 

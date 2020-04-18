@@ -10,7 +10,8 @@ export type FinancingApproved = {
 }
 
 export type FinancingNotApproved = {
-    isApproved: false
+    isApproved: false,
+    message: string
 }
 
 type GetApprovalResult = FinancingApproved | FinancingNotApproved;
@@ -44,20 +45,21 @@ class FinancingClient {
 
         //this would be calculated on the server
 
-        if (ensurancePlans.some(x => x === EnsurancePlanType.assetProtection)) {
+        if (ensurancePlans.some(x => x === EnsurancePlanType.assetProtection)
+            && carModel.basePrice / 10 <= downpayment) {
             return getApprovedFinancing();
         }
 
-        if (carModel.basePrice / 5 >= downpayment) {
-            return {
-                isApproved: false
-            }
+        if (carModel.basePrice / 5 <= downpayment) {
+            return getApprovedFinancing(
+                moment().add(15, 's').toDate()
+            );
         }
 
-        return getApprovedFinancing(
-            moment().add(15, 's').toDate()
-        );
-
+        return {
+            isApproved: false,
+            message: "Approval denied. Downpayment should be over 20% of base price (10% with 'asset protection' ensurance)."
+        }
     }
 
     public async finalizeFinancing(approvalToken: string) {
