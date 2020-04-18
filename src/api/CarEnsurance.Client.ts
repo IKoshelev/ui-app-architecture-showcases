@@ -13,6 +13,7 @@ export type EnsurancePlan = {
 
 class CarEnsuranceClient {
     public async getAvaliableEnsurancePlans(): Promise<EnsurancePlan[]> {
+        console.log(`server call getAvaliableEnsurancePlans`);
         await delay(1500);
         return [{
             type: EnsurancePlanType.base,

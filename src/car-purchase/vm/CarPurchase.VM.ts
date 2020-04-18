@@ -7,12 +7,15 @@ import moment from "moment";
 
 export class CarPurchaseVM {
 
-    constructor() {
+    constructor(id: string) {
+        this.id = id;
         this.carPurchaseModel = new CarPurchaseModel();
 
         this.carModelSelectorVM = new CarModelsSelectorVM(this.carPurchaseModel);
         this.ensurancePlanSelectorVM = new EnsurancePlansSelectorVM(this.carPurchaseModel);
     }
+
+    public readonly id: string;
 
     public readonly carPurchaseModel: CarPurchaseModel;
     public readonly carModelSelectorVM: CarModelsSelectorVM;

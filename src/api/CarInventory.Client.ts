@@ -9,6 +9,7 @@ export type CarModel = {
 class CarInventoryClient {
 
     public async getAvaliableCarModels(): Promise<CarModel[]> {
+        console.log(`server call getAvaliableCarModels`);
         await delay(500);
         return [
             {

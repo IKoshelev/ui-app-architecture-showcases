@@ -38,6 +38,8 @@ class FinancingClient {
         ensurancePlans: EnsurancePlanType[],
         downpayment: number): Promise<GetApprovalResult> {
 
+        console.log(`server call getApproval`);
+
         await delay(1000);
 
         //this would be calculated on the server
@@ -59,6 +61,11 @@ class FinancingClient {
     }
 
     public async finalizeFinancing(approvalToken: string) {
+
+        console.log(`server call finalizeFinancing`);
+
+        await delay(500);
+
         return approvedFinacings.some(x =>
             x.approvalToken === approvalToken
             && (!x.expiration || x.expiration >= new Date())

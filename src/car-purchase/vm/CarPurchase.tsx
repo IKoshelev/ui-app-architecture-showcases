@@ -3,16 +3,12 @@ import React from "react";
 import { CarPurchaseVM } from "./CarPurchase.VM";
 import { CarModelsSelector } from "./car-model-selector/CarModelsSelector";
 import { EnsurancePlanSelector } from "./ensurance-plan-selector/EnsurancePlanSelector";
-import './CarPurchase.css';
 
 export const CarPurchase: React.FunctionComponent<{
     vm: CarPurchaseVM
 }> = observer(({ vm }) => {
     console.log('Rendering CarPurchase', new Date());
     return <>
-        <div className='car-purchase-main-logo'>
-            Welcome to Crazy Ivan Motors
-        </div>
         <div className='car-purchase-model-selector-label'>
             Please select model
         </div>
