@@ -99,6 +99,11 @@
     grid-column: 2 / span 3;
 }
 
+.button-close-active-deal {
+    grid-row: 8;
+    grid-column: 2;
+}
+
 .button-request-approval {
     grid-row: 8;
     grid-column: 3;

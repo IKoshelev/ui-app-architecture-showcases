@@ -33,7 +33,20 @@ const App = observer(() => {
       }
     </div>
 
-    <CarPurchase vm={appVm.activeCapPurchaseVM}></CarPurchase>
+    {
+      appVm.activeCapPurchaseVM &&
+      <>
+        <CarPurchase vm={appVm.activeCapPurchaseVM}></CarPurchase>
+        <button
+          className='button-close-active-deal'
+          onClick={appVm.closeActiveDeal}
+        >
+          Close this deal
+      </button>
+      </>
+    }
+
+
 
   </div>
 
