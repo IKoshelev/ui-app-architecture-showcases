@@ -1,8 +1,7 @@
 import { observer } from "mobx-react";
-import React, { ChangeEvent } from "react";
+import React from "react";
 import { EnsurancePlansSelectorVM } from "./EnsurancePlansSelector.VM";
 import { SelectMultiple } from "../../../../generic-components/select-multiple/SelectMultiple";
-
 
 export const EnsurancePlanSelector: React.FunctionComponent<{
     vm: EnsurancePlansSelectorVM

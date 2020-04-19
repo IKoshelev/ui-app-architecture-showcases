@@ -13,7 +13,11 @@ export const NumericInput =
     observer((props: NumericInputProps) => {
 
         const vm = props.vm;
-        const propsWithoutVm = { ...props, vm: undefined }
+        const propsWithoutVm = {
+            ...props,
+            className: (props.className ?? '') + (vm.isValid ? '' : ' invalid'),
+            vm: undefined
+        }
 
         return <>
             <input

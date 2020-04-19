@@ -3,7 +3,6 @@ import { CarModelsSelectorVM } from "./CarModelsSelector.VM";
 import React from "react";
 import { SelectDropdown } from "../../../../generic-components/select-dropdown/SelectDropdown";
 
-
 export const CarModelsSelector: React.FunctionComponent<{
     vm: CarModelsSelectorVM
 }> = observer(({ vm }) => {

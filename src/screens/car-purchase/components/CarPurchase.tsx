@@ -9,6 +9,7 @@ export const CarPurchase: React.FunctionComponent<{
     vm: CarPurchaseVM
 }> = observer(({ vm }) => {
     console.log('Rendering CarPurchase', new Date());
+
     return <>
         <div className='car-purchase-model-selector-label'>
             Please select model
@@ -37,9 +38,9 @@ export const CarPurchase: React.FunctionComponent<{
                 console.log('Rendering deal state', new Date());
                 return <>
                     {
-                        vm.dealState &&
+                        vm.dealState !== 'no-approval' &&
                         <div className='car-purchase-deal-state'>
-                            {vm.dealState}
+                            {getDealStateDescription(vm.dealState)}
                         </div>
                     };
             </>
@@ -72,4 +73,20 @@ export const CarPurchase: React.FunctionComponent<{
             </div>
         }
     </>
+
+    function getDealStateDescription(state: typeof vm.dealState) {
+        if (state === 'deal-finalized') {
+            return 'Congratulations! Deal is finalized.';
+        }
+        if (state === 'no-approval') {
+            return '';
+        }
+        if (state === 'approval-perpetual') {
+            return 'Approval granted.';
+        }
+        if (state === 'approval-expired') {
+            return 'Approval expired.';
+        }
+        return `Approval granted. Expires in ${state.approvalExpiresInSeconds} seconds.`;
+    }
 });

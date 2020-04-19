@@ -58,30 +58,29 @@ export class CarPurchaseVM {
     public get dealState() {
 
         if (this.carPurchaseModel.isDealFinalized) {
-            return 'Congratulations! Deal is finalized.';
+            return 'deal-finalized' as const;
         }
 
         const approval = this.carPurchaseModel.financingApprovalForCurrentDeal;
 
         if (!approval) {
-            return '';
+            return 'no-approval' as const;
         }
 
         const expiration = approval.expiration;
         if (!expiration) {
-            return 'Approval granted.';
+            return 'approval-perpetual' as const;
         }
 
         var duration = moment.duration(moment(expiration).diff(ticker1second.lastTickDate));
         var seconds = Math.round(duration.asSeconds());
 
         if (seconds <= 0) {
-            return 'Approval expired';
+            return 'approval-expired' as const;
         }
 
-        return `Approval granted. Expires in ${seconds} seconds`;
+        return { approvalExpiresInSeconds: seconds } as const;
     }
-
 
     public readonly downpaymentVm: PositiveIntegerVM;
     private createDownpaymentVM() {

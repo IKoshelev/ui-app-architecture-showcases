@@ -1,17 +1,13 @@
-import { observable, computed, action, reaction } from "mobx";
+import { observable, computed, action } from "mobx";
 
 export interface NumericInputVM {
-
     readonly displayedValue: string | undefined,
     onChange: (val: string | undefined) => void,
     onBlur: (val: string | undefined) => void,
     readonly message?: string,
     readonly isValid: boolean,
-
     readonly disabled?: boolean
 }
-
-
 
 export class PositiveIntegerVM implements NumericInputVM {
 

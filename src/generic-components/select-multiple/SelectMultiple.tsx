@@ -15,7 +15,6 @@ type SelectMultipleProps<T> =
         }
     };
 
-
 export const SelectMultiple =
     observer(<T extends unknown>(props: SelectMultipleProps<T>) => {
 
@@ -59,5 +58,4 @@ export const SelectMultiple =
 
             vm.handleSelect(selectedItems);
         }
-
     });

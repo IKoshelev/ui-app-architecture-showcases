@@ -2,7 +2,6 @@ import { observable, action, computed } from "mobx";
 import { CarPurchaseModel } from "../../model/CarPurchase.Model";
 import { CarModel, carInvenotryClient } from "../../../../api/CarInventory.Client";
 
-
 export class CarModelsSelectorVM {
 
     public constructor(carPurchaseModel: CarPurchaseModel) {

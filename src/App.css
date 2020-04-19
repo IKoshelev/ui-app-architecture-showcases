@@ -83,6 +83,11 @@
     grid-row: 5;
     grid-column: 3;
 }
+
+.car-purchase-downpayment.invalid {
+    border: 2px solid red;
+}
+
 .car-purchase-downpayment-messages {
     grid-row: 5;
     grid-column: 4;
