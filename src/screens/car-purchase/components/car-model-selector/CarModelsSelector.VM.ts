@@ -1,6 +1,6 @@
 import { observable, action, computed } from "mobx";
 import { CarPurchaseModel } from "../../model/CarPurchase.Model";
-import { CarModel, carInvenotryClient } from "../../../api/CarInventory.Client";
+import { CarModel, carInvenotryClient } from "../../../../api/CarInventory.Client";
 
 
 export class CarModelsSelectorVM {
@@ -40,7 +40,7 @@ export class CarModelsSelectorVM {
     }
 
     @action.bound
-    public async selectModel(modelId: string | undefined) {
-        this.carPurchaseModel.carModel = this.availableModels.find(x => x.id.toString() === modelId);
+    public async setSelectedModel(carModel: CarModel | undefined) {
+        this.carPurchaseModel.carModel = carModel;
     }
 }

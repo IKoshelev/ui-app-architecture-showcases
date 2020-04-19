@@ -1,6 +1,7 @@
 import { observer } from "mobx-react";
 import { CarModelsSelectorVM } from "./CarModelsSelector.VM";
 import React from "react";
+import { SelectDropdown } from "../../../../generic-components/select-dropdown/SelectDropdown";
 
 
 export const CarModelsSelector: React.FunctionComponent<{
@@ -11,25 +12,19 @@ export const CarModelsSelector: React.FunctionComponent<{
         return <div className='car-model-selector-loading'>Loading</div>
     }
     return <>
-        <select
+        <SelectDropdown
             className='car-model-selector-select'
-            value={vm.selectedModel?.id ?? 0}
-            onChange={(e) => vm.selectModel(e.target.value)}
-            disabled={vm.isDealFinilized}
-        >
-            <option value={'0'}>
-                Please select model
-            </option>
+            emptyPlaceholder='Please select model'
+            vm={{
+                availableItems: vm.availableModels,
+                selectedItem: vm.selectedModel,
+                disabled: vm.isDealFinilized,
+                getKeyValue: (item) => item.id.toString(),
+                getDescription: (item) => item.description,
+                handleSelect: (item) => vm.setSelectedModel(item),
+            }}
 
-            {
-                vm.availableModels.map(x => (<option
-                    key={x.id}
-                    value={x.id}
-                >
-                    {x.description}
-                </option>))
-            }
-        </select>
+        />
         <button
             className='car-model-selector-refresh-btn'
             onClick={vm.reloadAvailableModels}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react';
 
-import { CarPurchase } from './car-purchase/vm/CarPurchase';
+import { CarPurchase } from './screens/car-purchase/components/CarPurchase';
 import { appVm } from './App.VM';
 
 import './App.css';

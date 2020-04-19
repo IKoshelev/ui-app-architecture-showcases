@@ -3,6 +3,7 @@ import React from "react";
 import { CarPurchaseVM } from "./CarPurchase.VM";
 import { CarModelsSelector } from "./car-model-selector/CarModelsSelector";
 import { EnsurancePlanSelector } from "./ensurance-plan-selector/EnsurancePlanSelector";
+import { NumericInput } from "../../../generic-components/numeric-input/NumericInput";
 
 export const CarPurchase: React.FunctionComponent<{
     vm: CarPurchaseVM
@@ -20,12 +21,10 @@ export const CarPurchase: React.FunctionComponent<{
         <div className='car-purchase-downpayment-label'>
             Please select downpayment
         </div>
-        <input
+        <NumericInput
             className='car-purchase-downpayment'
-            type='number'
-            value={vm.downpayment}
-            disabled={vm.isDealFinilized}
-            onChange={(e) => vm.setDownpayment(e.target.value)}
+            messagesClassName='car-purchase-downpayment-messages'
+            vm={vm.downpaymentVm}
         />
         <div className='car-purchase-final-price-label'>
             Final price
@@ -50,7 +49,7 @@ export const CarPurchase: React.FunctionComponent<{
             vm.canRequestApproval &&
             <button
                 className='button-request-approval'
-                disabled={vm.isLoading || vm.isDealFinilized}
+                disabled={!vm.isValid || vm.isDealFinilized}
                 onClick={vm.getApproval}
             >
                 Request approval
@@ -60,7 +59,7 @@ export const CarPurchase: React.FunctionComponent<{
             vm.canFinalizeDeal &&
             <button
                 className='button-finalzie-deal'
-                disabled={vm.isLoading || vm.isDealFinilized}
+                disabled={!vm.isValid || vm.isDealFinilized}
                 onClick={vm.finalzieDeal}
             >
                 Finalize deal

@@ -1,4 +1,4 @@
-import { CarPurchaseVM } from './car-purchase/vm/CarPurchase.VM';
+import { CarPurchaseVM } from './screens/car-purchase/components/CarPurchase.VM';
 import { observable, action } from 'mobx';
 
 

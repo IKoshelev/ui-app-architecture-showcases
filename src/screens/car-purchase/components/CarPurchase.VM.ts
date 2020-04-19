@@ -2,8 +2,9 @@ import { computed, action } from "mobx";
 import { CarPurchaseModel } from "../model/CarPurchase.Model";
 import { CarModelsSelectorVM } from "./car-model-selector/CarModelsSelector.VM";
 import { EnsurancePlansSelectorVM } from "./ensurance-plan-selector/EnsurancePlansSelector.VM";
-import { ticker1second } from "../../util/observable-ticker";
+import { ticker1second } from "../../../util/observable-ticker";
 import moment from "moment";
+import { PositiveIntegerVM } from "../../../generic-components/numeric-input/NumericInputVM";
 
 export class CarPurchaseVM {
 
@@ -13,6 +14,8 @@ export class CarPurchaseVM {
 
         this.carModelSelectorVM = new CarModelsSelectorVM(this.carPurchaseModel);
         this.ensurancePlanSelectorVM = new EnsurancePlansSelectorVM(this.carPurchaseModel);
+
+        this.downpaymentVm = this.createDownpaymentVM();
     }
 
     public readonly id: string;
@@ -79,6 +82,35 @@ export class CarPurchaseVM {
         return `Approval granted. Expires in ${seconds} seconds`;
     }
 
+
+    public readonly downpaymentVm: PositiveIntegerVM;
+    private createDownpaymentVM() {
+        return new PositiveIntegerVM(
+            () => this.carPurchaseModel.downpayment,
+            (val) => this.carPurchaseModel.downpayment = (val ?? 0),
+            () => this.isDealFinilized,
+            () => {
+                if (this.finalPrice
+                    && this.carPurchaseModel.downpayment > this.finalPrice) {
+                    return {
+                        isValid: false,
+                        message: 'Downpaymanet exceeds final price'
+                    }
+                }
+
+                return {
+                    isValid: true
+                }
+            }
+        );
+    }
+
+    @computed
+    public get isValid() {
+        return !this.isLoading
+            && this.downpaymentVm.isValid;
+    }
+
     @computed
     public get canRequestApproval() {
         return this.carPurchaseModel.canRequestApproval;
@@ -102,16 +134,5 @@ export class CarPurchaseVM {
     @action.bound
     public async finalzieDeal() {
         await this.carPurchaseModel.finalizeDeal();
-    }
-
-    @computed
-    public get downpayment() {
-        return this.carPurchaseModel.downpayment;
-    }
-
-    @action.bound
-    public setDownpayment(value: string = '0') {
-        const parsedVal = parseInt(value) || 0;
-        this.carPurchaseModel.downpayment = parsedVal;
     }
 }

@@ -1,9 +1,9 @@
 import { observable, computed, action } from "mobx";
-import { CarModel } from "../../api/CarInventory.Client";
-import { EnsurancePlanType } from "../../api/CarEnsurance.Client";
-import { FinancingApproved, financingClient } from "../../api/Financing.Client";
-import { setsMatch, sortByExpiration } from "../../util/util";
-import { ticker1second } from "../../util/observable-ticker";
+import { CarModel } from "../../../api/CarInventory.Client";
+import { EnsurancePlanType } from "../../../api/CarEnsurance.Client";
+import { FinancingApproved, financingClient } from "../../../api/Financing.Client";
+import { setsMatch, sortByExpiration } from "../../../util/util";
+import { ticker1second } from "../../../util/observable-ticker";
 
 export class CarPurchaseModel {
 

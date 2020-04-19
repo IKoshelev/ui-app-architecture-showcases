@@ -1,6 +1,6 @@
 import { observable, action, computed } from "mobx";
 import { CarPurchaseModel } from "../../model/CarPurchase.Model";
-import { EnsurancePlan, carEnsuranceClient } from "../../../api/CarEnsurance.Client";
+import { EnsurancePlan, carEnsuranceClient } from "../../../../api/CarEnsurance.Client";
 
 
 export class EnsurancePlansSelectorVM {
@@ -35,11 +35,6 @@ export class EnsurancePlansSelectorVM {
     }
 
     @computed
-    public get selectedPlanTypes() {
-        return this.carPurchaseModel.ensurancePlansSelected.map(x => x.toString());
-    }
-
-    @computed
     public get selectedPlans() {
         return this.availablePlans
             .filter(x =>
@@ -47,13 +42,9 @@ export class EnsurancePlansSelectorVM {
     }
 
     @action.bound
-    public async setSelectedPlans(newSelectedPlans: string[]) {
-        const selectedPlanTypes = this.availablePlans
-            .filter(x => {
-                return newSelectedPlans.some(y => y === x.type.toString())
-            })
-            .map(x => x.type);
+    public async setSelectedPlans(newSelectedPlans: EnsurancePlan[]) {
 
+        const selectedPlanTypes = newSelectedPlans.map(x => x.type);
         this.carPurchaseModel.ensurancePlansSelected = selectedPlanTypes;
     }
 }

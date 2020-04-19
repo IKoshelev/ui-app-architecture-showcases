@@ -74,7 +74,7 @@
     grid-column: 4;
 }
 
-.car-purchase-downpayment-label {
+.car-purchase-downpayment-label {  
     grid-row: 5;
     grid-column:2;
 }
@@ -82,7 +82,11 @@
 .car-purchase-downpayment {
     grid-row: 5;
     grid-column: 3;
-} 
+}
+.car-purchase-downpayment-messages {
+    grid-row: 5;
+    grid-column: 4;
+}
 
 .car-purchase-final-price-label {
     grid-row: 6;
