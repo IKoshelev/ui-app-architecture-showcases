@@ -29,7 +29,7 @@ export const CarPurchase: React.FunctionComponent<{
         />
         <button
             className='button-set-minimum-possible-downpayment'
-            disabled={vm.isLoading || !vm.canSetMinimumPossibleDownpayment}
+            disabled={!vm.canSetMinimumPossibleDownpayment}
             onClick={vm.setMinimumPossibleDownpayment}
         >
             Set minimum possible
@@ -53,26 +53,20 @@ export const CarPurchase: React.FunctionComponent<{
             </>
             }}
         </Observer>
-        {
-            vm.canRequestApproval &&
-            <button
-                className='button-request-approval'
-                disabled={!vm.isValid || vm.isDealFinilized}
-                onClick={vm.getApproval}
-            >
-                Request approval
-            </button>
-        }
-        {
-            vm.canFinalizeDeal &&
-            <button
-                className='button-finalzie-deal'
-                disabled={!vm.isValid || vm.isDealFinilized}
-                onClick={vm.finalzieDeal}
-            >
-                Finalize deal
-            </button>
-        }
+        <button
+            className='button-request-approval'
+            disabled={!vm.canRequestApproval}
+            onClick={vm.getApproval}
+        >
+            Request approval
+        </button>
+        <button
+            className='button-finalzie-deal'
+            disabled={!vm.canFinalizeDeal}
+            onClick={vm.finalzieDeal}
+        >
+            Finalize deal
+        </button>
         {
             vm.messages.length > 0 &&
             <div className='car-purchase-messages'>

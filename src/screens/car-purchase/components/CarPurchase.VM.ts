@@ -117,7 +117,9 @@ export class CarPurchaseVM {
 
     @computed
     public get canRequestApproval() {
-        return this.carPurchaseModel.canRequestApproval;
+        return this.carPurchaseModel.canRequestApproval
+            && !this.isLoading
+            && this.isValid;
     }
 
     @action.bound
@@ -132,7 +134,9 @@ export class CarPurchaseVM {
 
     @computed
     public get canFinalizeDeal() {
-        return this.carPurchaseModel.canFinalizeDeal;
+        return this.carPurchaseModel.canFinalizeDeal
+            && !this.isLoading
+            && this.isValid;
     }
 
     @action.bound
@@ -143,7 +147,8 @@ export class CarPurchaseVM {
     @computed
     public get canSetMinimumPossibleDownpayment() {
         return this.carPurchaseModel.carModel !== undefined
-            && !this.isDealFinilized;
+            && !this.isDealFinilized
+            && !this.isLoading;
     }
 
     @action.bound
