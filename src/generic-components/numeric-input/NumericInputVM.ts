@@ -1,4 +1,4 @@
-import { observable, computed, action } from "mobx";
+import { observable, computed, action, reaction } from "mobx";
 
 export interface NumericInputVM {
     readonly displayedValue: string | undefined,
@@ -13,24 +13,31 @@ export class PositiveIntegerVM implements NumericInputVM {
 
     public constructor(
         getModelValue: () => number | undefined,
-        setValidValue: (val: number | undefined) => void,
+        setValidValueToModel: (val: number | undefined) => void,
         isDisabled?: () => boolean,
         additionalValidity?: () => {
             isValid: boolean,
             message?: string
         }) {
 
-        this.getCurrentValue = getModelValue;
-        this.setValidValue = setValidValue;
+        this.getModelValue = getModelValue;
+        this.setValidValueToModel = setValidValueToModel;
         this.isDisabled = isDisabled ?? (() => false);
         this.additionalValidity = additionalValidity
             ?? (() => ({
                 isValid: true
             }));
+
+        // any change in model overrides unsaved input value
+        // to prevent model state being overwritten without user 
+        // first noticing it changed
+        reaction(
+            () => this.getModelValue(),
+            () => this.clearUnsavedState());
     }
 
-    private readonly getCurrentValue: () => number | undefined;
-    private readonly setValidValue: (val: number | undefined) => void;
+    private readonly getModelValue: () => number | undefined;
+    private readonly setValidValueToModel: (val: number | undefined) => void;
     private readonly isDisabled: () => boolean;
     private readonly additionalValidity: () => {
         isValid: boolean,
@@ -40,7 +47,7 @@ export class PositiveIntegerVM implements NumericInputVM {
     @computed
     public get displayedValue() {
         return this.currentUnsavedValue
-            ?? this.getCurrentValue()?.toString()
+            ?? this.getModelValue()?.toString()
     }
 
     @observable
@@ -72,14 +79,18 @@ export class PositiveIntegerVM implements NumericInputVM {
     }
 
     @action.bound
-    public onBlur(val: string | undefined) {
-
+    public clearUnsavedState() {
         this.currentUnsavedValue = undefined;
         this._message = undefined;
         this._isValid = true;
+    }
+
+    @action.bound
+    public onBlur(val: string | undefined) {
+        this.clearUnsavedState();
 
         if (val === undefined) {
-            this.setValidValue(val);
+            this.setValidValueToModel(val);
             return;
         }
 
@@ -105,6 +116,6 @@ export class PositiveIntegerVM implements NumericInputVM {
         }
 
         const int = parseInt(val);
-        this.setValidValue(int);
+        this.setValidValueToModel(int);
     }
 }

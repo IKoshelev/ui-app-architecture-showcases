@@ -1,10 +1,11 @@
-import { computed, action } from "mobx";
+import { computed, action, observable, runInAction } from "mobx";
 import { CarPurchaseModel } from "../model/CarPurchase.Model";
 import { CarModelsSelectorVM } from "./car-model-selector/CarModelsSelector.VM";
 import { EnsurancePlansSelectorVM } from "./ensurance-plan-selector/EnsurancePlansSelector.VM";
 import { ticker1second } from "../../../util/observable-ticker";
 import moment from "moment";
 import { PositiveIntegerVM } from "../../../generic-components/numeric-input/NumericInputVM";
+import { financingClient } from "../../../api/Financing.Client";
 
 export class CarPurchaseVM {
 
@@ -15,7 +16,7 @@ export class CarPurchaseVM {
         this.carModelSelectorVM = new CarModelsSelectorVM(this.carPurchaseModel);
         this.ensurancePlanSelectorVM = new EnsurancePlansSelectorVM(this.carPurchaseModel);
 
-        this.downpaymentVm = this.createDownpaymentVM();
+        this.downpaymentInputVm = this.createDownpaymentVM();
     }
 
     public readonly id: string;
@@ -23,6 +24,9 @@ export class CarPurchaseVM {
     public readonly carPurchaseModel: CarPurchaseModel;
     public readonly carModelSelectorVM: CarModelsSelectorVM;
     public readonly ensurancePlanSelectorVM: EnsurancePlansSelectorVM;
+
+    @observable
+    private _isLoading: boolean = false;
 
     @computed
     public get messages() {
@@ -33,7 +37,8 @@ export class CarPurchaseVM {
 
     @computed
     public get isLoading() {
-        return this.ensurancePlanSelectorVM.isLoading
+        return this._isLoading
+            || this.ensurancePlanSelectorVM.isLoading
             || this.carModelSelectorVM.isLoading
             || this.carPurchaseModel.isLoading;
     }
@@ -82,7 +87,7 @@ export class CarPurchaseVM {
         return { approvalExpiresInSeconds: seconds } as const;
     }
 
-    public readonly downpaymentVm: PositiveIntegerVM;
+    public readonly downpaymentInputVm: PositiveIntegerVM;
     private createDownpaymentVM() {
         return new PositiveIntegerVM(
             () => this.carPurchaseModel.downpayment,
@@ -107,7 +112,7 @@ export class CarPurchaseVM {
     @computed
     public get isValid() {
         return !this.isLoading
-            && this.downpaymentVm.isValid;
+            && this.downpaymentInputVm.isValid;
     }
 
     @computed
@@ -133,5 +138,33 @@ export class CarPurchaseVM {
     @action.bound
     public async finalzieDeal() {
         await this.carPurchaseModel.finalizeDeal();
+    }
+
+    @computed
+    public get canSetMinimumPossibleDownpayment() {
+        return this.carPurchaseModel.carModel !== undefined
+            && !this.isDealFinilized;
+    }
+
+    @action.bound
+    public async setMinimumPossibleDownpayment() {
+        this._isLoading = true;
+        try {
+            const minimumDownpayment = await financingClient.getMinimumPossibleDownpayment(
+                this.carPurchaseModel.carModel!,
+                this.carPurchaseModel.ensurancePlansSelected
+            );
+
+            runInAction(() => {
+                if (this.carPurchaseModel.downpayment !== minimumDownpayment) {
+                    this.carPurchaseModel.downpayment = minimumDownpayment;
+                } else {
+                    this.downpaymentInputVm.clearUnsavedState();
+                }
+            });
+
+        } finally {
+            this._isLoading = false;
+        }
     }
 }

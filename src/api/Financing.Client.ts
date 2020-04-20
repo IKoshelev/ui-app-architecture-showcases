@@ -34,6 +34,21 @@ function getApprovedFinancing(expiration?: Date) {
 
 class FinancingClient {
 
+    public async getMinimumPossibleDownpayment(
+        carModel: CarModel,
+        ensurancePlans: EnsurancePlanType[]): Promise<number> {
+
+        console.log(`server call getMinimumPossibleDownpayment`);
+
+        await delay(1000);
+
+        if (ensurancePlans.some(x => x === EnsurancePlanType.assetProtection)) {
+            return carModel.basePrice / 10;
+        }
+
+        return carModel.basePrice / 5;
+    }
+
     public async getApproval(
         carModel: CarModel,
         ensurancePlans: EnsurancePlanType[],

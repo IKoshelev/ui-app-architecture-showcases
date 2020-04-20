@@ -1,7 +1,7 @@
 #app-root {
     display: grid;
     grid-template-columns:  1fr 16em 12em 12em 1fr;
-    grid-template-rows:  5em 2em 2em 5em 2em 2em 2em 2em 2em auto;
+    grid-template-rows:  5em 2em 2em 5em 2em 2em 2em 2em 2em 2em auto;
 }
 
 #app-root>* {
@@ -88,42 +88,47 @@
     border: 2px solid red;
 }
 
-.car-purchase-downpayment-messages {
+.button-set-minimum-possible-downpayment {
     grid-row: 5;
     grid-column: 4;
 }
 
-.car-purchase-final-price-label {
+.car-purchase-downpayment-messages {
     grid-row: 6;
+    grid-column: 3/ span 2;
+}
+
+.car-purchase-final-price-label {
+    grid-row: 7;
     grid-column:2;
 }
 
 .car-final-price {
-    grid-row: 6;
+    grid-row: 7;
     grid-column:3;
 }
 
 .car-purchase-deal-state {
-    grid-row: 7;
+    grid-row: 8;
     grid-column: 2 / span 3;
 }
 
 .button-close-active-deal {
-    grid-row: 8;
+    grid-row: 9;
     grid-column: 2;
 }
 
 .button-request-approval {
-    grid-row: 8;
+    grid-row: 9;
     grid-column: 3;
 }
 
 .button-finalzie-deal {
-    grid-row: 8;
+    grid-row: 10;
     grid-column: 4;
 }
 
 .car-purchase-messages {
-    grid-row: 9;
+    grid-row: 10;
     grid-column: 2/ span 3;
 }

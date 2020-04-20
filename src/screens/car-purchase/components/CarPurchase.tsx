@@ -25,8 +25,15 @@ export const CarPurchase: React.FunctionComponent<{
         <NumericInput
             inputAttributes={{ className: 'car-purchase-downpayment' }}
             messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
-            vm={vm.downpaymentVm}
+            vm={vm.downpaymentInputVm}
         />
+        <button
+            className='button-set-minimum-possible-downpayment'
+            disabled={vm.isLoading || !vm.canSetMinimumPossibleDownpayment}
+            onClick={vm.setMinimumPossibleDownpayment}
+        >
+            Set minimum possible
+        </button>
         <div className='car-purchase-final-price-label'>
             Final price
         </div>
