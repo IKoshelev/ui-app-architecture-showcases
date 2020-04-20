@@ -3,9 +3,10 @@ import React from "react";
 import { NumericInputVM } from "./NumericInputVM";
 
 type NumericInputProps =
-    React.HTMLAttributes<HTMLElement> & {
+    {
+        inputAttributes?: React.HTMLAttributes<HTMLElement>,
+        messageAttributes?: React.HTMLAttributes<HTMLElement>,
         placeholder?: string | undefined,
-        messagesClassName?: string,
         vm: NumericInputVM
     };
 
@@ -13,15 +14,11 @@ export const NumericInput =
     observer((props: NumericInputProps) => {
 
         const vm = props.vm;
-        const propsWithoutVm = {
-            ...props,
-            className: (props.className ?? '') + (vm.isValid ? '' : ' invalid'),
-            vm: undefined
-        }
 
         return <>
             <input
-                {...propsWithoutVm}
+                {...props.inputAttributes ?? {}}
+                className={(props.inputAttributes?.className ?? '') + (vm.isValid ? '' : ' invalid')}
                 value={vm.displayedValue}
                 placeholder={props.placeholder}
                 disabled={vm.disabled}
@@ -32,7 +29,7 @@ export const NumericInput =
             {
                 vm.message &&
                 <div
-                    className={props.messagesClassName}>
+                    {...props.messageAttributes ?? {}}>
                     {vm.message}
                 </div>
             }

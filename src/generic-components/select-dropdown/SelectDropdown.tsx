@@ -2,7 +2,8 @@ import { observer } from "mobx-react";
 import React from "react";
 
 type SelectDropdownProps<T> =
-    React.HTMLAttributes<HTMLElement> & {
+    {
+        selectAttributes?: React.HTMLAttributes<HTMLElement>,
         emptyPlaceholder: string,
         vm: {
             availableItems: T[],
@@ -22,10 +23,9 @@ export const SelectDropdown =
     observer(<T extends unknown>(props: SelectDropdownProps<T>) => {
 
         const vm = props.vm;
-        const propsWithoutVm = { ...props, vm: undefined }
 
         return <select
-            {...propsWithoutVm}
+            {...props.selectAttributes ?? {}}
             disabled={vm.disabled}
             value={vm.selectedItem
                 ? vm.getKeyValue(vm.selectedItem)

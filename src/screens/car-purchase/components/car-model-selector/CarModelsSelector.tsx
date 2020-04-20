@@ -12,7 +12,7 @@ export const CarModelsSelector: React.FunctionComponent<{
     }
     return <>
         <SelectDropdown
-            className='car-model-selector-select'
+            selectAttributes={{ className: 'car-model-selector-select' }}
             emptyPlaceholder='Please select model'
             vm={{
                 availableItems: vm.availableModels,

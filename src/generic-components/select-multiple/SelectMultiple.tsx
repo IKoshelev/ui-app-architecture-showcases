@@ -2,7 +2,8 @@ import { observer } from "mobx-react";
 import React from "react";
 
 type SelectMultipleProps<T> =
-    React.HTMLAttributes<HTMLElement> & {
+    {
+        selectAttributes?: React.HTMLAttributes<HTMLElement>,
         vm: {
             availableItems: T[],
             selectedItems: T[],
@@ -19,10 +20,9 @@ export const SelectMultiple =
     observer(<T extends unknown>(props: SelectMultipleProps<T>) => {
 
         const vm = props.vm;
-        const propsWithoutVm = { ...props, vm: undefined }
 
         return <select
-            {...propsWithoutVm}
+            {...props.selectAttributes ?? {}}
             multiple={true}
             disabled={vm.disabled}
             value={vm.selectedItems.map(x => vm.getKeyValue(x))}

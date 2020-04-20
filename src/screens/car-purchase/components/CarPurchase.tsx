@@ -23,8 +23,8 @@ export const CarPurchase: React.FunctionComponent<{
             Please select downpayment
         </div>
         <NumericInput
-            className='car-purchase-downpayment'
-            messagesClassName='car-purchase-downpayment-messages'
+            inputAttributes={{ className: 'car-purchase-downpayment' }}
+            messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
             vm={vm.downpaymentVm}
         />
         <div className='car-purchase-final-price-label'>

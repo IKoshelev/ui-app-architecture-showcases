@@ -13,7 +13,7 @@ export const EnsurancePlanSelector: React.FunctionComponent<{
 
     return <>
         <SelectMultiple
-            className='ensurance-plan-selector-select'
+            selectAttributes={{ className: 'ensurance-plan-selector-select' }}
             vm={{
                 availableItems: vm.availablePlans,
                 selectedItems: vm.selectedPlans,
