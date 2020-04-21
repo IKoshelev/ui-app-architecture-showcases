@@ -1,4 +1,4 @@
-import { computed, observable, action } from "mobx";
+import { computed, observable } from "mobx";
 import { CarModel } from "../api/CarInventory.Client";
 import { EnsurancePlanType } from "../api/CarEnsurance.Client";
 
@@ -12,7 +12,9 @@ export type Deal = {
 
 // assume deal ids are unique enough, 
 // in real app this would be a generated guid or we woud get the from back-end
-let dealIdCounter = 1;
+let dealIdCounter = 0;
+
+const deal = createFreshDeal();
 
 export function createFreshDeal(): Deal {
     return {
@@ -26,41 +28,35 @@ export function createFreshDeal(): Deal {
 
 class DealsStore {
 
-    constructor() {
-        this.deals = [...this.deals, createFreshDeal()];
-    }
-    
     @observable
     public activeDealId: number = 1;
     
     @observable 
-    public deals: Deal[] = [];
+    public deals: Deal[] = [deal];
     
     @computed
-    public getActiveDeal = (): Deal | undefined => this.deals.find(x => x.id === this.activeDealId);
+    public get getActiveDeal(): Deal | undefined { 
+        return this.deals.find(x => x.id === this.activeDealId)
+    };
 
     @computed
     public get carModel() {
-        const activeDeal: Deal | undefined = this.getActiveDeal();
-        return activeDeal?.carModel;
+        return this.getActiveDeal?.carModel;
     }
 
     @computed
     public get selectedEnsurancePlanTypes() {
-        const activeDeal: Deal | undefined = this.getActiveDeal();
-        return activeDeal?.selectedEnsurancePlanTypes;
+        return this.getActiveDeal?.selectedEnsurancePlanTypes;
     }
 
     @computed
     public get downpayment() {
-        const activeDeal: Deal | undefined = this.getActiveDeal();
-        return activeDeal?.downpayment;
+        return this.getActiveDeal?.downpayment;
     }
 
     @computed
     public get financingFinilizedToken() {
-        const activeDeal: Deal | undefined = this.getActiveDeal();
-        return activeDeal?.financingFinilizedToken;
+        return this.getActiveDeal?.financingFinilizedToken;
     }
 }
 

@@ -1,12 +1,12 @@
 import React from 'react';
 import { observer } from 'mobx-react';
-
 import { CarPurchase } from './screens/car-purchase/components/CarPurchase';
 import { appVm } from './App.VM';
 
 import './App.css';
 
 const App = observer(() => {
+
   return <div id='app-root'>
 
     <div className='car-purchase-main-logo'>
