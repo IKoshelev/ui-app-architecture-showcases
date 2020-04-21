@@ -1,8 +1,4 @@
-// properties
-// activeDeal - a uniquie identifier for which deal the user has selected
-// Deals - an array containing the selected values of each deal, each with a unique identifier
-// isLoading
-
+import { computed, observable, action } from "mobx";
 import { CarModel } from "../api/CarInventory.Client";
 import { EnsurancePlanType } from "../api/CarEnsurance.Client";
 
@@ -30,11 +26,42 @@ export function createFreshDeal(): Deal {
 
 class DealsStore {
 
-    public activeDealId: number | undefined;
+    constructor() {
+        this.deals = [...this.deals, createFreshDeal()];
+    }
+    
+    @observable
+    public activeDealId: number = 1;
+    
+    @observable 
+    public deals: Deal[] = [];
+    
+    @computed
+    public getActiveDeal = (): Deal | undefined => this.deals.find(x => x.id === this.activeDealId);
 
-    public readonly deals: Deal[] = [];
+    @computed
+    public get carModel() {
+        const activeDeal: Deal | undefined = this.getActiveDeal();
+        return activeDeal?.carModel;
+    }
 
-    public getActiveDeal = () => this.deals.find(x => x.id === this.activeDealId);
+    @computed
+    public get selectedEnsurancePlanTypes() {
+        const activeDeal: Deal | undefined = this.getActiveDeal();
+        return activeDeal?.selectedEnsurancePlanTypes;
+    }
+
+    @computed
+    public get downpayment() {
+        const activeDeal: Deal | undefined = this.getActiveDeal();
+        return activeDeal?.downpayment;
+    }
+
+    @computed
+    public get financingFinilizedToken() {
+        const activeDeal: Deal | undefined = this.getActiveDeal();
+        return activeDeal?.financingFinilizedToken;
+    }
 }
 
 export const dealsStore = new DealsStore();
