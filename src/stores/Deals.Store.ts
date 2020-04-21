@@ -32,7 +32,7 @@ class DealsStore {
 
     public activeDealId: number | undefined;
 
-    public deals: Deal[] = [];
+    public readonly deals: Deal[] = [];
 
     public getActiveDeal = () => this.deals.find(x => x.id === this.activeDealId);
 }
