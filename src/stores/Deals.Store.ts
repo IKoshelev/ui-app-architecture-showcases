@@ -17,13 +17,13 @@ let dealIdCounter = 0;
 const deal = createFreshDeal();
 
 export function createFreshDeal(): Deal {
-    return {
+    return observable({
         id: (dealIdCounter += 1),
         carModel: undefined,
         selectedEnsurancePlanTypes: [],
         downpayment: undefined,
         financingFinilizedToken: undefined
-    }
+    })
 }
 
 class DealsStore {
