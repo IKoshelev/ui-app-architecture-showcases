@@ -3,7 +3,9 @@
 // Deals - an array containing the selected values of each deal, each with a unique identifier
 // isLoading
 
-export class DealsStore {
+class DealsStore {
 
 
 }
+
+export const dealsStore = new DealsStore();
