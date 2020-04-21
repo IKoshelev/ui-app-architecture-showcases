@@ -1,4 +1,4 @@
-import { computed, observable } from "mobx";
+import { computed, observable, action } from "mobx";
 import { CarModel } from "../api/CarInventory.Client";
 import { EnsurancePlanType } from "../api/CarEnsurance.Client";
 
@@ -36,12 +36,31 @@ class DealsStore {
     
     @computed
     public get getActiveDeal(): Deal | undefined { 
-        return this.deals.find(x => x.id === this.activeDealId)
+        return this.deals.find(deal => deal.id === this.activeDealId)
     };
+
+    @action.bound 
+    public setActiveDealId(value: number) {
+        this.activeDealId = value
+    }
 
     @computed
     public get carModel() {
         return this.getActiveDeal?.carModel;
+    }
+
+    @action.bound 
+    public setCarModel(value: CarModel) {
+        this.deals = this.deals.map(deal => {
+            if (deal.id !== this.activeDealId) {
+                return deal;
+            }
+
+            return {
+                ...deal,
+                carModel: value 
+            }
+        })
     }
 
     @computed
@@ -49,14 +68,56 @@ class DealsStore {
         return this.getActiveDeal?.selectedEnsurancePlanTypes;
     }
 
+    @action.bound 
+    public setSelectedEnsurancePlanTypes(value: EnsurancePlanType[]) {
+        this.deals = this.deals.map(deal => {
+            if (deal.id !== this.activeDealId) {
+                return deal;
+            }
+
+            return {
+                ...deal,
+                selectedEnsurancePlanTypes: value 
+            }
+        })
+    }
+
     @computed
     public get downpayment() {
         return this.getActiveDeal?.downpayment;
     }
 
+    @action.bound 
+    public setDownPayment(value: number) {
+        this.deals = this.deals.map(deal => {
+            if (deal.id !== this.activeDealId) {
+                return deal;
+            }
+
+            return {
+                ...deal,
+                setDownPayment: value 
+            }
+        })
+    }
+
     @computed
     public get financingFinilizedToken() {
         return this.getActiveDeal?.financingFinilizedToken;
+    }
+
+    @action.bound 
+    public setFinancingFinilizedToken(value: number) {
+        this.deals = this.deals.map(deal => {
+            if (deal.id !== this.activeDealId) {
+                return deal;
+            }
+
+            return {
+                ...deal,
+                financingFinilizedToken: value 
+            }
+        })
     }
 }
 
