@@ -4,10 +4,12 @@ import { CarPurchaseVM } from "./CarPurchase.VM";
 import { CarModelsSelector } from "./car-model-selector/CarModelsSelector";
 import { EnsurancePlanSelector } from "./ensurance-plan-selector/EnsurancePlanSelector";
 import { NumericInput } from "../../../generic-components/numeric-input/NumericInput";
+import './CarPurchase.css';
 
 export const CarPurchase: React.FunctionComponent<{
-    vm: CarPurchaseVM
-}> = observer(({ vm }) => {
+    vm: CarPurchaseVM,
+    additionalElems?: () => React.ReactNode
+}> = observer(({ vm, additionalElems }) => {
     console.log('Rendering CarPurchase', new Date());
 
     return <>
@@ -49,8 +51,8 @@ export const CarPurchase: React.FunctionComponent<{
                         <div className='car-purchase-deal-state'>
                             {getDealStateDescription(vm.dealState)}
                         </div>
-                    };
-            </>
+                    }
+                </>
             }}
         </Observer>
         <button
@@ -72,6 +74,9 @@ export const CarPurchase: React.FunctionComponent<{
             <div className='car-purchase-messages'>
                 {vm.messages.map(x => (<div key={x}>{x}</div>))}
             </div>
+        }
+        {
+            additionalElems?.()
         }
     </>
 

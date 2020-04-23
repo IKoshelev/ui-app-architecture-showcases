@@ -19,6 +19,8 @@ export class CarPurchaseVM {
         this.downpaymentInputVm = this.createDownpaymentVM();
     }
 
+    public readonly cssClassName = 'car-purchase-deal' as const;
+
     public readonly id: string;
 
     public readonly carPurchaseModel: CarPurchaseModel;

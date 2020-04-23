@@ -1,0 +1,102 @@
+.car-purchase-deal {
+    display: grid;
+    grid-template-columns:  16em 12em 12em;
+    grid-template-rows: 2em 5em 2em 2em 2em 2em 2em 2em;
+}
+
+.car-purchase-deal>* {
+    margin: 2px;
+}
+
+/* css class names could still use some analysis and improvement */
+
+.car-purchase-deal>.car-purchase-model-selector-label {
+    grid-row: 1;
+    grid-column: 1;
+}
+
+.car-purchase-deal>.car-model-selector-select,
+.car-purchase-deal>.car-model-selector-loading {
+    grid-row: 1;
+    grid-column: 2;
+}
+
+.car-purchase-deal>.car-model-selector-refresh-btn {
+    grid-row: 1;
+    grid-column: 3;
+}
+
+.car-purchase-deal>.car-purchase-ensurance-selector-label {
+    grid-row: 2;
+    grid-column: 1;
+}
+
+.car-purchase-deal>.ensurance-plan-selector-select,
+.car-purchase-deal>.ensurance-plan-selector-loading {
+    grid-row: 2;
+    grid-column: 2;
+} 
+
+.car-purchase-deal>.ensurance-plan-selector-refresh-btn {
+    grid-row: 2;
+    grid-column: 3;
+}
+
+.car-purchase-deal>.car-purchase-downpayment-label {  
+    grid-row: 3;
+    grid-column:1;
+}
+
+.car-purchase-deal>.car-purchase-downpayment {
+    grid-row: 3;
+    grid-column: 2;
+}
+
+.car-purchase-deal>.car-purchase-downpayment.invalid {
+    border: 2px solid red;
+}
+
+.car-purchase-deal>.button-set-minimum-possible-downpayment {
+    grid-row: 3;
+    grid-column: 3;
+}
+
+.car-purchase-deal>.car-purchase-downpayment-messages {
+    grid-row: 4;
+    grid-column: 2/ span 2;
+}
+
+.car-purchase-deal>.car-purchase-final-price-label {
+    grid-row: 5;
+    grid-column:1;
+}
+
+.car-purchase-deal>.car-final-price {
+    grid-row: 5;
+    grid-column:2;
+}
+
+.car-purchase-deal>.car-purchase-deal-state {
+    grid-row: 6;
+    grid-column: 1 / span 3;
+}
+
+.car-purchase-deal>.button-close-active-deal {
+    grid-row: 7;
+    grid-column: 1;
+}
+
+.car-purchase-deal>.button-request-approval {
+    grid-row: 7;
+    grid-column: 2;
+}
+
+.car-purchase-deal>.button-finalzie-deal {
+    grid-row: 7;
+    grid-column: 3;
+}
+
+.car-purchase-deal>.car-purchase-messages {
+    grid-row: 8;
+    grid-column: 1/ span 3;
+}
