@@ -1,30 +1,29 @@
 import { useState, useEffect } from "react";
 import { carEnsuranceClient, EnsurancePlan } from "../../../../api/CarEnsurance.Client";
 import { dealsStore } from "../../../../stores/Deals.Store";
+import { fetchAvailableInsurancePlans } from "../../../../stores/Deals.Async";
 
 export const useInsurancePlanSelector = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [availablePlans, setAvailablePlans] = useState<EnsurancePlan[]>([]);
 
     const reloadAvailablePlans = async () => {
         setIsLoading(true);
-        try {
-            const result: EnsurancePlan[] = await carEnsuranceClient.getAvaliableEnsurancePlans();
-            setAvailablePlans(result);
-        } finally {
-            setIsLoading(false);
-        }
+        await fetchAvailableInsurancePlans();
+        setIsLoading(false);
     }
 
     useEffect(() => {
-        reloadAvailablePlans();
-    }, [])
+        setIsLoading(false);
+        if (dealsStore.availableInsurancePlans.length === 0) {
+            reloadAvailablePlans();
+        };
+    }, [dealsStore.activeDealId])
 
     return {
         isLoading,
-        availablePlans,
-        selectedPlans: availablePlans.filter(a =>
-            dealsStore.selectedEnsurancePlanTypes.find(x => a.type === x)),
+        availablePlans: dealsStore.availableInsurancePlans,
+        selectedPlans: dealsStore.availableInsurancePlans.filter(a =>
+            dealsStore.selectedEnsurancePlanTypes.some(x => a.type === x)),
         isDealFinilized: false,
         setSelectedPlans: dealsStore.setSelectedEnsurancePlanTypes,
         reloadAvailablePlans

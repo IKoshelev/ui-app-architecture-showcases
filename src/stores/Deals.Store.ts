@@ -1,14 +1,17 @@
 import { computed, observable, action } from "mobx";
 import { CarModel } from "../api/CarInventory.Client";
-import { EnsurancePlanType } from "../api/CarEnsurance.Client";
-import { ReadonlyDeep, getArrayWithUpdatedItems } from "../util/mobxHelpers";
+import { EnsurancePlanType, EnsurancePlan } from "../api/CarEnsurance.Client";
+import { ReadonlyDeep, getArrayWithUpdatedItems } from "../util/state-helpers";
 
 export type Deal = {
     id: number,
     carModel: CarModel | undefined,
+    availableCarModels: CarModel[],
     selectedEnsurancePlanTypes: EnsurancePlanType[],
+    availableInsurancePlans: EnsurancePlan[],
     downpayment: number | undefined,
-    financingFinilizedToken: number | undefined
+    financingFinilizedToken: number | undefined,
+    isLoading: boolean
 }
 
 // assume deal ids are unique enough, 
@@ -21,9 +24,12 @@ export function createFreshDeal(): Deal {
     return observable({
         id: (dealIdCounter += 1),
         carModel: undefined,
+        availableCarModels: [],
         selectedEnsurancePlanTypes: [],
+        availableInsurancePlans: [],
         downpayment: undefined,
-        financingFinilizedToken: undefined
+        financingFinilizedToken: undefined,
+        isLoading: false
     })
 }
 
@@ -38,9 +44,7 @@ class DealsStore {
     @action.bound
     public addNewDeal = () => {
         const newDeal = createFreshDeal();
-        console.log('newDeal', newDeal)
         this.deals = [...this.deals, newDeal];
-        console.log(this.deals);
     }
 
     @computed
@@ -52,7 +56,6 @@ class DealsStore {
 
     @action.bound
     public closeActiveDeal(): void {
-        console.log('this.deals', this.deals);
         this.deals = this.deals.filter(deal => deal.id !== this.activeDealId);
     }
 
@@ -64,6 +67,18 @@ class DealsStore {
     @action.bound
     public setActiveDealId(value: number) {
         this.activeDealId = value
+    }
+
+    @computed
+    public get isLoading() {
+        return this.getActiveDeal?.isLoading;
+    }
+
+    @action.bound
+    public setIsLoading(value: boolean) {
+        this.updateActiveItem({
+            isLoading: value
+        });
     }
 
     @computed
@@ -79,9 +94,34 @@ class DealsStore {
     }
 
     @computed
+    public get availableInsurancePlans() {
+        return this.getActiveDeal?.availableInsurancePlans ?? [];
+    }
+
+    @action.bound
+    public setAvailableInsurancePlans(value: EnsurancePlan[]) {
+        this.updateActiveItem({
+            availableInsurancePlans: value
+        });
+    }
+
+    @computed
+    public get availableCarModels() {
+        return this.getActiveDeal?.availableCarModels ?? [];
+    }
+
+    @action.bound
+    public setAvailableCarModels(value: CarModel[]) {
+        this.updateActiveItem({
+            availableCarModels: value
+        });
+    }
+
+    @computed
     public get selectedEnsurancePlanTypes() {
         return this.getActiveDeal?.selectedEnsurancePlanTypes ?? [];
     }
+
 
     @action.bound
     public setSelectedEnsurancePlanTypes(value: EnsurancePlanType[]) {

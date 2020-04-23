@@ -25,8 +25,8 @@ export const CarModelsSelector2: React.FunctionComponent = observer(() => {
                 availableItems: availableModels,
                 selectedItem: selectedModel,
                 disabled: isDealFinalized,
-                getKeyValue: (item) => item.id.toString(),
-                getDescription: (item) => item.description,
+                getKeyValue: (item) => item?.id.toString(),
+                getDescription: (item) => item?.description,
                 handleSelect: (item) => setSelectedModel(item),
             }}
 

@@ -1,6 +1,6 @@
 import { observer } from "mobx-react";
 import React from "react";
-import { ReadonlyDeep } from "../../util/mobxHelpers";
+import { ReadonlyDeep } from "../../util/state-helpers";
 
 type SelectDropdownProps<T> =
     {

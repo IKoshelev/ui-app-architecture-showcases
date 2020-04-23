@@ -1,15 +1,23 @@
 import React from 'react';
 import { observer } from 'mobx-react';
-import { dealsStore } from './stores/Deals.Store';
 import { CarPurchase2 } from './screens/car-purchase/components/CarPurchase2';
+import { useApp } from './useApp';
 
 import './App.css';
 
-export const App2 = observer(() => { 
-  console.log('dealsStore', dealsStore);
-  console.log('dealsStore.deals', dealsStore.deals);
-  return <div id='app-root'>
+export const App2 = observer(() => {
 
+  const {
+      deals,
+      activeDealId,
+      handleAddNewDealClick,
+      handleSelectDealClick,
+      handleCloseDealClick
+  } = useApp();
+  
+  return ( 
+
+  <div id='app-root'>
     <div className='car-purchase-main-logo'>
       Welcome to Crazy Ivan Motors
     </div>
@@ -17,16 +25,16 @@ export const App2 = observer(() => {
     <div className='tabs'>
       <button
         className='button-add-new-deal'
-        onClick={dealsStore.addNewDeal}
+        onClick={handleAddNewDealClick}
       >
         Add deal
       </button>
       {
-        dealsStore.deals.map(deal => (
+        deals.map(deal => (
           <div
-            className={`deal-tab-header ${deal.id === dealsStore.activeDealId ? 'active' : ''}`}
+            className={`deal-tab-header ${deal.id === activeDealId ? 'active' : ''}`}
             key={deal.id}
-            onClick={() => dealsStore.setActiveDealId(deal.id)}
+            onClick={() => handleSelectDealClick(deal.id)}
           >
             {deal.id}
           </div>
@@ -35,12 +43,12 @@ export const App2 = observer(() => {
     </div>
 
     {
-      dealsStore.activeDealId &&
+      activeDealId &&
       <>
         <CarPurchase2 />
         <button
           className='button-close-active-deal'
-          onClick={dealsStore.closeActiveDeal}
+          onClick={handleCloseDealClick}
         >
           Close this deal
       </button>
@@ -48,4 +56,4 @@ export const App2 = observer(() => {
     }
 
   </div>
-});
+)})
