@@ -5,9 +5,9 @@ import { appVm } from './App.VM';
 
 import './App.css';
 
-const App = observer(() => {
+export const App = observer(() => (
 
-  return <div id='app-root'>
+  <div id='app-root'>
 
     <div className='car-purchase-main-logo'>
       Welcome to Crazy Ivan Motors
@@ -46,10 +46,5 @@ const App = observer(() => {
       </>
     }
 
-
-
   </div>
-
-});
-
-export default App;
+));

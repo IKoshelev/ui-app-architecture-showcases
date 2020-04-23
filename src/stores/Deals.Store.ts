@@ -1,6 +1,7 @@
 import { computed, observable, action } from "mobx";
 import { CarModel } from "../api/CarInventory.Client";
 import { EnsurancePlanType } from "../api/CarEnsurance.Client";
+import { ReadonlyDeep, getArrayWithUpdatedItems } from "../util/mobxHelpers";
 
 export type Deal = {
     id: number,
@@ -14,7 +15,7 @@ export type Deal = {
 // in real app this would be a generated guid or we woud get the from back-end
 let dealIdCounter = 0;
 
-const deal = createFreshDeal();
+const initialDeal = createFreshDeal();
 
 export function createFreshDeal(): Deal {
     return observable({
@@ -26,53 +27,21 @@ export function createFreshDeal(): Deal {
     })
 }
 
-// todo move to util
-function getArrayWithUpdatedItems<T>(
-    arr: T[],
-    predicate: (item: T) => boolean,
-    update: Partial<T>): T[] {
-
-    // this code will fire even if there is no active item, just swallowing the update without error
-    return arr.map(item => {
-
-        if (!predicate(item)) {
-            return item;
-        }
-
-        return {
-            ...item,
-            ...update
-        }
-    });
-
-    // I can't see a situation, in which which we are given an update, 
-    // can't find item to apply it to, and that is not an error.
-    // So, if we go this route, i'd do somethings like this:
-    const itemIndex = arr.findIndex(predicate);
-    if (itemIndex === -1) {
-        throw new Error(`Item for update not found`);
-    }
-
-    const newArr = [...arr];
-    newArr[itemIndex] = {
-        ...newArr[itemIndex],
-        ...update
-    }
-    return newArr;
-}
-
-// todo move to util
-type ReadonlyDeep<TType> = {
-    readonly [key in keyof TType]: ReadonlyDeep<TType[key]>;
-}
-
 class DealsStore {
 
     @observable
     public activeDealId: number = 1;
 
     @observable
-    public deals: Deal[] = [deal];
+    public deals: Deal[] = [initialDeal];
+
+    @action.bound
+    public addNewDeal = () => {
+        const newDeal = createFreshDeal();
+        console.log('newDeal', newDeal)
+        this.deals = [...this.deals, newDeal];
+        console.log(this.deals);
+    }
 
     @computed
     public get getActiveDeal(): ReadonlyDeep<Deal> | undefined {
@@ -80,6 +49,12 @@ class DealsStore {
         // from accitdentally setting state in any other way, so, lets only give them ReadonlyDeep
         return this.deals.find(deal => deal.id === this.activeDealId);
     };
+
+    @action.bound
+    public closeActiveDeal(): void {
+        console.log('this.deals', this.deals);
+        this.deals = this.deals.filter(deal => deal.id !== this.activeDealId);
+    }
 
     @action
     private updateActiveItem(update: Partial<Deal>) {
