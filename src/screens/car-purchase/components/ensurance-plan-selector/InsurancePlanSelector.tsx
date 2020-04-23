@@ -24,7 +24,7 @@ export const InsurancePlanSelector = observer(() => {
             selectAttributes={{ className: 'ensurance-plan-selector-select' }}
             vm={{
                 availableItems: availablePlans,
-                selectedItems: selectedPlans || [],
+                selectedItems: selectedPlans,
                 disabled: isDealFinilized,
                 getKeyValue: (item) => item.type.toString(),
                 getDescription: (item) => item.description,
