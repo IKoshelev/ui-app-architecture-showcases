@@ -24,8 +24,8 @@ class CarInventoryClient {
             },
             {
                 id: 3,
-                description: 'Lamborgini Hurricane',
-                basePrice: 280000
+                description: 'Porsche Cayene',
+                basePrice: 90000
             }
         ]
     }

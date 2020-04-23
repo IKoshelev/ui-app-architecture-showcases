@@ -7,12 +7,11 @@ import { NumericInput } from "../../../generic-components/numeric-input/NumericI
 import './CarPurchase.css';
 
 export const CarPurchase: React.FunctionComponent<{
-    vm: CarPurchaseVM,
-    additionalElems?: () => React.ReactNode
-}> = observer(({ vm, additionalElems }) => {
+    vm: CarPurchaseVM
+}> = observer(({ vm }) => {
     console.log('Rendering CarPurchase', new Date());
 
-    return <>
+    return <div className='car-purchase-deal'>
         <div className='car-purchase-model-selector-label'>
             Please select model
         </div>
@@ -63,6 +62,12 @@ export const CarPurchase: React.FunctionComponent<{
             Request approval
         </button>
         <button
+            className='button-close-active-deal'
+            onClick={vm.close}
+        >
+            Close this deal
+        </button>
+        <button
             className='button-finalzie-deal'
             disabled={!vm.canFinalizeDeal}
             onClick={vm.finalzieDeal}
@@ -75,10 +80,7 @@ export const CarPurchase: React.FunctionComponent<{
                 {vm.messages.map(x => (<div key={x}>{x}</div>))}
             </div>
         }
-        {
-            additionalElems?.()
-        }
-    </>
+    </div>
 
     function getDealStateDescription(state: typeof vm.dealState) {
         if (state === 'deal-finalized') {

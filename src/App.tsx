@@ -1,5 +1,5 @@
 import React from 'react';
-import { observer } from 'mobx-react';
+import { observer, Observer } from 'mobx-react';
 
 import { CarPurchase } from './screens/car-purchase/components/CarPurchase';
 import { appVm } from './App.VM';
@@ -27,40 +27,35 @@ export const App = observer(() => {
             <div
               className={`deal-tab-header ${x === appVm.activeCapPurchaseVM ? 'active' : ''}`}
               key={x.id}
-              onClick={() => appVm.setActiveDeal(x)}
             >
-              {x.id}
+              <Observer>
+                {() => {
+                  console.log(`rendering header for ${x.id}`);
+                  return (<>
+                    <div
+                      className='header-text'
+                      onClick={() => appVm.setActiveDeal(x)}
+                    >
+                      {x.tabHeader}
+                    </div>
+                  </>);
+                }}
+              </Observer>
+              <button
+                className='close-button'
+                onClick={x.close}
+              >
+                X
+                </button>
             </div>
           ))
         }
       </div>
 
-      <div
-        className={`active-tab ${appVm.activeCapPurchaseVM?.cssClassName}`}
-      >
+      <div className={`active-tab`}>
         {
           appVm.activeCapPurchaseVM &&
-          <>
-            <CarPurchase
-              vm={appVm.activeCapPurchaseVM}
-              additionalElems={() => (
-                /* This is just to show how to split React node definition
-                  from its rendering, usually to place it deeper into the DOM tree;
-                  This approach is to be used very sparringly, it is spaghettish;
-                  Cleaner approach is - VM receives a callback function to request
-                  its own closing or emits an appropriate event, defines and renders
-                  a button to trigger it;
-               */
-                <button
-                  className='button-close-active-deal'
-                  onClick={appVm.closeActiveDeal}
-                >
-                  Close this deal
-                </button>
-              )}
-            />
-
-          </>
+          <CarPurchase vm={appVm.activeCapPurchaseVM} />
         }
       </div>
 

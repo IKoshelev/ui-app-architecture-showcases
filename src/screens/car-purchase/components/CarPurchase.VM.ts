@@ -9,8 +9,9 @@ import { financingClient } from "../../../api/Financing.Client";
 
 export class CarPurchaseVM {
 
-    constructor(id: string) {
+    constructor(id: string, onClose?: (_this: CarPurchaseVM) => void) {
         this.id = id;
+        this.onClose = onClose;
         this.carPurchaseModel = new CarPurchaseModel();
 
         this.carModelSelectorVM = new CarModelsSelectorVM(this.carPurchaseModel);
@@ -22,6 +23,7 @@ export class CarPurchaseVM {
     public readonly cssClassName = 'car-purchase-deal' as const;
 
     public readonly id: string;
+    private readonly onClose?: (_this: CarPurchaseVM) => void;
 
     public readonly carPurchaseModel: CarPurchaseModel;
     public readonly carModelSelectorVM: CarModelsSelectorVM;
@@ -43,6 +45,24 @@ export class CarPurchaseVM {
             || this.ensurancePlanSelectorVM.isLoading
             || this.carModelSelectorVM.isLoading
             || this.carPurchaseModel.isLoading;
+    }
+
+    @computed
+    public get tabHeader() {
+        if (!this.carPurchaseModel.carModel) {
+            return `${this.id}`;
+        }
+
+        let state: string = '';
+        if (this.dealState === 'deal-finalized') {
+            state = 'done';
+        } else if (this.dealState === 'approval-perpetual') {
+            state = 'approved'
+        } else if (typeof this.dealState !== 'string') {
+            state = `${this.dealState.approvalExpiresInSeconds} sec`;
+        }
+
+        return `${this.carPurchaseModel.carModel.description} ${state}`;
     }
 
     @computed
@@ -173,5 +193,11 @@ export class CarPurchaseVM {
         } finally {
             this._isLoading = false;
         }
+    }
+
+    @action.bound
+    public close() {
+        // clean deal, probably by notifying backend
+        this.onClose?.(this);
     }
 }

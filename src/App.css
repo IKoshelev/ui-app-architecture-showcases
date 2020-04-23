@@ -1,7 +1,7 @@
 #app-root {
     display: grid;
     grid-template-columns:  1fr 40em 1fr;
-    grid-template-rows:  5em 21em auto;
+    grid-template-rows:  5em auto auto;
 }
 
 .main-logo {
@@ -17,7 +17,7 @@
 
     display: grid;
     grid-template-columns:  1fr;
-    grid-template-rows:  2em 19em;
+    grid-template-rows:  auto auto;
 }
 
 
@@ -39,13 +39,26 @@
 .screens>.tabs>.deal-tab-header {
     border: 2px solid black;
     flex-grow: 0;
-    width: 5em;
+    width: 14em;
     text-align: center;
+    display: flex;
+    flex-direction: row;
 }
 
 .screens>.tabs>.deal-tab-header.active {
     font-weight: bold;
     border-bottom: 2px solid #ffffff00;
+}
+
+.screens>.tabs>.deal-tab-header>.header-text {
+    flex-grow: 1;
+    overflow: hidden;
+
+    font-size: 0.8em;
+}
+
+.screens>.tabs>.deal-tab-header>.close-button {
+    flex-grow: 0;
 }
 
 .screens>.active-tab {

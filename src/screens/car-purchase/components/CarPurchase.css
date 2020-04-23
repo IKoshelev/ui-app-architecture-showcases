@@ -1,7 +1,7 @@
 .car-purchase-deal {
     display: grid;
     grid-template-columns:  16em 12em 12em;
-    grid-template-rows: 2em 5em 2em 2em 2em 2em 2em 2em;
+    grid-template-rows: 2em 5em 2em auto 2em auto 2em auto;
 }
 
 .car-purchase-deal>* {

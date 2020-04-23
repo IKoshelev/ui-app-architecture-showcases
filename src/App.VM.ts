@@ -19,7 +19,7 @@ class AppVM {
     @action.bound
     public addNewDeal() {
         this.coutner += 1;
-        const vm = new CarPurchaseVM(`Deal ${this.coutner}`)
+        const vm = new CarPurchaseVM(`Deal ${this.coutner}`, this.closeDeal);
         this.capPurchaseVMs.push(vm);
         this.activeCapPurchaseVM = vm;
     }
@@ -30,14 +30,17 @@ class AppVM {
     }
 
     @action.bound
-    public closeActiveDeal() {
-        const index = this.capPurchaseVMs.findIndex((x) => x === this.activeCapPurchaseVM);
+    private closeDeal(dealVm: CarPurchaseVM) {
+        const index = this.capPurchaseVMs.findIndex((x) => x === dealVm);
         if (index === -1) {
             return;
         }
-        this.activeCapPurchaseVM =
-            this.capPurchaseVMs[index - 1]
-            ?? this.capPurchaseVMs[index + 1];
+
+        if (this.activeCapPurchaseVM === this.capPurchaseVMs[index]) {
+            this.activeCapPurchaseVM =
+                this.capPurchaseVMs[index - 1]
+                ?? this.capPurchaseVMs[index + 1];
+        }
 
         this.capPurchaseVMs.splice(index, 1);
     }
