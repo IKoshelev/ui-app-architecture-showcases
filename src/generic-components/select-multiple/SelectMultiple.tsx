@@ -1,17 +1,18 @@
 import { observer } from "mobx-react";
 import React from "react";
+import { ReadonlyDeep } from "../../util/mobxHelpers";
 
 type SelectMultipleProps<T> =
     {
         selectAttributes?: React.HTMLAttributes<HTMLElement>,
         vm: {
-            availableItems: T[],
-            selectedItems: T[],
+            availableItems: ReadonlyDeep<T[]>,
+            selectedItems: ReadonlyDeep<T[]>,
 
-            getKeyValue: (item: T) => string,
-            getDescription: (item: T) => string,
+            getKeyValue: (item: ReadonlyDeep<T>) => string,
+            getDescription: (item: ReadonlyDeep<T>) => string,
 
-            handleSelect: (items: T[]) => void,
+            handleSelect: (items: ReadonlyDeep<T>[]) => void,
             disabled?: boolean
         }
     };

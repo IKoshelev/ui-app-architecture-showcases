@@ -80,7 +80,7 @@ class DealsStore {
 
     @computed
     public get selectedEnsurancePlanTypes() {
-        return this.getActiveDeal?.selectedEnsurancePlanTypes;
+        return this.getActiveDeal?.selectedEnsurancePlanTypes ?? [];
     }
 
     @action.bound

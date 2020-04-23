@@ -19,11 +19,12 @@ export const useInsurancePlanSelector = () => {
     useEffect(() => {
         reloadAvailablePlans();
     }, [])
-    
+
     return {
         isLoading,
         availablePlans,
-        selectedPlans: dealsStore.selectedEnsurancePlanTypes,
+        selectedPlans: availablePlans.filter(a =>
+            dealsStore.selectedEnsurancePlanTypes.find(x => a.type === x)),
         isDealFinilized: false,
         setSelectedPlans: dealsStore.setSelectedEnsurancePlanTypes,
         reloadAvailablePlans

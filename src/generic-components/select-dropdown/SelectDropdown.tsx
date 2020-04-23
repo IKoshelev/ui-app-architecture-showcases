@@ -1,19 +1,19 @@
 import { observer } from "mobx-react";
 import React from "react";
+import { ReadonlyDeep } from "../../util/mobxHelpers";
 
 type SelectDropdownProps<T> =
     {
         selectAttributes?: React.HTMLAttributes<HTMLElement>,
         emptyPlaceholder: string,
         vm: {
-            availableItems: T[],
-            selectedItem: T | undefined,
+            availableItems: ReadonlyDeep<T[]>,
+            selectedItem: ReadonlyDeep<T> | undefined,
 
+            getKeyValue: (item: ReadonlyDeep<T>) => string,
+            getDescription: (item: ReadonlyDeep<T>) => string,
 
-            getKeyValue: (item: T) => string,
-            getDescription: (item: T) => string,
-
-            handleSelect: (item: T | undefined) => void,
+            handleSelect: (item: ReadonlyDeep<T> | undefined) => void,
             disabled?: boolean
         }
     };

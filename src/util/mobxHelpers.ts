@@ -32,6 +32,11 @@ export function getArrayWithUpdatedItems<T>(
     // return newArr;
 }
 
-export type ReadonlyDeep<TType> = {
-    readonly [key in keyof TType]: ReadonlyDeep<TType[key]>;
-}
+export type ReadonlyDeep<TType> =
+    TType extends readonly (infer TElem)[] ? readonly ReadonlyDeep<TElem>[] :
+    {
+        readonly [key in keyof TType]:
+        TType[key] extends readonly (infer TElem)[] ? readonly ReadonlyDeep<TElem>[] :
+        TType[key] extends object ? readonly ReadonlyDeep<TType[key]>[] :
+        TType[key];
+    }
