@@ -1,8 +1,8 @@
 import { observer } from "mobx-react";
 import React from "react";
-import { SelectMultiple } from "../../../../generic-components/select-multiple/SelectMultiple";
+import { SelectMultiple2 } from "../../../../generic-components/select-multiple/SelectMultiple2";
 import { useInsurancePlanSelector } from "./useInsurancePlanSelector";
-import { EnsurancePlanType } from "../../../../api/CarEnsurance.Client";
+import { EnsurancePlanType, EnsurancePlan } from "../../../../api/CarEnsurance.Client";
 
 export const InsurancePlanSelector = observer(() => {
 
@@ -20,20 +20,14 @@ export const InsurancePlanSelector = observer(() => {
     }
 
     return <>
-        <SelectMultiple
+        <SelectMultiple2
             selectAttributes={{ className: 'ensurance-plan-selector-select' }}
-            vm={{
-                availableItems: availablePlans,
-                selectedItems: selectedPlans,
-                disabled: isDealFinilized,
-                getKeyValue: (item) => item.type.toString(),
-                getDescription: (item) => item.description,
-                handleSelect: (items) => {
-                    const types: EnsurancePlanType[] = items.map(item => item.type);
-                    setSelectedPlans(types)
-                },
-            }}
-
+            availableItems={availablePlans}
+            selectedItems={selectedPlans}
+            disabled={isDealFinilized}
+            getKeyValue={(item: EnsurancePlan) => item.type.toString()}
+            getDescription={(item: EnsurancePlan) => item.description}
+            handleSelect={(items: EnsurancePlan[]) => setSelectedPlans(items)}
         />
         <button
             className='ensurance-plan-selector-refresh-btn'

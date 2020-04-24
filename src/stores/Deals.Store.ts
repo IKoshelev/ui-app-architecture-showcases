@@ -2,36 +2,20 @@ import { computed, observable, action } from "mobx";
 import { CarModel } from "../api/CarInventory.Client";
 import { EnsurancePlanType, EnsurancePlan } from "../api/CarEnsurance.Client";
 import { ReadonlyDeep, getArrayWithUpdatedItems } from "../util/state-helpers";
+import { createFreshDeal, calculateFinalPrice } from "./Deals.Sync";
 
 export type Deal = {
     id: number,
     carModel: CarModel | undefined,
     availableCarModels: CarModel[],
-    selectedEnsurancePlanTypes: EnsurancePlanType[],
+    selectedInsurancePlans: EnsurancePlan[],
     availableInsurancePlans: EnsurancePlan[],
     downpayment: number | undefined,
     financingFinilizedToken: number | undefined,
     isLoading: boolean
 }
 
-// assume deal ids are unique enough, 
-// in real app this would be a generated guid or we woud get the from back-end
-let dealIdCounter = 0;
-
 const initialDeal = createFreshDeal();
-
-export function createFreshDeal(): Deal {
-    return observable({
-        id: (dealIdCounter += 1),
-        carModel: undefined,
-        availableCarModels: [],
-        selectedEnsurancePlanTypes: [],
-        availableInsurancePlans: [],
-        downpayment: undefined,
-        financingFinilizedToken: undefined,
-        isLoading: false
-    })
-}
 
 class DealsStore {
 
@@ -49,8 +33,6 @@ class DealsStore {
 
     @computed
     public get getActiveDeal(): ReadonlyDeep<Deal> | undefined {
-        // If we use setter function - we want to prevent devs
-        // from accitdentally setting state in any other way, so, lets only give them ReadonlyDeep
         return this.deals.find(deal => deal.id === this.activeDealId);
     };
 
@@ -118,15 +100,15 @@ class DealsStore {
     }
 
     @computed
-    public get selectedEnsurancePlanTypes() {
-        return this.getActiveDeal?.selectedEnsurancePlanTypes ?? [];
+    public get selectedInsurancePlans() {
+        return this.getActiveDeal?.selectedInsurancePlans ?? [];
     }
 
 
     @action.bound
-    public setSelectedEnsurancePlanTypes(value: EnsurancePlanType[]) {
+    public setSelectedInsurancePlans(value: EnsurancePlan[]) {
         this.updateActiveItem({
-            selectedEnsurancePlanTypes: value
+            selectedInsurancePlans: value
         });
     }
 
@@ -137,7 +119,7 @@ class DealsStore {
 
     @action.bound
     public setDownPayment(value: number | undefined) {
-        // notice, before the property name was wrong and compiler ignored it
+        console.log('updating')
         this.updateActiveItem({
             downpayment: value
         });

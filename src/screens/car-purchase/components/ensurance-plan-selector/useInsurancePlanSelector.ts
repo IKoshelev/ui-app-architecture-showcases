@@ -22,10 +22,9 @@ export const useInsurancePlanSelector = () => {
     return {
         isLoading,
         availablePlans: dealsStore.availableInsurancePlans,
-        selectedPlans: dealsStore.availableInsurancePlans.filter(a =>
-            dealsStore.selectedEnsurancePlanTypes.some(x => a.type === x)),
+        selectedPlans: dealsStore.selectedInsurancePlans,
         isDealFinilized: false,
-        setSelectedPlans: dealsStore.setSelectedEnsurancePlanTypes,
+        setSelectedPlans: dealsStore.setSelectedInsurancePlans,
         reloadAvailablePlans
     }
 }

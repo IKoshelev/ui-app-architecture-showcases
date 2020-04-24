@@ -25,7 +25,6 @@ export const DownPayment: React.FC = observer(() => {
                 handleChange={handleChange}
                 handleBlur={handleBlur}
                 message={message}
-
             />
             <button
                 className='button-set-minimum-possible-downpayment'
