@@ -3,10 +3,7 @@ import { useActions } from './useActions';
 import { observer } from 'mobx-react';
 import { dealsStore } from '../../../../stores/Deals.Store';
 
-const render = () => true;
-
-export const Actions = observer((() => {
-    console.log('Actions');
+export const Actions = () => {
     const hook = useActions();
 
     return (
@@ -17,7 +14,7 @@ export const Actions = observer((() => {
                 >
                 Close this deal
             </button>
-            {/* <button
+            <button
                 className='button-request-approval'
                 disabled={hook.isRequestApprovalButtonDisabled}
                 onClick={hook.handleRequestApprovalClick}
@@ -30,8 +27,8 @@ export const Actions = observer((() => {
                 onClick={hook.handleFinalizeDealClick}
             >
                 Finalize deal
-            </button> */}
+            </button>
         </>
     )
-}))
+};
 

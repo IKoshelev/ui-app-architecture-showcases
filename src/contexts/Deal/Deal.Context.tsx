@@ -14,7 +14,9 @@ export type IDealContext = {
     isLoading: boolean,
     setIsLoading: (value: boolean) => void,
     isApproved: boolean,
-    setIsApproved: (value: boolean) => void
+    setIsApproved: (value: boolean) => void,
+    approvalToken?: string,
+    setApprovalToken: (value: string) => void,
     isFinalized: boolean,
     setIsFinalized: (value: boolean) => void,
     expirationTimer: number,
@@ -38,6 +40,7 @@ export const DealProvider: React.FC<IDealContextProps> = (props) => {
     const [selectedInsurancePlans, setSelectedInsurancePlans] = useState<EnsurancePlan[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isApproved, setIsApproved] = useState<boolean>(false);
+    const [approvalToken, setApprovalToken] = useState<string>();
     const [isFinalized, setIsFinalized] = useState<boolean>(false);
     const [expirationTimer, setExpirationTimer] = useState<number>(0);
     const [messages, setMessages] = useState<string[]>([]);
@@ -55,6 +58,8 @@ export const DealProvider: React.FC<IDealContextProps> = (props) => {
                     setIsLoading,
                     isApproved,
                     setIsApproved,
+                    approvalToken,
+                    setApprovalToken,
                     isFinalized,
                     setIsFinalized,
                     expirationTimer,

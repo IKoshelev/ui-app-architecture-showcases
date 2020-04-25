@@ -31,7 +31,7 @@ export const CarPurchase2 = memo(() => {
         <FinalPrice />
         {/* <DealState /> */}
         <Actions />
-        {/* <Messages /> */}
+        <Messages />
     </>
 )
 });

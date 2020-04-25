@@ -1,9 +1,9 @@
-import { dealsStore } from "../../../../stores/Deals.Store"
+import { useDeal } from "../../../../contexts/Deal/Deal.Context";
 
 export const useMessages = () => {
-    const message = dealsStore.status?.expirationTimer;
+    const deal = useDeal();
     return {
-        messages: [message],
+        messages: deal.messages,
         showMessages: true
     }
 }

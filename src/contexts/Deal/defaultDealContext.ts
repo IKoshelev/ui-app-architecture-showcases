@@ -23,6 +23,9 @@ export const defaultDealContext: IDealContext = {
     setIsApproved: (value: boolean) => {
         throw new Error('You forget to add a provider')
     },
+    setApprovalToken: (value: string) => {
+        throw new Error('You forget to add a provider')
+    },
     isFinalized: false,
     setIsFinalized: (value: boolean) => {
         throw new Error('You forget to add a provider')
