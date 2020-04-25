@@ -25,22 +25,8 @@ export const fetchMinimumDownPayment = trackLoadingInDealsStore(async () => {
     dealsStore.setDownPayment(minimumDownpayment);
 });
 
-export const fetchMinimumDownPayment = async (): Promise<void> => {
-    dealsStore.setIsLoading(true);
-    try {
-        const minimumDownpayment = await financingClient.getMinimumPossibleDownpayment(
-            dealsStore.carModel!,
-            <EnsurancePlanType[]> dealsStore.selectedInsurancePlans.map(plan => plan.type)
-        );
-        dealsStore.setDownPayment(minimumDownpayment);
-    } finally {
-        dealsStore.setIsLoading(false);
-    }
-}
 
-export const fetchApproval = async (): Promise<void> => {
-    dealsStore.setIsLoading(true);
-    try {
+export const fetchApproval = trackLoadingInDealsStore(async () => {
         const result = await financingClient.getApproval(
                 dealsStore.carModel!,
                 <EnsurancePlanType[]> dealsStore.selectedInsurancePlans.map(plan => plan.type),
@@ -68,8 +54,4 @@ export const fetchApproval = async (): Promise<void> => {
                 });
             }
         }, 1000)
-        
-    } finally {
-        dealsStore.setIsLoading(false);
-    }
-}
+});
