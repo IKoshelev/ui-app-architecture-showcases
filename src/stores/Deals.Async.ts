@@ -72,5 +72,6 @@ export const fetchApproval = trackLoadingInDealsStore(async () => {
     // I really think we should keep it a hard state of expiration Date and current Date and
     // derive remaining seconds. And here comes the question - we can do it in the hooks,
     // but what happens if Deal expiration has to have conseuqences even when deal is not active? 
-    // Imagine, for example, we have to play a sound when a deal expires in 15 seconds, even when the
+    // Imagine, for example, we have to send a notification (you know, 'webpage want to send you notifications')
+    // when a deal is about to expire? 
 });
