@@ -14,3 +14,14 @@ export function sortByExpiration(a: FinancingApproved, b: FinancingApproved) {
         return b.expiration.valueOf() - a.expiration.valueOf();
     }
 }
+
+export const trackIsRunningGeneric = (setIsRunning: (status: boolean) => void) =>
+    <TParam extends unknown[], TReturn>(fn: (...param: TParam) => Promise<TReturn>) =>
+        (...param: Parameters<typeof fn>) => {
+            setIsRunning(true);
+            try {
+                return fn(...param);
+            } finally {
+                setIsRunning(false);
+            }
+        }
