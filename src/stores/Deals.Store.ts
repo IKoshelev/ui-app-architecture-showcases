@@ -1,19 +1,9 @@
 import { computed, observable, action } from "mobx";
 import { CarModel } from "../api/CarInventory.Client";
-import { EnsurancePlanType, EnsurancePlan } from "../api/CarEnsurance.Client";
+import { EnsurancePlan } from "../api/CarEnsurance.Client";
 import { ReadonlyDeep, getArrayWithUpdatedItems } from "../util/state-helpers";
-import { createFreshDeal, calculateFinalPrice } from "./Deals.Sync";
-
-export type Deal = {
-    id: number,
-    carModel: CarModel | undefined,
-    availableCarModels: CarModel[],
-    selectedInsurancePlans: EnsurancePlan[],
-    availableInsurancePlans: EnsurancePlan[],
-    downpayment: number | undefined,
-    financingFinilizedToken: number | undefined,
-    isLoading: boolean
-}
+import { createFreshDeal, defaultDealStatus } from "./Deals.Sync";
+import { Deal, DealStatus } from "./Deals.Types";
 
 const initialDeal = createFreshDeal();
 
@@ -32,7 +22,7 @@ class DealsStore {
     }
 
     @computed
-    public get getActiveDeal(): ReadonlyDeep<Deal> | undefined {
+    public get getActiveDeal() {
         return this.deals.find(deal => deal.id === this.activeDealId);
     };
 
@@ -71,7 +61,8 @@ class DealsStore {
     @action.bound
     public setCarModel(value: CarModel | undefined) {
         this.updateActiveItem({
-            carModel: value
+            carModel: value,
+            status: defaultDealStatus
         });
     }
 
@@ -108,7 +99,8 @@ class DealsStore {
     @action.bound
     public setSelectedInsurancePlans(value: EnsurancePlan[]) {
         this.updateActiveItem({
-            selectedInsurancePlans: value
+            selectedInsurancePlans: value,
+            status: defaultDealStatus
         });
     }
 
@@ -119,21 +111,21 @@ class DealsStore {
 
     @action.bound
     public setDownPayment(value: number | undefined) {
-        console.log('updating')
         this.updateActiveItem({
-            downpayment: value
+            downpayment: value,
+            status: defaultDealStatus
         });
     }
 
     @computed
-    public get financingFinilizedToken() {
-        return this.getActiveDeal?.financingFinilizedToken;
+    public get status() {
+        return this.getActiveDeal?.status;
     }
 
     @action.bound
-    public setFinancingFinilizedToken(value: number | undefined) {
+    public setStatus(value: DealStatus) {        
         this.updateActiveItem({
-            financingFinilizedToken: value
+            status: value
         });
     }
 }

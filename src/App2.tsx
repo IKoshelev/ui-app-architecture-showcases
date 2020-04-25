@@ -7,13 +7,7 @@ import './App.css';
 
 export const App2 = observer(() => {
 
-  const {
-      deals,
-      activeDealId,
-      handleAddNewDealClick,
-      handleSelectDealClick,
-      handleCloseDealClick
-  } = useApp();
+  const hook = useApp();
   
   return ( 
 
@@ -25,16 +19,16 @@ export const App2 = observer(() => {
     <div className='tabs'>
       <button
         className='button-add-new-deal'
-        onClick={handleAddNewDealClick}
+        onClick={hook.handleAddNewDealClick}
       >
         Add deal
       </button>
       {
-        deals.map(deal => (
+        hook.deals.map(deal => (
           <div
-            className={`deal-tab-header ${deal.id === activeDealId ? 'active' : ''}`}
+            className={`deal-tab-header ${deal.id === hook.activeDealId ? 'active' : ''}`}
             key={deal.id}
-            onClick={() => handleSelectDealClick(deal.id)}
+            onClick={() => hook.handleSelectDealClick(deal.id)}
           >
             {deal.id}
           </div>
@@ -43,16 +37,7 @@ export const App2 = observer(() => {
     </div>
 
     {
-      activeDealId &&
-      <>
-        <CarPurchase2 />
-        <button
-          className='button-close-active-deal'
-          onClick={handleCloseDealClick}
-        >
-          Close this deal
-      </button>
-      </>
+      hook.activeDealId && <CarPurchase2 />
     }
 
   </div>

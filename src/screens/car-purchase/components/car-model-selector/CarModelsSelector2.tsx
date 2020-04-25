@@ -5,16 +5,9 @@ import { observer } from "mobx-react";
 
 export const CarModelsSelector2: React.FunctionComponent = observer(() => {
 
-    const {
-        isLoading,
-        isDealFinalized,
-        reloadAvailableModels,
-        availableModels,
-        selectedModel,
-        setSelectedModel
-    } = useCarModelsSelector2();
+    const hook = useCarModelsSelector2();
 
-    if (isLoading) {
+    if (hook.isLoading) {
         return <div className='car-model-selector-loading'>Loading</div>
     }
     
@@ -22,17 +15,17 @@ export const CarModelsSelector2: React.FunctionComponent = observer(() => {
         <SelectDropdown2
             selectAttributes={{ className: 'car-model-selector-select' }}
             emptyPlaceholder='Please select model'
-            availableItems={availableModels}
-            selectedItem={selectedModel}
-            disabled={isDealFinalized}
+            availableItems={hook.availableModels}
+            selectedItem={hook.selectedModel}
+            disabled={hook.isDealFinalized}
             getKeyValue={(item) => item?.id.toString()}
             getDescription={(item) => item?.description}
-            handleSelect={(item) => setSelectedModel(item)}
+            handleSelect={(item) => hook.setSelectedModel(item)}
         />
         <button
             className='car-model-selector-refresh-btn'
-            onClick={reloadAvailableModels}
-            disabled={isDealFinalized}
+            onClick={hook.reloadAvailableModels}
+            disabled={hook.isDealFinalized}
         >
             Refresh available models
         </button>
