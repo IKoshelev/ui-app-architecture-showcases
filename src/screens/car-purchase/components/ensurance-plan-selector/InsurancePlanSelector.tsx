@@ -6,33 +6,26 @@ import { EnsurancePlanType, EnsurancePlan } from "../../../../api/CarEnsurance.C
 
 export const InsurancePlanSelector = observer(() => {
 
-    const {
-        isLoading,
-        availablePlans,
-        selectedPlans,
-        isDealFinilized,
-        reloadAvailablePlans,
-        setSelectedPlans
-    } = useInsurancePlanSelector();
+    const hook = useInsurancePlanSelector();
 
-    if (isLoading) {
+    if (hook.isLoading) {
         return <div className='ensurance-plan-selector-loading'>Loading</div>
     }
 
     return <>
         <SelectMultiple2
             selectAttributes={{ className: 'ensurance-plan-selector-select' }}
-            availableItems={availablePlans}
-            selectedItems={selectedPlans}
-            disabled={isDealFinilized}
+            availableItems={hook.availablePlans}
+            selectedItems={hook.selectedPlans}
+            disabled={hook.isDealFinilized}
             getKeyValue={(item: EnsurancePlan) => item.type.toString()}
             getDescription={(item: EnsurancePlan) => item.description}
-            handleSelect={(items: EnsurancePlan[]) => setSelectedPlans(items)}
+            handleSelect={(items: EnsurancePlan[]) => hook.setSelectedPlans(items)}
         />
         <button
             className='ensurance-plan-selector-refresh-btn'
-            onClick={reloadAvailablePlans}
-            disabled={isDealFinilized}
+            onClick={hook.reloadAvailablePlans}
+            disabled={hook.isDealFinilized}
         >
             Refresh available plans
         </button>

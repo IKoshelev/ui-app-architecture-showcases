@@ -8,7 +8,7 @@ import { NumericInput } from "../../../generic-components/numeric-input/NumericI
 export const CarPurchase: React.FunctionComponent<{
     vm: CarPurchaseVM
 }> = observer(({ vm }) => {
-    console.log('Rendering CarPurchase', new Date());
+    console.log('Rendering CarPurchase');
 
     return <>
         <div className='car-purchase-model-selector-label'>
@@ -42,7 +42,7 @@ export const CarPurchase: React.FunctionComponent<{
         </div>
         <Observer>
             {() => {
-                console.log('Rendering deal state', new Date());
+                console.log('Rendering deal state');
                 return <>
                     {
                         vm.dealState !== 'no-approval' &&

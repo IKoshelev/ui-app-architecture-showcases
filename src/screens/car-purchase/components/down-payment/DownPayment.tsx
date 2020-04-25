@@ -5,31 +5,23 @@ import { NumericInput2 } from '../../../../generic-components/numeric-input/Nume
 
 export const DownPayment: React.FC = observer(() => {
 
-    const {
-        isDisabled,
-        handleClick,
-        isValid,
-        value,
-        message,
-        handleChange,
-        handleBlur
-    } = useDownPayment();
+    const hook = useDownPayment();
 
     return (
         <>
             <NumericInput2
                 inputAttributes={{ className: 'car-purchase-downpayment' }}
                 messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
-                isValid={isValid}
-                displayedValue={value}
-                handleChange={handleChange}
-                handleBlur={handleBlur}
-                message={message}
+                isValid={hook.isValid}
+                displayedValue={hook.value}
+                handleChange={hook.handleChange}
+                handleBlur={hook.handleBlur}
+                message={hook.message}
             />
             <button
                 className='button-set-minimum-possible-downpayment'
-                disabled={isDisabled}
-                onClick={handleClick}
+                disabled={hook.isDisabled}
+                onClick={hook.handleClick}
             >
                 Set minimum possible
             </button>
