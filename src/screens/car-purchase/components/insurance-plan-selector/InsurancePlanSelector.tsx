@@ -15,17 +15,17 @@ export const InsurancePlanSelector = observer(() => {
     return <>
         <SelectMultiple2
             selectAttributes={{ className: 'ensurance-plan-selector-select' }}
-            availableItems={hook.availablePlans}
-            selectedItems={hook.selectedPlans}
-            disabled={hook.isDealFinilized}
+            availableItems={hook.availableItems}
+            selectedItems={hook.selectedItems}
+            disabled={hook.isDisabled}
             getKeyValue={(item: EnsurancePlan) => item.type.toString()}
             getDescription={(item: EnsurancePlan) => item.description}
-            handleSelect={(items: EnsurancePlan[]) => hook.setSelectedPlans(items)}
+            handleSelect={(items: EnsurancePlan[]) => hook.handleSelect(items)}
         />
         <button
             className='ensurance-plan-selector-refresh-btn'
-            onClick={hook.reloadAvailablePlans}
-            disabled={hook.isDealFinilized}
+            onClick={hook.handleClick}
+            disabled={hook.isDisabled}
         >
             Refresh available plans
         </button>

@@ -1,13 +1,13 @@
-import { dealsStore } from "../../../../stores/Deals.Store"
-import { fetchApproval } from "../../../../stores/Deals.Async"
-import { canRequestApproval } from "../../../../stores/Deals.Sync"
+import { useDeal, IDealContext } from "../../../../contexts/Deal/Deal.Context";
 
 export const useActions = () => {
+    const { id, handleCloseDealClick }  = useDeal();
+    
     return {
-        handleCloseDealClick: () => dealsStore.closeActiveDeal(),
-        handleRequestApprovalClick: () => fetchApproval(),
-        isRequestApprovalButtonDisabled: !canRequestApproval(),
-        handleFinalizeDealClick: () => console.log('handleFinalizeDealClick called'),
-        isFinalizeDealButtonDisabled: false
+        handleCloseDealClick: () => handleCloseDealClick(id),
+        // handleRequestApprovalClick: () => fetchApproval(),
+        // isRequestApprovalButtonDisabled: !canRequestApproval(),
+        // handleFinalizeDealClick: () => console.log('handleFinalizeDealClick called'),
+        // isFinalizeDealButtonDisabled: false
     }
 }

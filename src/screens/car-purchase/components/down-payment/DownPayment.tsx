@@ -13,7 +13,7 @@ export const DownPayment: React.FC = observer(() => {
                 inputAttributes={{ className: 'car-purchase-downpayment' }}
                 messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
                 isValid={hook.isValid}
-                displayedValue={hook.value}
+                displayedValue={hook.displayedValue}
                 handleChange={hook.handleChange}
                 handleBlur={hook.handleBlur}
                 message={hook.message}

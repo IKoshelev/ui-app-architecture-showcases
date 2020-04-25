@@ -1,12 +1,13 @@
 import { observer } from "mobx-react";
 import React, { useMemo, memo } from 'react';
 import { CarModelsSelector2 } from "./car-model-selector/CarModelsSelector2";
-import { InsurancePlanSelector } from "./ensurance-plan-selector/InsurancePlanSelector";
+import { InsurancePlanSelector } from "./insurance-plan-selector/InsurancePlanSelector";
 import { DownPayment } from "./down-payment/DownPayment";
 import { calculateFinalPrice } from "../../../stores/Deals.Sync";
 import { Actions } from "./actions/Actions";
 import { DealState } from "./deal-state/DealState";
 import { Messages } from "./messages/Messages";
+import { FinalPrice } from "./final-price/FinalPrice";
 
 export const CarPurchase2 = memo(() => {
     console.log('CarPurchase2');
@@ -27,12 +28,10 @@ export const CarPurchase2 = memo(() => {
         <div className='car-purchase-final-price-label'>
             Final price
         </div>
-        <div className='car-final-price'>
-            {calculateFinalPrice()}
-        </div>
-        <DealState />
+        <FinalPrice />
+        {/* <DealState /> */}
         <Actions />
-        <Messages />
+        {/* <Messages /> */}
     </>
 )
 });

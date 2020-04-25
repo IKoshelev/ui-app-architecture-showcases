@@ -10,7 +10,7 @@ type SelectDropdownProps<T> =
         selectedItem: ReadonlyDeep<T> | undefined,
         getKeyValue: (item: ReadonlyDeep<T>) => string,
         getDescription: (item: ReadonlyDeep<T>) => string,
-        handleSelect: (item: ReadonlyDeep<T> | undefined) => void,
+        handleSelect: (item: ReadonlyDeep<T>) => void,
         disabled?: boolean
     };
 
@@ -22,7 +22,9 @@ export const SelectDropdown2 = observer(<T extends unknown>(props: SelectDropdow
         const selectedItem = props.availableItems
             .find(i => value === props.getKeyValue(i));
 
-        props.handleSelect(selectedItem);
+        if (selectedItem) {
+            props.handleSelect(selectedItem);
+        }
     }
 
     return (

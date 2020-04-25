@@ -2,6 +2,7 @@ import React from "react";
 import { SelectDropdown2 } from "../../../../generic-components/select-dropdown/SelectDropdown2";
 import { useCarModelsSelector2 } from "./useCarModelsSelector2";
 import { observer } from "mobx-react";
+import { CarModel } from "../../../../api/CarInventory.Client";
 
 export const CarModelsSelector2: React.FunctionComponent = observer(() => {
 
@@ -15,17 +16,17 @@ export const CarModelsSelector2: React.FunctionComponent = observer(() => {
         <SelectDropdown2
             selectAttributes={{ className: 'car-model-selector-select' }}
             emptyPlaceholder='Please select model'
-            availableItems={hook.availableModels}
-            selectedItem={hook.selectedModel}
-            disabled={hook.isDealFinalized}
-            getKeyValue={(item) => item?.id.toString()}
-            getDescription={(item) => item?.description}
-            handleSelect={(item) => hook.setSelectedModel(item)}
+            availableItems={hook.availableItems}
+            selectedItem={hook.selectedItem}
+            disabled={hook.isDisabled}
+            getKeyValue={(item: CarModel) => item?.id.toString()}
+            getDescription={(item: CarModel) => item?.description}
+            handleSelect={(item: CarModel) => hook.handleSelect(item)}
         />
         <button
             className='car-model-selector-refresh-btn'
-            onClick={hook.reloadAvailableModels}
-            disabled={hook.isDealFinalized}
+            onClick={hook.handleClick}
+            disabled={hook.isDisabled}
         >
             Refresh available models
         </button>

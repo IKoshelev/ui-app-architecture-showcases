@@ -17,7 +17,7 @@ export const Actions = observer((() => {
                 >
                 Close this deal
             </button>
-            <button
+            {/* <button
                 className='button-request-approval'
                 disabled={hook.isRequestApprovalButtonDisabled}
                 onClick={hook.handleRequestApprovalClick}
@@ -30,7 +30,7 @@ export const Actions = observer((() => {
                 onClick={hook.handleFinalizeDealClick}
             >
                 Finalize deal
-            </button>
+            </button> */}
         </>
     )
 }))

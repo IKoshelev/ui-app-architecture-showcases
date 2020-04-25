@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { dealsStore } from "../../../../stores/Deals.Store";
-import { fetchMinimumDownPayment } from "../../../../stores/Deals.Async";
-import { calculateFinalPrice } from "../../../../stores/Deals.Sync";
+import { financingClient } from "../../../../api/Financing.Client";
+import { useDeal } from "../../../../contexts/Deal/Deal.Context";
+import { calculateFinalPrice } from "../../../../contexts/Deal/Deal.Sync";
 
 export const useDownPayment = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -9,14 +9,52 @@ export const useDownPayment = () => {
     const [message, setMessage] = useState<string>('');
     const [isValid, setIsValid] = useState<boolean>(true);
 
+    const deal = useDeal();
+    
     const setMinimumPossibleDownpayment = async (): Promise<void> => {
+        if (!deal.carModel) {
+            return;
+        }
         setIsLoading(true);
-        await fetchMinimumDownPayment();
-        setIsLoading(false);
+        deal.setIsLoading(true);
+        try {
+            const result = await financingClient.getMinimumPossibleDownpayment(
+                deal.carModel,
+                deal.selectedInsurancePlans.map(plan => plan.type)
+            );
+            setValue(result.toString());
+            deal.setDownpayment(result);
+        } finally {
+            setIsLoading(false);
+            deal.setIsLoading(false);
+        }
     }
 
+    const finalPriceCheck = (value?: number) => {
+        const finalPrice = calculateFinalPrice(deal.carModel, deal.selectedInsurancePlans);
+        const downpayment = value ?? deal.downpayment;
+        console.log(downpayment);
+        console.log(finalPrice);
+        if (!finalPrice) {
+            setIsValid(true);
+            setMessage('');
+            return;
+        }
+
+        if (deal.carModel && downpayment > finalPrice) {
+            setIsValid(false);
+            setMessage('Downpayment exceeds final price');
+        }
+    }
+
+    useEffect(() => {
+        setIsValid(true);
+        setMessage('');
+        finalPriceCheck();
+    }, [deal.carModel])
+
     const setValueFromStore = () => {
-        const nextValue = dealsStore?.downpayment?.toString() ?? '0'
+        const nextValue = deal.downpayment.toString();
         setValue(nextValue);
         setMessage('');
         setIsValid(true);
@@ -24,23 +62,22 @@ export const useDownPayment = () => {
 
     useEffect(() => {
         setValueFromStore();
-    }, [dealsStore.activeDealId])
+    }, []);
 
     return {
-        isDisabled: isLoading || !dealsStore.carModel,
+        isDisabled: isLoading || !deal.carModel,
         isValid,
-        value,
+        displayedValue: value,
         message,
         handleClick: async () => {
             await setMinimumPossibleDownpayment();
-            setValueFromStore();
         },
         handleChange(event: React.ChangeEvent<HTMLInputElement>) {
             setValue(event.target.value);
         },
-        handleBlur(event: React.ChangeEvent<HTMLInputElement>) {
+        handleBlur(_event: React.ChangeEvent<HTMLInputElement>) {
             if (value === '') {
-                dealsStore.setDownPayment(0);
+                deal.setDownpayment(0);
                 return;
             }
             const transformedValue: string = value.trim()
@@ -63,17 +100,9 @@ export const useDownPayment = () => {
             }
 
             const parsedInteger = parseInt(transformedValue);
-            setValue(transformedValue);
-            dealsStore.setDownPayment(parsedInteger);
-            const finalPrice = calculateFinalPrice();
-            if (!finalPrice) {
-                return;
-            }
-            if (dealsStore.carModel && parsedInteger > finalPrice) {
-                setIsValid(false);
-                setMessage('Downpayment exceeds final price');
-                return;
-            }
+            setValue(parsedInteger.toString());
+            deal.setDownpayment(parsedInteger);
+            finalPriceCheck(parsedInteger);
         }
     }
 }

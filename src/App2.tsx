@@ -1,11 +1,13 @@
 import React from 'react';
-import { observer } from 'mobx-react';
 import { CarPurchase2 } from './screens/car-purchase/components/CarPurchase2';
+import { DealProvider } from './contexts/Deal/Deal.Context';
 import { useApp } from './useApp';
-
 import './App.css';
+import { CarModelsProvider } from './contexts/CarModels/CarModels.Context';
+import { InsurancePlansProvider } from './contexts/InsurancePlans/InsurancePlans.Context';
 
-export const App2 = observer(() => {
+
+export const App2 = () => {
 
   const hook = useApp();
   
@@ -24,21 +26,31 @@ export const App2 = observer(() => {
         Add deal
       </button>
       {
-        hook.deals.map(deal => (
-          <div
-            className={`deal-tab-header ${deal.id === hook.activeDealId ? 'active' : ''}`}
-            key={deal.id}
-            onClick={() => hook.handleSelectDealClick(deal.id)}
-          >
-            {deal.id}
-          </div>
+        hook.dealIds.map(id => (
+            <div
+              key={id}
+              className={`deal-tab-header ${id === hook.activeDealId ? 'active' : ''}`}
+              onClick={() => hook.handleSelectDealClick(id)}
+            >
+              Deal {id}
+            </div>
         ))
       }
     </div>
 
     {
-      hook.activeDealId && <CarPurchase2 />
-    }
-
+      hook.dealIds.map(id => (
+        <DealProvider
+          key={id}
+          initialDealId={id}
+          handleCloseDealClick={hook.handleCloseDealClick}
+        >
+          <CarModelsProvider>
+            <InsurancePlansProvider>
+              {hook.activeDealId === id && <CarPurchase2 />}
+            </InsurancePlansProvider>
+          </CarModelsProvider>
+        </DealProvider>
+      ))}
   </div>
-)})
+)}

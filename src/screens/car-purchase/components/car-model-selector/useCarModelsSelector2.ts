@@ -1,29 +1,20 @@
-import { useState, useEffect } from "react";
 import { dealsStore } from "../../../../stores/Deals.Store";
-import { fetchAvailableCarModels } from "../../../../stores/Deals.Async";
+import { useDeal } from "../../../../contexts/Deal/Deal.Context";
+import { useCarModels } from "../../../../contexts/CarModels/CarModels.Context";
 import { CarModel } from "../../../../api/CarInventory.Client";
 
 export const useCarModelsSelector2 = () => {
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-
-    const reloadAvailableModels = async () => {
-        setIsLoading(true);
-        await fetchAvailableCarModels();
-        setIsLoading(false);
-    }
-
-    useEffect(() => {
-        if (dealsStore.availableCarModels.length === 0) {
-            reloadAvailableModels();
-        };
-    }, [dealsStore.activeDealId])
+    const deal = useDeal();
+    const carModels = useCarModels();
 
     return {
-        isLoading,
-        isDealFinalized: false,
-        availableModels: dealsStore.availableCarModels,
-        selectedModel: dealsStore.carModel,
-        setSelectedModel: dealsStore.setCarModel,
-        reloadAvailableModels
+        isLoading: carModels.isLoading,
+        isDisabled: deal.isFinalized,
+        availableItems: carModels.carModels,
+        selectedItem: deal.carModel,
+        handleSelect(item: CarModel) {
+            deal.setCarModel(item)
+        },
+        handleClick: carModels.reloadAvailableModels
     }
 }
