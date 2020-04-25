@@ -41,17 +41,16 @@ export const calculateFinalPrice = (): number | undefined => {
 }
 
 export const canRequestApproval = (): boolean => {
-    // yes, I was wrong, you were totally correct and your work around is amplifying the possible number of states...
-    // this is killing me Ivan, can you find a better solution whilst still allowing me to achieve the architecture I am going for????
-    const hasCarModel = dealsStore?.carModel ?? false;
-    const isLoading = dealsStore?.isLoading ?? false;
-    const isFinalized = dealsStore?.status?.isFinalized ?? false;
-    const isApproved = dealsStore?.status?.isApproved ?? false;
-    const expiryTime = dealsStore?.status?.expirationTimer ?? 0;
+    if (dealsStore.isLoading) {
+        return false;
+    }
 
-    return !isLoading
-        && hasCarModel
-        && !isFinalized
-        && !isApproved
-        && !expiryTime
+    const status = dealsStore.status;
+    if (!status) {
+        return false;
+    }
+
+    return !status.isFinalized
+        && !status.isApproved
+        && !(status.expirationTimer > 0);
 }
