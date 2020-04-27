@@ -1,6 +1,7 @@
 import { IDealContext } from "./Deal.Context";
 import { CarModel } from "../../api/CarInventory.Client";
 import { EnsurancePlan } from "../../api/CarEnsurance.Client";
+import { ApprovalStatus } from "./Deal.Types";
 
 export const defaultDealContext: IDealContext = {
     id: 0,
@@ -23,23 +24,15 @@ export const defaultDealContext: IDealContext = {
     setIsValid: (value: boolean) => {
         throw new Error('You forget to add a provider')
     },
-    isApproved: false,
-    setIsApproved: (value: boolean) => {
-        throw new Error('You forget to add a provider')
-    },
-    setApprovalToken: (value: string) => {
-        throw new Error('You forget to add a provider')
-    },
     isFinalized: false,
     setIsFinalized: (value: boolean) => {
         throw new Error('You forget to add a provider')
     },
-    expirationTimer: 0,
-    setExpirationTimer: (value: number) => {
-        throw new Error('You forget to add a provider')
-    },
     messages: [],
     setMessages: (value: string[]) => {
+        throw new Error('You forget to add a provider')
+    },
+    setApprovalStatus: (value: ApprovalStatus) => {
         throw new Error('You forget to add a provider')
     },
     handleCloseDealClick: (id: number) => {

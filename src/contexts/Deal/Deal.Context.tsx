@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { CarModel } from '../../api/CarInventory.Client';
 import { EnsurancePlan } from '../../api/CarEnsurance.Client';
 import { defaultDealContext } from './defaultDealContext';
+import { ApprovalStatus } from './Deal.Types';
 
 export type IDealContext = {
     id: number,
@@ -13,16 +14,12 @@ export type IDealContext = {
     setDownpayment: (value: number) => void,
     isLoading: boolean,
     setIsLoading: (value: boolean) => void,
-    isApproved: boolean,
-    setIsApproved: (value: boolean) => void,
-    approvalToken?: string,
-    setApprovalToken: (value: string) => void,
+    approvalStatus?: ApprovalStatus,
+    setApprovalStatus: (value: ApprovalStatus) => void,
     isFinalized: boolean,
     setIsFinalized: (value: boolean) => void,
     isValid: boolean,
     setIsValid: (value: boolean) => void,
-    expirationTimer: number,
-    setExpirationTimer: (value: number) => void,
     messages: string[],
     setMessages: (value: string[]) => void,
     handleCloseDealClick: (id: number) => void;
@@ -42,11 +39,9 @@ export const DealProvider: React.FC<IDealContextProps> = (props) => {
     const [selectedInsurancePlans, setSelectedInsurancePlans] = useState<EnsurancePlan[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isValid, setIsValid] = useState<boolean>(false);
-    const [isApproved, setIsApproved] = useState<boolean>(false);
-    const [approvalToken, setApprovalToken] = useState<string>();
     const [isFinalized, setIsFinalized] = useState<boolean>(false);
-    const [expirationTimer, setExpirationTimer] = useState<number>(0);
     const [messages, setMessages] = useState<string[]>([]);
+    const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>();
 
     return <DealContext.Provider
                 value={{
@@ -59,18 +54,14 @@ export const DealProvider: React.FC<IDealContextProps> = (props) => {
                     setSelectedInsurancePlans,
                     isLoading,
                     setIsLoading,
-                    isApproved,
-                    setIsApproved,
                     isValid,
                     setIsValid,
-                    approvalToken,
-                    setApprovalToken,
                     isFinalized,
                     setIsFinalized,
-                    expirationTimer,
-                    setExpirationTimer,
                     messages,
                     setMessages,
+                    approvalStatus,
+                    setApprovalStatus,
                     handleCloseDealClick: props.handleCloseDealClick
                 }}
             >

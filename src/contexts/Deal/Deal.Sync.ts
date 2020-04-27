@@ -1,5 +1,6 @@
 import { EnsurancePlan } from "../../api/CarEnsurance.Client";
 import { CarModel } from "../../api/CarInventory.Client";
+import { ApprovalStatus } from "./Deal.Types";
 
 export const calculateFinalPrice = (carModel: CarModel | undefined, insurancePlans: EnsurancePlan[]): number | null => {
     if (!carModel) {
@@ -15,17 +16,15 @@ export const canRequestApproval = (
     isLoading: boolean, 
     carModel: CarModel | undefined, 
     isFinalized: boolean, 
-    isApproved: boolean, 
-    expirationTimer: number,
+    approvalStatus: ApprovalStatus | undefined,
     isValid: boolean
     ): boolean  => {
     const hasCarModel = !!carModel;    
-    const isExpired = expirationTimer === 0;
+    const hasApprovalStatus = !!approvalStatus;
     
     return !isLoading
             && hasCarModel
             && !isFinalized
-            && !isApproved
-            && isExpired
+            && !hasApprovalStatus
             && isValid;
 };

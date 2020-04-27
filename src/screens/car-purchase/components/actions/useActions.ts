@@ -8,10 +8,10 @@ export const useActions = () => {
     const deal = useDeal();
 
     useEffect(() => {
-        const nextValue: boolean = !canRequestApproval(deal.isLoading, deal.carModel, deal.isFinalized, deal.isApproved, deal.expirationTimer, deal.isValid);
+        const nextValue: boolean = !canRequestApproval(deal.isLoading, deal.carModel, deal.isFinalized, deal.approvalStatus, deal.isValid);
         setIsRequestApprovalButtonDisabled(nextValue);
 
-    }, [deal.isLoading, deal.carModel, deal.isFinalized, deal.isApproved, deal.expirationTimer, deal.isValid])
+    }, [deal.isLoading, deal.carModel, deal.isFinalized, deal.approvalStatus, deal.isValid])
 
     return {
         handleCloseDealClick: () => deal.handleCloseDealClick(deal.id),
@@ -27,22 +27,22 @@ export const useActions = () => {
                 deal.downpayment
             );
             console.log('result', result);
-            const nextExpirationTimer: number = result.isApproved ? 15 : 0;
-            deal.setExpirationTimer(nextExpirationTimer);
-            deal.setIsApproved(result.isApproved);
-            if (result.isApproved) {
-                deal.setApprovalToken(result.approvalToken);
-                deal.setMessages([]);
-            } else {
-                deal.setMessages([result.message]);
-            }
+            // const nextExpirationTimer: number = result.isApproved ? 15 : 0;
+            // deal.setExpirationTimer(nextExpirationTimer);
+            // deal.setIsApproved(result.isApproved);
+            // if (result.isApproved) {
+            //     deal.setApprovalToken(result.approvalToken);
+            //     deal.setMessages([]);
+            // } else {
+            //     deal.setMessages([result.message]);
+            // }
 
-            setInterval(() => {
-                if (deal.expirationTimer && deal.expirationTimer > 0) {
-                    const timeLeft = deal.expirationTimer - 1;
-                    deal.setExpirationTimer(timeLeft);
-                }
-            }, 1000)
+            // setInterval(() => {
+            //     if (deal.expirationTimer && deal.expirationTimer > 0) {
+            //         const timeLeft = deal.expirationTimer - 1;
+            //         deal.setExpirationTimer(timeLeft);
+            //     }
+            // }, 1000)
             } finally {
                 deal.setIsLoading(false)
             }
