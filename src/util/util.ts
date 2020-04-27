@@ -5,12 +5,10 @@ export function setsMatch<T>(arr1: T[], arr2: T[]) {
     return unionSize === arr1.length && unionSize === arr2.length;
 }
 
-export function sortByExpiration(a: FinancingApproved, b: FinancingApproved) {
-    if (a.expiration === undefined) {
-        return -1;
-    } else if (b.expiration === undefined) {
-        return 1;
-    } else {
-        return b.expiration.valueOf() - a.expiration.valueOf();
-    }
+export const getSorterByLatest = <T>(getProp: (item: T) => Date) => (a: T, b: T) => {
+    const dateA = getProp(a);
+    const dateB = getProp(b);
+    return dateB.valueOf() - dateA.valueOf();
 }
+
+export type PromiseValueType<T> = T extends Promise<infer TValuteType> ? TValuteType : never;

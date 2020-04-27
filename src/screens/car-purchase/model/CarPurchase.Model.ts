@@ -1,8 +1,8 @@
 import { observable, computed, action } from "mobx";
 import { CarModel } from "../../../api/CarInventory.Client";
 import { EnsurancePlanType } from "../../../api/CarEnsurance.Client";
-import { FinancingApproved, financingClient } from "../../../api/Financing.Client";
-import { setsMatch, sortByExpiration } from "../../../util/util";
+import { financingClient } from "../../../api/Financing.Client";
+import { setsMatch, getSorterByLatest, PromiseValueType } from "../../../util/util";
 import { ticker1second } from "../../../util/observable-ticker";
 
 export class CarPurchaseModel {
@@ -27,19 +27,29 @@ export class CarPurchaseModel {
     public isLoading = false;
 
     @observable
-    public messages: string[] = [];
+    private _messages: string[] = [];
 
     @computed
-    public get financingApprovalForCurrentDeal() {
+    public get messages() {
+
+        const approval = this.financingApprovalResponseForCurrentDeal;
+
+        return [
+            ...this._messages,
+            ...(approval?.isApproved === false ? [approval.message] : [])
+        ];
+    }
+
+    @computed
+    public get financingApprovalResponseForCurrentDeal() {
         return this.fincingApprovalsCache
             .filter(x =>
                 this.carModel?.id === x.carModelId
                 && this.downpayment === x.downpayment
                 && setsMatch(this.ensurancePlansSelected, x.ensurancePlansSelected)
             )
-            .map(x => x.approval)
-            .sort(sortByExpiration)
-        [0];
+            .sort(getSorterByLatest(x => x.timestamp))
+        [0]?.approvalResponse;
     }
 
     @observable
@@ -47,43 +57,34 @@ export class CarPurchaseModel {
         carModelId: number,
         ensurancePlansSelected: EnsurancePlanType[],
         downpayment: number,
-        approval: FinancingApproved
+        timestamp: Date,
+        approvalResponse: PromiseValueType<ReturnType<typeof financingClient.getApproval>>
     }[] = [];
 
     @computed
     public get canRequestApproval() {
-
-        const approvalIsNotPresentORExpired = !this.financingApprovalForCurrentDeal
-            || (this.financingApprovalForCurrentDeal.expiration
-                && this.financingApprovalForCurrentDeal.expiration < ticker1second.lastTickDate);
-
         return this.carModel
             && this.isDealFinalized === false
-            && approvalIsNotPresentORExpired;
+            && !this.hasValidFinancingApproval;
     }
 
     @action
     public async getApproval() {
         this.isLoading = true;
-        this.messages = [];
 
         try {
-            const result = await financingClient.getApproval(
+            const response = await financingClient.getApproval(
                 this.carModel!,
                 this.ensurancePlansSelected,
                 this.downpayment);
-
-            if (result.isApproved === false) {
-                this.messages.push(result.message);
-                return;
-            }
 
             this.fincingApprovalsCache.push({
                 carModelId: this.carModel!.id,
                 ensurancePlansSelected: [...this.ensurancePlansSelected],
                 downpayment: this.downpayment,
-                approval: result
-            })
+                timestamp: new Date(),
+                approvalResponse: response
+            });
 
         }
         finally {
@@ -94,23 +95,33 @@ export class CarPurchaseModel {
     @computed
     public get canFinalizeDeal() {
         return this.isDealFinalized === false
-            && this.financingApprovalForCurrentDeal
-            && (this.financingApprovalForCurrentDeal.expiration === undefined
-                || this.financingApprovalForCurrentDeal.expiration >= ticker1second.lastTickDate);
+            && this.hasValidFinancingApproval;
+    }
+
+    @computed
+    private get hasValidFinancingApproval() {
+        const approval = this.financingApprovalResponseForCurrentDeal;
+
+        return approval
+            && approval.isApproved
+            && (!approval.expiration || approval.expiration >= ticker1second.lastTickDate);
     }
 
     @action
     public async finalizeDeal() {
         this.isLoading = true;
-        this.messages = [];
+        this._messages = [];
 
         try {
+            if (!this.financingApprovalResponseForCurrentDeal?.isApproved) {
+                throw new Error('Invalid state.');
+            }
             const result = await financingClient.finalizeFinancing(
-                this.financingApprovalForCurrentDeal.approvalToken
+                this.financingApprovalResponseForCurrentDeal.approvalToken
             );
 
             if (!result) {
-                this.messages.push('Deal finalization failed.');
+                this._messages.push('Deal finalization failed.');
                 return;
             }
 

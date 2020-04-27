@@ -88,9 +88,9 @@ export class CarPurchaseVM {
             return 'deal-finalized' as const;
         }
 
-        const approval = this.carPurchaseModel.financingApprovalForCurrentDeal;
+        const approval = this.carPurchaseModel.financingApprovalResponseForCurrentDeal;
 
-        if (!approval) {
+        if (!approval || approval.isApproved === false) {
             return 'no-approval' as const;
         }
 
