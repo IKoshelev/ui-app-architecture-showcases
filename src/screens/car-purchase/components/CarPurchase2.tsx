@@ -5,6 +5,7 @@ import { DownPayment } from "./down-payment/DownPayment";
 import { Actions } from "./actions/Actions";
 import { Messages } from "./messages/Messages";
 import { FinalPrice } from "./final-price/FinalPrice";
+import { DealState } from './deal-state/DealState';
 
 export const CarPurchase2 = memo(() => {
     console.log('CarPurchase2');
@@ -26,7 +27,7 @@ export const CarPurchase2 = memo(() => {
             Final price
         </div>
         <FinalPrice />
-        {/* <DealState /> */}
+        <DealState />
         <Actions />
         <Messages />
     </>

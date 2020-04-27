@@ -14,7 +14,7 @@ export type IDealContext = {
     setDownpayment: (value: number) => void,
     isLoading: boolean,
     setIsLoading: (value: boolean) => void,
-    approvalStatus?: ApprovalStatus,
+    approvalStatus: ApprovalStatus,
     setApprovalStatus: (value: ApprovalStatus) => void,
     isFinalized: boolean,
     setIsFinalized: (value: boolean) => void,
@@ -41,7 +41,7 @@ export const DealProvider: React.FC<IDealContextProps> = (props) => {
     const [isValid, setIsValid] = useState<boolean>(false);
     const [isFinalized, setIsFinalized] = useState<boolean>(false);
     const [messages, setMessages] = useState<string[]>([]);
-    const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>();
+    const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>({ isApproved: false });
 
     return <DealContext.Provider
                 value={{

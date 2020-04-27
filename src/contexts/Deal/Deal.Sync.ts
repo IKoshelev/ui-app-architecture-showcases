@@ -16,15 +16,14 @@ export const canRequestApproval = (
     isLoading: boolean, 
     carModel: CarModel | undefined, 
     isFinalized: boolean, 
-    approvalStatus: ApprovalStatus | undefined,
+    approvalStatus: ApprovalStatus,
     isValid: boolean
     ): boolean  => {
     const hasCarModel = !!carModel;    
-    const hasApprovalStatus = !!approvalStatus;
     
     return !isLoading
             && hasCarModel
             && !isFinalized
-            && !hasApprovalStatus
+            && !approvalStatus.isApproved
             && isValid;
 };

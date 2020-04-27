@@ -1,33 +1,43 @@
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
 import { useState, useEffect } from "react";
-import { FinancingApproved, FinancingNotApproved } from "../../../../api/Financing.Client";
 
 export const useDealState = () => {
     const [message, setMessage] = useState<string>('message');
     const deal = useDeal();
-    // work in progress, doesn't yet take into account approvals can have expiration timers and can not
+
+    // for me this is view logic, but the conditions could easily be extracted into a pure function in Deal.Sync.ts if you think this is business logic
     const getDealStateDescription = (): void => {
+        const {
+            isApproved,
+            expiration,
+            hasExpiration
+        } = deal.approvalStatus;
+
         if (deal.isFinalized) {
             setMessage('Congratulations! Deal is finalized.');
         }
-        // if (deal.isApproved && !!deal.expiration) {
-        //     setMessage('Approval expired.');
-        //     return;
-        // }
-        // if (deal.isApproved && !!deal.expiration) {
-        //     setMessage(`Approval granted. Expires in ${deal.expiration} seconds.`);
-        // }
-        // if (deal.isApproved) {
-        //     setMessage('Approval granted.');
-        //     return;
-        // }
+        if (isApproved && hasExpiration && !!expiration) {
+            setMessage(`Approval granted. Expires in ${expiration} seconds.`);
+            return;
+        }
+        if (isApproved && hasExpiration && expiration === 0) {
+            setMessage('Approval expired.');
+            return;
+        }
+        if (isApproved && !hasExpiration) {
+            setMessage('Approval granted.');
+            return;
+        }
         setMessage('');
         return;
     }
 
     useEffect(() => {
         getDealStateDescription();
-    })
+    }, [
+        deal.approvalStatus,
+        deal.isFinalized
+    ])
 
     return {
         message: message,

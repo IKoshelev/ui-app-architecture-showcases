@@ -67,7 +67,7 @@ class FinancingClient {
 
         if (carModel.basePrice / 5 <= downpayment) {
             return getApprovedFinancing(
-                moment().add(15, 's').toDate()
+                moment().add(2, 's').toDate() // reset to 15
             );
         }
 

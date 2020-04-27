@@ -32,6 +32,9 @@ export const defaultDealContext: IDealContext = {
     setMessages: (value: string[]) => {
         throw new Error('You forget to add a provider')
     },
+    approvalStatus: {
+        isApproved: false
+    },
     setApprovalStatus: (value: ApprovalStatus) => {
         throw new Error('You forget to add a provider')
     },
