@@ -1,27 +1,33 @@
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
 import { financingClient } from "../../../../api/Financing.Client";
+import { canRequestApproval } from "../../../../contexts/Deal/Deal.Sync";
+import { useEffect, useState } from "react";
 
 export const useActions = () => {
-    const { id, handleCloseDealClick }  = useDeal();
-
+    const [isRequestApprovalButtonDisabled, setIsRequestApprovalButtonDisabled] = useState<boolean>(false);
     const deal = useDeal();
-    const hasCarModel = !!deal?.carModel;
-    const hasExpired = !!deal.expirationTimer;
-    
+
+    useEffect(() => {
+        const nextValue: boolean = !canRequestApproval(deal.isLoading, deal.carModel, deal.isFinalized, deal.isApproved, deal.expirationTimer, deal.isValid);
+        setIsRequestApprovalButtonDisabled(nextValue);
+
+    }, [deal.isLoading, deal.carModel, deal.isFinalized, deal.isApproved, deal.expirationTimer, deal.isValid])
+
     return {
-        handleCloseDealClick: () => handleCloseDealClick(id),
+        handleCloseDealClick: () => deal.handleCloseDealClick(deal.id),
         handleRequestApprovalClick: async () => {
             if (!deal.carModel) {
                 return;
             }
+            deal.setIsLoading(true);
+            try {
             const result = await financingClient.getApproval(
                 deal.carModel,
                 deal.selectedInsurancePlans.map(plan => plan.type),
                 deal.downpayment
             );
-
-            const nextExpirationTimer: number = result.isApproved ? 15 : 0;
             console.log('result', result);
+            const nextExpirationTimer: number = result.isApproved ? 15 : 0;
             deal.setExpirationTimer(nextExpirationTimer);
             deal.setIsApproved(result.isApproved);
             if (result.isApproved) {
@@ -37,12 +43,12 @@ export const useActions = () => {
                     deal.setExpirationTimer(timeLeft);
                 }
             }, 1000)
+            } finally {
+                deal.setIsLoading(false)
+            }
+
         },
-        isRequestApprovalButtonDisabled: !(deal.isLoading
-                                        || !!deal?.carModel
-                                        || deal.isFinalized
-                                        || deal.isApproved
-                                        || !!deal.expirationTimer),
+        isRequestApprovalButtonDisabled,
         handleFinalizeDealClick: () => console.log('handleFinalizeDealClick called'),
         isFinalizeDealButtonDisabled: false
     }

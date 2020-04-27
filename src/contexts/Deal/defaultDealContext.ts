@@ -19,6 +19,10 @@ export const defaultDealContext: IDealContext = {
     setIsLoading: (value: boolean) => {
         throw new Error('You forget to add a provider')
     },
+    isValid: false,
+    setIsValid: (value: boolean) => {
+        throw new Error('You forget to add a provider')
+    },
     isApproved: false,
     setIsApproved: (value: boolean) => {
         throw new Error('You forget to add a provider')

@@ -4,6 +4,7 @@ import { observer } from 'mobx-react';
 import { dealsStore } from '../../../../stores/Deals.Store';
 
 export const Actions = () => {
+    
     const hook = useActions();
 
     return (

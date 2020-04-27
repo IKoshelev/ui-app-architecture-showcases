@@ -10,3 +10,22 @@ export const calculateFinalPrice = (carModel: CarModel | undefined, insurancePla
 
     return carModel.basePrice + priceIncrease;
 }
+
+export const canRequestApproval = (
+    isLoading: boolean, 
+    carModel: CarModel | undefined, 
+    isFinalized: boolean, 
+    isApproved: boolean, 
+    expirationTimer: number,
+    isValid: boolean
+    ): boolean  => {
+    const hasCarModel = !!carModel;    
+    const isExpired = expirationTimer === 0;
+    
+    return !isLoading
+            && hasCarModel
+            && !isFinalized
+            && !isApproved
+            && isExpired
+            && isValid;
+};

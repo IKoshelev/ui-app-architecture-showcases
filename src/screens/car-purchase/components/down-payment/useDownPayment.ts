@@ -7,7 +7,6 @@ export const useDownPayment = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [value, setValue] = useState<string>('0');
     const [message, setMessage] = useState<string>('');
-    const [isValid, setIsValid] = useState<boolean>(true);
 
     const deal = useDeal();
     
@@ -33,23 +32,25 @@ export const useDownPayment = () => {
     const finalPriceCheck = (value?: number) => {
         const finalPrice = calculateFinalPrice(deal.carModel, deal.selectedInsurancePlans);
         const downpayment = value ?? deal.downpayment;
-        console.log(downpayment);
-        console.log(finalPrice);
         if (!finalPrice) {
-            setIsValid(true);
+            deal.setIsValid(true);
             setMessage('');
             return;
         }
 
         if (deal.carModel && downpayment > finalPrice) {
-            setIsValid(false);
+            deal.setIsValid(false);
             setMessage('Downpayment exceeds final price');
         }
     }
 
-    useEffect(() => {
-        setIsValid(true);
+    const clearState = (): void => {
+        deal.setIsValid(true);
         setMessage('');
+    }
+
+    useEffect(() => {
+        clearState();
         finalPriceCheck();
     }, [deal.carModel])
 
@@ -57,7 +58,7 @@ export const useDownPayment = () => {
         const nextValue = deal.downpayment.toString();
         setValue(nextValue);
         setMessage('');
-        setIsValid(true);
+        deal.setIsValid(true);
     }
 
     useEffect(() => {
@@ -66,7 +67,7 @@ export const useDownPayment = () => {
 
     return {
         isDisabled: isLoading || !deal.carModel,
-        isValid,
+        isValid: deal.isValid,
         displayedValue: value,
         message,
         handleClick: async () => {
@@ -80,6 +81,7 @@ export const useDownPayment = () => {
                 deal.setDownpayment(0);
                 return;
             }
+            clearState();
             const transformedValue: string = value.trim()
             .replace('k', '000')
             .replace('K', '000')
@@ -87,14 +89,14 @@ export const useDownPayment = () => {
             .replace('M', '000000');
 
             if (transformedValue[0] === '-') {
-                setIsValid(false);
+                deal.setIsValid(false);
                 setMessage('Value must be 0 or positive');
                 return;
             }
 
             const isInteger = /^\d+$/.test(transformedValue) === true;
             if (!isInteger) {
-                setIsValid(false);
+                deal.setIsValid(false);
                 setMessage('Please enter a valid integer');
                 return;
             }

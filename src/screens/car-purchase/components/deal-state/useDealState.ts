@@ -1,28 +1,37 @@
-export type dealState = 'deal-finalized' | 'approval-perpetual' | 'no-approval' | 'approval-expired';
-
-const state: dealState = 'approval-expired';
-const approvalExpiresInSeconds = 15;
+import { useDeal } from "../../../../contexts/Deal/Deal.Context";
+import { useState, useEffect } from "react";
+import { FinancingApproved, FinancingNotApproved } from "../../../../api/Financing.Client";
 
 export const useDealState = () => {
+    const [message, setMessage] = useState<string>('message');
+    const deal = useDeal();
 
-    const getDealStateDescription = (state: dealState) => {
-        if (state === 'deal-finalized') {
-            return 'Congratulations! Deal is finalized.';
+    // Work in progress, the current implementation is wrong imo and needs to be fixed before progressing
+    const getDealStateDescription = (): void => {
+        if (deal.isFinalized) {
+            setMessage('Congratulations! Deal is finalized.');
         }
-        if (state === 'no-approval') {
-            return '';
+        if (deal.isApproved && !!deal.expirationTimer) {
+            setMessage('Approval expired.');
+            return;
         }
-        if (state === 'approval-perpetual') {
-            return 'Approval granted.';
+        if (deal.isApproved && !!deal.expirationTimer) {
+            setMessage(`Approval granted. Expires in ${deal.expirationTimer} seconds.`);
         }
-        if (state === 'approval-expired') {
-            return 'Approval expired.';
+        if (deal.isApproved) {
+            setMessage('Approval granted.');
+            return;
         }
-        return `Approval granted. Expires in ${approvalExpiresInSeconds} seconds.`;
+        setMessage('');
+        return;
     }
 
+    useEffect(() => {
+        getDealStateDescription();
+    })
+
     return {
-        message: getDealStateDescription(state),
+        message: message,
         showMessage: true
     }
 }
