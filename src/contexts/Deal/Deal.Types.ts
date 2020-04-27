@@ -1,6 +1,6 @@
 export type ApprovalStatus = {
     isApproved: boolean,
-    expiration?: number,
-    hasExpiration?: boolean,
+    expiration?: Date,
+    isExpired?: boolean,
     approvalToken?: string
 }

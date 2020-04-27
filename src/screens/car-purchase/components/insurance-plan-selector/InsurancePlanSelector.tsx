@@ -1,10 +1,9 @@
-import { observer } from "mobx-react";
 import React from "react";
 import { SelectMultiple2 } from "../../../../generic-components/select-multiple/SelectMultiple2";
 import { useInsurancePlanSelector } from "./useInsurancePlanSelector";
-import { EnsurancePlanType, EnsurancePlan } from "../../../../api/CarEnsurance.Client";
+import { EnsurancePlan } from "../../../../api/CarEnsurance.Client";
 
-export const InsurancePlanSelector = observer(() => {
+export const InsurancePlanSelector = () => {
 
     const hook = useInsurancePlanSelector();
 
@@ -30,4 +29,4 @@ export const InsurancePlanSelector = observer(() => {
             Refresh available plans
         </button>
     </>
-});
+};

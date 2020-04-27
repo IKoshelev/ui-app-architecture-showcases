@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { useActions } from './useActions';
 
 export const Actions = () => {
-    
+
     const hook = useActions();
 
     return (

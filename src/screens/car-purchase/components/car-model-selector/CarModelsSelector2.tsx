@@ -1,10 +1,9 @@
-import React from "react";
+import React, { memo } from "react";
 import { SelectDropdown2 } from "../../../../generic-components/select-dropdown/SelectDropdown2";
 import { useCarModelsSelector2 } from "./useCarModelsSelector2";
-import { observer } from "mobx-react";
 import { CarModel } from "../../../../api/CarInventory.Client";
 
-export const CarModelsSelector2: React.FunctionComponent = observer(() => {
+export const CarModelsSelector2: React.FunctionComponent = () => {
 
     const hook = useCarModelsSelector2();
 
@@ -31,4 +30,4 @@ export const CarModelsSelector2: React.FunctionComponent = observer(() => {
             Refresh available models
         </button>
     </>
-});
+};

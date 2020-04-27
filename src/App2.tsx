@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { CarPurchase2 } from './screens/car-purchase/components/CarPurchase2';
 import { DealProvider } from './contexts/Deal/Deal.Context';
 import { useApp } from './useApp';
@@ -53,4 +53,4 @@ export const App2 = () => {
         </DealProvider>
       ))}
   </div>
-)}
+)};

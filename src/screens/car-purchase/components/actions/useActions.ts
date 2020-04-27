@@ -1,8 +1,9 @@
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
 import { financingClient } from "../../../../api/Financing.Client";
 import { canRequestApproval } from "../../../../contexts/Deal/Deal.Sync";
-import { useEffect, useState, useRef } from "react";
-import useInterval from "../../../../util/useInterval";
+import { useState, useEffect } from "react";
+
+let count = 0;
 
 export const useActions = () => {
     const [isRequestApprovalButtonDisabled, setIsRequestApprovalButtonDisabled] = useState<boolean>(false);
@@ -14,18 +15,6 @@ export const useActions = () => {
         setIsRequestApprovalButtonDisabled(nextValue);
 
     }, [deal.isLoading, deal.carModel, deal.isFinalized, deal.approvalStatus, deal.isValid]);
-
-    useInterval(() => {
-        if (!deal.approvalStatus.expiration) {
-            return;
-        }
-        const expiration = deal.approvalStatus.expiration - 1;
-        deal.setApprovalStatus({
-            ...deal.approvalStatus,
-            expiration,
-        });
-        return;
-    }, 1000, false);
 
     return {
         handleCloseDealClick: () => deal.handleCloseDealClick(deal.id),
@@ -40,29 +29,21 @@ export const useActions = () => {
                     deal.selectedInsurancePlans.map(plan => plan.type),
                     deal.downpayment
                 );
-                
-                console.log('result', result);
-
+            
                 if (result.isApproved && !result.expiration) {
-                    console.log('is Approved without expiration', result);
                     deal.setApprovalStatus({
                         isApproved: true,
-                        approvalToken: result.approvalToken,
+                        approvalToken: result.approvalToken
                     })
                     deal.setMessages([]);
                     return;
                 } 
 
-                if (result.isApproved && !!result.expiration) {
-                    console.log('is Approved with expiration', result);
-                    const now = new Date();
-                    const difference = result.expiration.getTime() - now.getTime();
-                    let differenceRounded = Math.round(difference / 1000);
-                    
+                if (result.isApproved && !!result.expiration) {              
                     deal.setApprovalStatus({
                         isApproved: true,
-                        hasExpiration: true,
-                        expiration: differenceRounded,
+                        expiration: result.expiration,
+                        isExpired: false,
                         approvalToken: result.approvalToken,
                     })
                     deal.setMessages([]);
@@ -83,7 +64,30 @@ export const useActions = () => {
 
         },
         isRequestApprovalButtonDisabled,
-        handleFinalizeDealClick: () => console.log('handleFinalizeDealClick called'),
+        handleFinalizeDealClick: async () => {
+            if (!deal.approvalStatus.approvalToken) {
+                return;
+            }
+
+            deal.setIsLoading(true);
+            deal.setMessages([]);
+    
+            try {
+                const result = await financingClient.finalizeFinancing(
+                    deal.approvalStatus.approvalToken,
+                    true
+                );
+
+                if (!result) {
+                    deal.setMessages(['Deal finalization failed.']);
+                    return;
+                }
+                deal.setIsFinalized(true);
+            }
+            finally {
+                deal.setIsLoading(false);
+            }
+        },
         isFinalizeDealButtonDisabled: false
     }
 }

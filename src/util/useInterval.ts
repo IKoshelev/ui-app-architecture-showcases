@@ -28,7 +28,7 @@ export function useInterval(
   useEffect(() => {
     if (delay === null || delay === false) return undefined;
     const tick = () => savedCallback.current();
-    const id = setInterval(tick, delay);
+    const id: NodeJS.Timeout = setInterval(tick, delay);
     return () => clearInterval(id);
   }, [delay]);
 }

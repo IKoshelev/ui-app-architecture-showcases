@@ -2,6 +2,7 @@ import React from 'react';
 import { useDealState } from './useDealState';
 
 export const DealState = () => {
+
     const hook = useDealState();
 
     if (!hook.showMessage) {

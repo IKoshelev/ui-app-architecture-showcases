@@ -67,7 +67,7 @@ class FinancingClient {
 
         if (carModel.basePrice / 5 <= downpayment) {
             return getApprovedFinancing(
-                moment().add(2, 's').toDate() // reset to 15
+                moment().add(5, 's').toDate() // reset to 15
             );
         }
 
@@ -77,11 +77,19 @@ class FinancingClient {
         }
     }
 
-    public async finalizeFinancing(approvalToken: string) {
+    public async finalizeFinancing(approvalToken: string, skipCache?: boolean) {
 
         console.log(`server call finalizeFinancing`);
 
         await delay(500);
+        console.log('about to return');
+        console.log('approvedFinacings', approvedFinacings);
+        if (skipCache) {
+            return {
+                    isApproved: true,
+                    approvalToken: Math.random().toString()
+            };
+        }
 
         return approvedFinacings.some(x =>
             x.approvalToken === approvalToken

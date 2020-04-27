@@ -27,3 +27,24 @@ export const canRequestApproval = (
             && !approvalStatus.isApproved
             && isValid;
 };
+
+export const getDealStatus = (
+    isFinalized: boolean,
+    isApproved: boolean,
+    expiration?: Date,
+    isExpired?: boolean,
+) => {
+    if (isFinalized) {
+        return 'deal-finalized';
+    }
+    if (isApproved && !!expiration && !isExpired) {
+        return 'approval-with-expiry-date';
+    }
+    if (isApproved && isExpired) {
+        return 'approval-expired';
+    }
+    if (isApproved && !expiration) {
+        return 'approval-perpetual';
+    }
+    return 'no-approval';
+}

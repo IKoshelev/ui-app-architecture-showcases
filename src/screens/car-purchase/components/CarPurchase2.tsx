@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { CarModelsSelector2 } from "./car-model-selector/CarModelsSelector2";
 import { InsurancePlanSelector } from "./insurance-plan-selector/InsurancePlanSelector";
 import { DownPayment } from "./down-payment/DownPayment";
@@ -7,10 +7,10 @@ import { Messages } from "./messages/Messages";
 import { FinalPrice } from "./final-price/FinalPrice";
 import { DealState } from './deal-state/DealState';
 
-export const CarPurchase2 = memo(() => {
+export const CarPurchase2 = () => {
     console.log('CarPurchase2');
     return (
-    <>  
+    <>
         <div className='car-purchase-model-selector-label'>
             Please select model
         </div>
@@ -32,4 +32,4 @@ export const CarPurchase2 = memo(() => {
         <Messages />
     </>
 )
-});
+};
