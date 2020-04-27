@@ -5,8 +5,7 @@ import { FinancingApproved, FinancingNotApproved } from "../../../../api/Financi
 export const useDealState = () => {
     const [message, setMessage] = useState<string>('message');
     const deal = useDeal();
-
-    // Work in progress, the current implementation is wrong imo and needs to be fixed before progressing
+    // work in progress, doesn't yet take into account approvals can have expiration timers and can not
     const getDealStateDescription = (): void => {
         if (deal.isFinalized) {
             setMessage('Congratulations! Deal is finalized.');
