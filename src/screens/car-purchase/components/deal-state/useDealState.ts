@@ -10,17 +10,17 @@ export const useDealState = () => {
         if (deal.isFinalized) {
             setMessage('Congratulations! Deal is finalized.');
         }
-        if (deal.isApproved && !!deal.expirationTimer) {
-            setMessage('Approval expired.');
-            return;
-        }
-        if (deal.isApproved && !!deal.expirationTimer) {
-            setMessage(`Approval granted. Expires in ${deal.expirationTimer} seconds.`);
-        }
-        if (deal.isApproved) {
-            setMessage('Approval granted.');
-            return;
-        }
+        // if (deal.isApproved && !!deal.expiration) {
+        //     setMessage('Approval expired.');
+        //     return;
+        // }
+        // if (deal.isApproved && !!deal.expiration) {
+        //     setMessage(`Approval granted. Expires in ${deal.expiration} seconds.`);
+        // }
+        // if (deal.isApproved) {
+        //     setMessage('Approval granted.');
+        //     return;
+        // }
         setMessage('');
         return;
     }

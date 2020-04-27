@@ -27,8 +27,8 @@ export const useActions = () => {
                 deal.downpayment
             );
             console.log('result', result);
-            // const nextExpirationTimer: number = result.isApproved ? 15 : 0;
-            // deal.setExpirationTimer(nextExpirationTimer);
+            // const nextexpiration: number = result.isApproved ? 15 : 0;
+            // deal.setexpiration(nextexpiration);
             // deal.setIsApproved(result.isApproved);
             // if (result.isApproved) {
             //     deal.setApprovalToken(result.approvalToken);
@@ -38,9 +38,9 @@ export const useActions = () => {
             // }
 
             // setInterval(() => {
-            //     if (deal.expirationTimer && deal.expirationTimer > 0) {
-            //         const timeLeft = deal.expirationTimer - 1;
-            //         deal.setExpirationTimer(timeLeft);
+            //     if (deal.expiration && deal.expiration > 0) {
+            //         const timeLeft = deal.expiration - 1;
+            //         deal.setexpiration(timeLeft);
             //     }
             // }, 1000)
             } finally {

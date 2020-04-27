@@ -1,11 +1,8 @@
-import { observer } from "mobx-react";
-import React, { useMemo, memo } from 'react';
+import React, { memo } from 'react';
 import { CarModelsSelector2 } from "./car-model-selector/CarModelsSelector2";
 import { InsurancePlanSelector } from "./insurance-plan-selector/InsurancePlanSelector";
 import { DownPayment } from "./down-payment/DownPayment";
-import { calculateFinalPrice } from "../../../stores/Deals.Sync";
 import { Actions } from "./actions/Actions";
-import { DealState } from "./deal-state/DealState";
 import { Messages } from "./messages/Messages";
 import { FinalPrice } from "./final-price/FinalPrice";
 
