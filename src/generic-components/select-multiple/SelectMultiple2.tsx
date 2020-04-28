@@ -1,4 +1,3 @@
-import { observer } from "mobx-react";
 import React from "react";
 import { ReadonlyDeep } from "../../util/state-helpers";
 
@@ -15,7 +14,7 @@ type SelectMultipleProps<T> =
         disabled?: boolean
     };
 
-export const SelectMultiple2 = observer(<T extends unknown>(props: SelectMultipleProps<T>) => {
+export const SelectMultiple2 = <T extends unknown>(props: SelectMultipleProps<T>) => {
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
         const options = e.target.options;
@@ -56,4 +55,4 @@ export const SelectMultiple2 = observer(<T extends unknown>(props: SelectMultipl
             }
         </select>
     )
-});
+};

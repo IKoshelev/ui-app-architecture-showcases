@@ -1,4 +1,3 @@
-import { observer } from "mobx-react";
 import React from "react";
 import { ReadonlyDeep } from "../../util/state-helpers";
 
@@ -14,7 +13,7 @@ type SelectDropdownProps<T> =
         disabled?: boolean
     };
 
-export const SelectDropdown2 = observer(<T extends unknown>(props: SelectDropdownProps<T>) => {
+export const SelectDropdown2 = <T extends unknown>(props: SelectDropdownProps<T>) => {
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
         const value = e.target.value
@@ -56,4 +55,4 @@ export const SelectDropdown2 = observer(<T extends unknown>(props: SelectDropdow
             }
         </select>
     )
-});
+};
