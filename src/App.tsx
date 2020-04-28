@@ -10,7 +10,7 @@ export const App = observer(() => (
   <div id='app-root'>
 
     <div className='car-purchase-main-logo'>
-      Welcome to Crazy Ivan Motors
+      Crazy Ivan Motors (Hooks V3)
     </div>
 
     <div className='tabs'>
