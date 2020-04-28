@@ -5,7 +5,7 @@ name: Build node
 
 on:
   push:
-    branches: [ master ]
+    branches: [ version-3 ]
 
 jobs:
   build:
@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x]
+        node-version: [10.x]
 
     steps:
     - uses: actions/checkout@v2
