@@ -4,14 +4,14 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-- $(variables.branch)
+- version-3
 
 pool:
   vmImage: 'ubuntu-latest'
 
 steps:
 
-- checkout: $(variables.branch)
+- checkout: 'version-3'
 
 - task: NodeTool@0
   inputs:
