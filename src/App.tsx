@@ -10,7 +10,7 @@ export const App = observer(() => {
   return <div id='app-root'>
 
     <div className='main-logo'>
-      Welcome to Crazy Ivan Motors
+      Welcome to Crazy Ivan Motors (MVVM)
     </div>
 
     <div className='screens'>
