@@ -11,8 +11,6 @@ pool:
 
 steps:
 
-- checkout: 'version-3'
-
 - task: NodeTool@0
   inputs:
     versionSpec: '10.x'
