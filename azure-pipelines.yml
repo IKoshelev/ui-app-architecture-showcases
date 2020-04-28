@@ -4,7 +4,7 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-- master
+- ${{variables.branch}}
 
 
 pool:
@@ -12,7 +12,7 @@ pool:
 
 steps:
 
-- checkout: version-2
+- checkout: ${{variables.branch}}
 
 - task: NodeTool@0
   inputs:
