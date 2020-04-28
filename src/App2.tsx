@@ -10,23 +10,23 @@ import { InsurancePlansProvider } from './contexts/InsurancePlans/InsurancePlans
 export const App2 = () => {
 
   const hook = useApp();
-  
-  return ( 
 
-  <div id='app-root'>
-    <div className='car-purchase-main-logo'>
-      Welcome to Crazy Ivan Motors
+  return (
+
+    <div id='app-root'>
+      <div className='car-purchase-main-logo'>
+        Crazy Ivan Motors (Hooks V3)
     </div>
 
-    <div className='tabs'>
-      <button
-        className='button-add-new-deal'
-        onClick={hook.handleAddNewDealClick}
-      >
-        Add deal
+      <div className='tabs'>
+        <button
+          className='button-add-new-deal'
+          onClick={hook.handleAddNewDealClick}
+        >
+          Add deal
       </button>
-      {
-        hook.dealIds.map(id => (
+        {
+          hook.dealIds.map(id => (
             <div
               key={id}
               className={`deal-tab-header ${id === hook.activeDealId ? 'active' : ''}`}
@@ -34,23 +34,24 @@ export const App2 = () => {
             >
               Deal {id}
             </div>
-        ))
-      }
-    </div>
+          ))
+        }
+      </div>
 
-    {
-      hook.dealIds.map(id => (
-        <DealProvider
-          key={id}
-          initialDealId={id}
-          handleCloseDealClick={hook.handleCloseDealClick}
-        >
-          <CarModelsProvider>
-            <InsurancePlansProvider>
-              {hook.activeDealId === id && <CarPurchase2 />}
-            </InsurancePlansProvider>
-          </CarModelsProvider>
-        </DealProvider>
-      ))}
-  </div>
-)};
+      {
+        hook.dealIds.map(id => (
+          <DealProvider
+            key={id}
+            initialDealId={id}
+            handleCloseDealClick={hook.handleCloseDealClick}
+          >
+            <CarModelsProvider>
+              <InsurancePlansProvider>
+                {hook.activeDealId === id && <CarPurchase2 />}
+              </InsurancePlansProvider>
+            </CarModelsProvider>
+          </DealProvider>
+        ))}
+    </div>
+  )
+};
