@@ -22,6 +22,11 @@ export const useApp = () => {
                 setActiveDealId(0);
                 return;
             }
+
+            if (id !== activeDealId) {
+                return;
+            }
+
             const previousId = dealIds[activeIdIndex - 1];
             const nextId = dealIds[activeIdIndex + 1];
             if (previousId) {
