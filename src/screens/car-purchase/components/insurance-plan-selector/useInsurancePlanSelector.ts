@@ -1,6 +1,6 @@
 import { useInsurancePlans } from "../../../../contexts/InsurancePlans/InsurancePlans.Context";
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
-import { EnsurancePlan } from "../../../../api/CarEnsurance.Client";
+import { InsurancePlan } from "../../../../api/CarInsurance.Client";
 import { calculateFinalPrice } from "../../../../contexts/Deal/Deal.Sync";
 
 export const useInsurancePlanSelector = () => {
@@ -12,7 +12,7 @@ export const useInsurancePlanSelector = () => {
         availableItems: plans.insurancePlans,
         selectedItems: deal.selectedInsurancePlans,
         isDisabled: deal.isFinalized,
-        handleSelect(items: EnsurancePlan[]) {
+        handleSelect(items: InsurancePlan[]) {
             deal.setSelectedInsurancePlans(items)
             deal.setApprovalStatus({ isApproved: false })
             const finalPrice = calculateFinalPrice(deal.carModel, items);

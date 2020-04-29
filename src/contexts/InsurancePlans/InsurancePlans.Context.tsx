@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { defaultInsurancePlansContext } from './defaultInsurancePlans';
 import { useDeal } from '../Deal/Deal.Context';
-import { EnsurancePlan, carEnsuranceClient } from '../../api/CarEnsurance.Client';
+import {  InsurancePlan, carInsuranceClient } from '../../api/CarInsurance.Client';
 
 export type IInsurancePlansContext = {
-    insurancePlans: EnsurancePlan[],
+    insurancePlans:  InsurancePlan[],
     isLoading: boolean,
     setIsLoading: (value: boolean) => void,
     reloadAvailableInsurancePlans: () => void
@@ -17,7 +17,7 @@ interface IInsurancePlansContextProps {
 }
 
 export const InsurancePlansProvider: React.FC<IInsurancePlansContextProps> = (props) => {
-    const [insurancePlans, setInsurancePlans] = useState<EnsurancePlan[]>([]);
+    const [insurancePlans, setInsurancePlans] = useState< InsurancePlan[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const deal = useDeal();
@@ -26,7 +26,7 @@ export const InsurancePlansProvider: React.FC<IInsurancePlansContextProps> = (pr
         setIsLoading(true);
         deal.setIsLoading(true);
         try {
-            const result: EnsurancePlan[] = await carEnsuranceClient.getAvaliableEnsurancePlans();
+            const result:  InsurancePlan[] = await carInsuranceClient.getAvaliableInsurancePlans();
             setInsurancePlans(result);
         } finally {
             setIsLoading(false);

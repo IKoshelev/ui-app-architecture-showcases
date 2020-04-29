@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { CarModel } from '../../api/CarInventory.Client';
-import { EnsurancePlan } from '../../api/CarEnsurance.Client';
+import {  InsurancePlan } from '../../api/CarInsurance.Client';
 import { defaultDealContext } from './defaultDealContext';
 import { ApprovalStatus } from './Deal.Types';
 
@@ -8,8 +8,8 @@ export type IDealContext = {
     id: number,
     carModel?: CarModel,
     setCarModel: (value: CarModel) => void,
-    selectedInsurancePlans: EnsurancePlan[],
-    setSelectedInsurancePlans: (value: EnsurancePlan[]) => void,
+    selectedInsurancePlans:  InsurancePlan[],
+    setSelectedInsurancePlans: (value:  InsurancePlan[]) => void,
     downpayment: number,
     setDownpayment: (value: number) => void,
     isLoading: boolean,
@@ -36,7 +36,7 @@ interface IDealContextProps {
 export const DealProvider: React.FC<IDealContextProps> = (props) => {
     const [downpayment, setDownpayment] = useState<number>(0);
     const [carModel, setCarModel] = useState<CarModel>();
-    const [selectedInsurancePlans, setSelectedInsurancePlans] = useState<EnsurancePlan[]>([]);
+    const [selectedInsurancePlans, setSelectedInsurancePlans] = useState< InsurancePlan[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isValid, setIsValid] = useState<boolean>(false);
     const [isFinalized, setIsFinalized] = useState<boolean>(false);

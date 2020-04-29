@@ -1,6 +1,6 @@
 import { IDealContext } from "./Deal.Context";
 import { CarModel } from "../../api/CarInventory.Client";
-import { EnsurancePlan } from "../../api/CarEnsurance.Client";
+import {  InsurancePlan } from "../../api/CarInsurance.Client";
 import { ApprovalStatus } from "./Deal.Types";
 
 export const defaultDealContext: IDealContext = {
@@ -9,7 +9,7 @@ export const defaultDealContext: IDealContext = {
         throw new Error('You forget to add a provider')
     },
     selectedInsurancePlans: [],
-    setSelectedInsurancePlans: (value: EnsurancePlan[]) => {
+    setSelectedInsurancePlans: (value:  InsurancePlan[]) => {
         throw new Error('You forget to add a provider')
     },
     downpayment: 0,

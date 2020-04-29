@@ -1,5 +1,4 @@
 let app = 0;
-let app2 = 0;
 
 export function onRenderCallback(
     id, // the "id" prop of the Profiler tree that has just committed
@@ -10,15 +9,11 @@ export function onRenderCallback(
     commitTime, // when React committed this update
     interactions // the Set of interactions belonging to this update
   ) {
-    console.log('id', id);
+    // console.log('id', id);
     // console.log('actualDuration', actualDuration);
     // console.log('interactions', interactions)
     if (id === 'App') {
       app = app + actualDuration;
       console.log('total duration app', app);
-    }
-    if (id === 'App2') {
-      app2 = app2 + actualDuration;
-      console.log('total duration app2', app2);
     }
   }

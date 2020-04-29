@@ -1,6 +1,6 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { useDownPayment } from './useDownPayment';
-import { NumericInput2 } from '../../../../generic-components/numeric-input/NumericInput2';
+import { NumericInput } from '../../../../generic-components/numeric-input/NumericInput';
 
 export const DownPayment: React.FC = () => {
 
@@ -8,7 +8,7 @@ export const DownPayment: React.FC = () => {
 
     return (
         <>
-            <NumericInput2
+            <NumericInput
                 inputAttributes={{ className: 'car-purchase-downpayment' }}
                 messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
                 isValid={hook.isValid}

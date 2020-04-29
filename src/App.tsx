@@ -1,14 +1,19 @@
 import React from 'react';
-import { observer } from 'mobx-react';
 import { CarPurchase } from './screens/car-purchase/components/CarPurchase';
-import { appVm } from './App.VM';
-
+import { DealProvider } from './contexts/Deal/Deal.Context';
+import { useApp } from './useApp';
 import './App.css';
+import { CarModelsProvider } from './contexts/CarModels/CarModels.Context';
+import {InsurancePlansProvider } from './contexts/InsurancePlans/InsurancePlans.Context';
 
-export const App = observer(() => (
+
+export const App = () => {
+
+  const hook = useApp();
+  
+  return ( 
 
   <div id='app-root'>
-
     <div className='car-purchase-main-logo'>
       Welcome to Crazy Ivan Motors
     </div>
@@ -16,35 +21,36 @@ export const App = observer(() => (
     <div className='tabs'>
       <button
         className='button-add-new-deal'
-        onClick={appVm.addNewDeal}
+        onClick={hook.handleAddNewDealClick}
       >
         Add deal
       </button>
       {
-        appVm.capPurchaseVMs.map(x => (
-          <div
-            className={`deal-tab-header ${x === appVm.activeCapPurchaseVM ? 'active' : ''}`}
-            key={x.id}
-            onClick={() => appVm.setActiveDeal(x)}
-          >
-            {x.id}
-          </div>
+        hook.dealIds.map(id => (
+            <div
+              key={id}
+              className={`deal-tab-header ${id === hook.activeDealId ? 'active' : ''}`}
+              onClick={() => hook.handleSelectDealClick(id)}
+            >
+              Deal {id}
+            </div>
         ))
       }
     </div>
 
     {
-      appVm.activeCapPurchaseVM &&
-      <>
-        <CarPurchase vm={appVm.activeCapPurchaseVM}></CarPurchase>
-        <button
-          className='button-close-active-deal'
-          onClick={appVm.closeActiveDeal}
+      hook.dealIds.map(id => (
+        <DealProvider
+          key={id}
+          initialDealId={id}
+          handleCloseDealClick={hook.handleCloseDealClick}
         >
-          Close this deal
-      </button>
-      </>
-    }
-
+          <CarModelsProvider>
+            <InsurancePlansProvider>
+              {hook.activeDealId === id && <CarPurchase />}
+            </InsurancePlansProvider>
+          </CarModelsProvider>
+        </DealProvider>
+      ))}
   </div>
-));
+)};

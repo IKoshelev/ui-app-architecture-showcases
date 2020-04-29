@@ -1,7 +1,7 @@
 import React from "react";
-import { SelectMultiple2 } from "../../../../generic-components/select-multiple/SelectMultiple2";
+import { SelectMultiple } from "../../../../generic-components/select-multiple/SelectMultiple";
 import { useInsurancePlanSelector } from "./useInsurancePlanSelector";
-import { EnsurancePlan } from "../../../../api/CarEnsurance.Client";
+import {  InsurancePlan } from "../../../../api/CarInsurance.Client";
 
 export const InsurancePlanSelector = () => {
 
@@ -12,14 +12,14 @@ export const InsurancePlanSelector = () => {
     }
 
     return <>
-        <SelectMultiple2
+        <SelectMultiple
             selectAttributes={{ className: 'ensurance-plan-selector-select' }}
             availableItems={hook.availableItems}
             selectedItems={hook.selectedItems}
             disabled={hook.isDisabled}
-            getKeyValue={(item: EnsurancePlan) => item.type.toString()}
-            getDescription={(item: EnsurancePlan) => item.description}
-            handleSelect={(items: EnsurancePlan[]) => hook.handleSelect(items)}
+            getKeyValue={(item:  InsurancePlan) => item.type.toString()}
+            getDescription={(item:  InsurancePlan) => item.description}
+            handleSelect={(items:  InsurancePlan[]) => hook.handleSelect(items)}
         />
         <button
             className='ensurance-plan-selector-refresh-btn'

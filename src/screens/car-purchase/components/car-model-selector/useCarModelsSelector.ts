@@ -3,7 +3,7 @@ import { useCarModels } from "../../../../contexts/CarModels/CarModels.Context";
 import { CarModel } from "../../../../api/CarInventory.Client";
 import { calculateFinalPrice } from "../../../../contexts/Deal/Deal.Sync";
 
-export const useCarModelsSelector2 = () => {
+export const useCarModelsSelector = () => {
     const deal = useDeal();
     const carModels = useCarModels();
 

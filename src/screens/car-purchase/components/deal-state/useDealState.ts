@@ -10,7 +10,6 @@ export const useDealState = () => {
     const [isRunning, setIsRunning] = useState(false);
     const deal = useDeal();
 
-    // for me this is view logic, but the conditions could easily be extracted into a pure function in Deal.Sync.ts if you think this is business logic
     const setMessageFromDealStatus = (): void => {
         const status = getDealStatus(
             deal.isFinalized,
