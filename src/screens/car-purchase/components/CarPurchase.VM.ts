@@ -120,7 +120,7 @@ export class CarPurchaseVM {
                     && this.carPurchaseModel.downpayment > this.finalPrice) {
                     return {
                         isValid: false,
-                        message: 'Downpaymanet exceeds final price'
+                        message: 'Downpayment exceeds final price'
                     }
                 }
 
