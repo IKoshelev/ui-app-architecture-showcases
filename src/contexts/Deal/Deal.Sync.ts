@@ -2,7 +2,7 @@ import { InsurancePlan } from "../../api/CarInsurance.Client";
 import { CarModel } from "../../api/CarInventory.Client";
 import { ApprovalStatus } from "./Deal.Types";
 
-export const calculateFinalPrice = (carModel: CarModel | undefined, insurancePlans:  InsurancePlan[]): number | null => {
+export const calculateFinalPrice = (carModel: CarModel | undefined, insurancePlans: InsurancePlan[]): number | null => {
     if (!carModel) {
         return null;
     }
@@ -13,19 +13,19 @@ export const calculateFinalPrice = (carModel: CarModel | undefined, insurancePla
 }
 
 export const canRequestApproval = (
-    isLoading: boolean, 
-    carModel: CarModel | undefined, 
-    isFinalized: boolean, 
+    isLoading: boolean,
+    carModel: CarModel | undefined,
+    isFinalized: boolean,
     approvalStatus: ApprovalStatus,
     isValid: boolean
-    ): boolean  => {
-    const hasCarModel = !!carModel;    
-    
+): boolean => {
+    const hasCarModel = !!carModel;
+
     return !isLoading
-            && hasCarModel
-            && !isFinalized
-            && !approvalStatus.isApproved
-            && isValid;
+        && hasCarModel
+        && !isFinalized
+        && !approvalStatus.isApproved || (!!approvalStatus.expiration && approvalStatus.expiration <= new Date())
+        && isValid;
 };
 
 export const canFinalizeDeal = (
