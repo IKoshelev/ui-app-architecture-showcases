@@ -29,7 +29,7 @@ export const EnsurancePlanSelector: React.FunctionComponent<{
             onClick={vm.reloadAvailablePlans}
             disabled={vm.isDealFinilized}
         >
-            Refresh avilable plans
+            Refresh available plans
         </button>
     </>
 });

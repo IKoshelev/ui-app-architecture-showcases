@@ -29,7 +29,7 @@ export const CarModelsSelector: React.FunctionComponent<{
             onClick={vm.reloadAvailableModels}
             disabled={vm.isDealFinilized}
         >
-            Refresh avilable models
+            Refresh available models
         </button>
     </>
 });
