@@ -1,4 +1,3 @@
-import { observer } from "mobx-react";
 import React from "react";
 
 type SelectDropdownProps<T> =
@@ -13,7 +12,7 @@ type SelectDropdownProps<T> =
         disabled?: boolean
     };
 
-export const SelectDropdown = observer(<T extends unknown>(props: SelectDropdownProps<T>) => {
+export const SelectDropdown = <T extends unknown>(props: SelectDropdownProps<T>) => {
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
         const value = e.target.value
@@ -55,4 +54,4 @@ export const SelectDropdown = observer(<T extends unknown>(props: SelectDropdown
             }
         </select>
     )
-});
+};

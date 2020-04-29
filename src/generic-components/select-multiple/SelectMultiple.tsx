@@ -1,4 +1,3 @@
-import { observer } from "mobx-react";
 import React from "react";
 
 type SelectMultipleProps<T> =
@@ -12,7 +11,7 @@ type SelectMultipleProps<T> =
         disabled?: boolean
     };
 
-export const SelectMultiple = observer(<T extends unknown>(props: SelectMultipleProps<T>) => {
+export const SelectMultiple = <T extends unknown>(props: SelectMultipleProps<T>) => {
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
         const options = e.target.options;
@@ -53,4 +52,4 @@ export const SelectMultiple = observer(<T extends unknown>(props: SelectMultiple
             }
         </select>
     )
-});
+};
