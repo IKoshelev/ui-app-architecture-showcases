@@ -8,9 +8,10 @@ import { DealState } from './deal-state/DealState';
 import { CloseDealButton } from './close-deal-button/CloseDealButton';
 import { RequestApprovalButton } from './request-approval-button/RequestApprovalButton';
 import { FinalizeDealButton } from './finalize-deal-button/FinalizeDealButton';
+import './CarPurchase.css';
 
 export const CarPurchase = () => (
-    <>
+    <div className='car-purchase-deal'>
         <div className='car-purchase-model-selector-label'>
             Please select model
         </div>
@@ -32,5 +33,5 @@ export const CarPurchase = () => (
         <RequestApprovalButton />
         <FinalizeDealButton />
         <Messages />
-    </>
+    </div>
 );
