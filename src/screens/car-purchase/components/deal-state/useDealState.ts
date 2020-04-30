@@ -11,6 +11,7 @@ export const useDealState = () => {
     const deal = useDeal();
 
     const setMessageFromDealStatus = (): void => {
+        // looks like this function could just take whole deal?
         const status = getDealStatus(
             deal.isFinalized,
             deal.approvalStatus.isApproved,
@@ -18,6 +19,8 @@ export const useDealState = () => {
             deal.approvalStatus.isExpired,
         )
 
+        // I really don't like this explicit state setting.
+        // Derived computed state is much less prone to bugs.
         if (status === 'deal-finalized') {
             setMessage('Congratulations! Deal is finalized.');
             return;
@@ -44,11 +47,17 @@ export const useDealState = () => {
             setIsRunning(true);
         }
     }, [
+        // i only see 1 of this dependencies used in the hook above.
+        // They ARE used indirectly by setMessageFromDealStatus,
+        // but it is not far-less visible. Next thing that will happen -
+        // we will add another dependency to setMessageFromDealStatus and forget to add it here.
+        // This is a bug waiting to happen.
         deal.approvalStatus,
         deal.isFinalized,
         timeRemaining
     ])
 
+    // This is a bug waiting to happen and it will be impossible to change.
     useInterval(() => {
         if (!deal.approvalStatus.expiration) {
             return;

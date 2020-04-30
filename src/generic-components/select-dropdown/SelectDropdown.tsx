@@ -20,6 +20,8 @@ export const SelectDropdown = <T extends unknown>(props: SelectDropdownProps<T>)
         const selectedItem = props.availableItems
             .find(i => value === props.getKeyValue(i));
 
+        // this means we can't unset item (probably not a problem for showcase, 
+        // since we are not showing how to build widgets)
         if (selectedItem) {
             props.handleSelect(selectedItem);
         }

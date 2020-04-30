@@ -16,7 +16,7 @@ export const useInsurancePlanSelector = () => {
             deal.setSelectedInsurancePlans(items)
             deal.setApprovalStatus({ isApproved: false })
             const finalPrice = calculateFinalPrice(deal.carModel, items);
-            
+
             if (!finalPrice) {
                 deal.setIsValid(true);
             } else if (deal.carModel && deal.downpayment > finalPrice) {

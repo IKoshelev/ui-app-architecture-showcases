@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { financingClient } from "../../../../api/Financing.Client";
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
 import { calculateFinalPrice } from "../../../../contexts/Deal/Deal.Sync";
+import { useEffectOnce } from "../../../../util/useEffectOnce";
 
 export const useDownPayment = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -9,7 +10,7 @@ export const useDownPayment = () => {
     const [message, setMessage] = useState<string>('');
 
     const deal = useDeal();
-    
+
     const setMinimumPossibleDownpayment = async (): Promise<void> => {
         if (!deal.carModel) {
             return;
@@ -29,6 +30,7 @@ export const useDownPayment = () => {
         }
     }
 
+    // this function looks weird - it both returns a value and has side-effects, a bad sign
     const passesFinalPriceCheck = (value?: number): boolean => {
         const finalPrice = calculateFinalPrice(deal.carModel, deal.selectedInsurancePlans);
         const downpayment = value ?? deal.downpayment;
@@ -37,6 +39,7 @@ export const useDownPayment = () => {
             return true;
         }
 
+        // this looks redundant. carModel presence is already part of finalPrice state
         if (deal.carModel && downpayment > finalPrice) {
             setMessage('Downpayment exceeds final price');
             return false;
@@ -45,20 +48,16 @@ export const useDownPayment = () => {
         return true;
     }
 
-    useEffect(() => {
-        passesFinalPriceCheck();
-    }, [deal.carModel, deal.selectedInsurancePlans])
+    useEffect(() => void passesFinalPriceCheck(),
+        [deal.carModel, deal.selectedInsurancePlans]);
 
-    const setValueFromStore = () => {
+    useEffectOnce(setValueFromStore);
+    function setValueFromStore() {
         const nextValue = deal.downpayment.toString();
         setValue(nextValue);
         setMessage('');
         deal.setIsValid(true);
     }
-
-    useEffect(() => {
-        setValueFromStore();
-    }, []);
 
     return {
         isDisabled: isLoading || !deal.carModel || deal.isFinalized,
@@ -81,13 +80,15 @@ export const useDownPayment = () => {
                 return;
             }
 
-            
+
             const transformedValue: string = value.trim()
                 .replace('k', '000')
                 .replace('K', '000')
                 .replace('m', '000000')
                 .replace('M', '000000');
 
+            // Why does positive integer parsing code suddenly know about deal validity and approvalStatusees?
+            // Parsing function should be separate - it is a utility that will be used all-over the project
             if (transformedValue[0] === '-') {
                 deal.setIsValid(false);
                 deal.setApprovalStatus({ isApproved: false });

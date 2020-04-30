@@ -52,7 +52,7 @@ export const App = () => {
 
         <div className={`active-tab`}>
           {
-            hook.dealIds.map(id => (
+            hook.dealIds.map(id => ( // what if we have 10 providers?  
               <DealProvider
                 key={id}
                 initialDealId={id}

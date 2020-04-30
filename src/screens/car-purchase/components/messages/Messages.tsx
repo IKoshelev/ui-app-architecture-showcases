@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMessages } from './useMessages';
-
+// do we even need this typing? 
 export const Messages: React.FC = () => {
     const hook = useMessages();
 

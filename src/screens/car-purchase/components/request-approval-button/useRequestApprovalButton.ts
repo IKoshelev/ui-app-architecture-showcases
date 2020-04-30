@@ -4,7 +4,8 @@ import { canRequestApproval } from "../../../../contexts/Deal/Deal.Sync";
 import { financingClient } from "../../../../api/Financing.Client";
 
 export const useRequestApprovalButton = () => {
-
+    // i'm not sure, why this button suddenly needs its own state? 
+    // its state is completely derived from state of the deal, no?
     const [isRequestApprovalButtonDisabled, setIsRequestApprovalButtonDisabled] = useState<boolean>(false);
 
     const deal = useDeal();
@@ -27,7 +28,7 @@ export const useRequestApprovalButton = () => {
                     deal.selectedInsurancePlans.map(plan => plan.type),
                     deal.downpayment
                 );
-            
+
                 if (result.isApproved && !result.expiration) {
                     deal.setApprovalStatus({
                         isApproved: true,
@@ -35,9 +36,9 @@ export const useRequestApprovalButton = () => {
                     })
                     deal.setMessages([]);
                     return;
-                } 
+                }
 
-                if (result.isApproved && !!result.expiration) {              
+                if (result.isApproved && !!result.expiration) {
                     deal.setApprovalStatus({
                         isApproved: true,
                         expiration: result.expiration,
@@ -45,7 +46,7 @@ export const useRequestApprovalButton = () => {
                         approvalToken: result.approvalToken,
                     })
                     deal.setMessages([]);
-                } 
+                }
 
                 if (!result.isApproved) {
                     deal.setApprovalStatus({
@@ -53,7 +54,7 @@ export const useRequestApprovalButton = () => {
                     });
                     deal.setMessages([result.message]);
                 }
-                
+
 
             } finally {
                 deal.setIsLoading(false)

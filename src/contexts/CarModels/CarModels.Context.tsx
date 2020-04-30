@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CarModel, carInvenotryClient } from '../../api/CarInventory.Client';
 import { defaultCarModelsContext } from './defaultCarModels';
 import { useDeal } from '../Deal/Deal.Context';
+import { useEffectOnce } from '../../util/useEffectOnce';
 
 export type ICarModelsContext = {
     carModels: CarModel[],
@@ -22,7 +23,8 @@ export const CarModelsProvider: React.FC<ICarModelsContextProps> = (props) => {
 
     const deal = useDeal();
 
-    const reloadAvailableModels = async () => {
+    useEffectOnce(reloadAvailableModels);
+    async function reloadAvailableModels() {
         setIsLoading(true);
         deal.setIsLoading(true);
         try {
@@ -34,20 +36,16 @@ export const CarModelsProvider: React.FC<ICarModelsContextProps> = (props) => {
         }
     }
 
-    useEffect(() => {
-        reloadAvailableModels();
-    }, [])
-
     return <CarModelsContext.Provider
-                value={{
-                    isLoading,
-                    setIsLoading,
-                    carModels,
-                    reloadAvailableModels
-                }}
-            >
-                {props.children}
-            </CarModelsContext.Provider>
-} 
+        value={{
+            isLoading,
+            setIsLoading,
+            carModels,
+            reloadAvailableModels
+        }}
+    >
+        {props.children}
+    </CarModelsContext.Provider>
+}
 
 export const useCarModels = () => useContext(CarModelsContext);

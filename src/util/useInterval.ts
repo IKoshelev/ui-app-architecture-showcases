@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 /* istanbul ignore next */
 /** keep typescript happy */
-const noop = () => {};
+const noop = () => { };
 
 export function useInterval(
   callback: () => void,
@@ -19,6 +19,10 @@ export function useInterval(
 
   // Execute callback if immediate is set.
   useEffect(() => {
+    // very bad. We must always use curly bracket with if, while, for, etc...
+    // i.e. never pass a bare line where block of code can be passed.
+    // This is a hard learned lesson in all programming languages
+    // Also, whole file is very hard to understand
     if (!immediate) return;
     if (delay === null || delay === false) return;
     savedCallback.current();

@@ -21,7 +21,7 @@ export const useFinalizeDealButton = () => {
 
             deal.setIsLoading(true);
             deal.setMessages([]);
-    
+
             try {
                 const result = await financingClient.finalizeFinancing(
                     deal.approvalStatus.approvalToken,
