@@ -9,7 +9,7 @@ export const useDownPayment = () => {
     const [message, setMessage] = useState<string>('');
 
     const deal = useDeal();
-    
+
     const setMinimumPossibleDownpayment = async (): Promise<void> => {
         if (!deal.carModel) {
             return;
@@ -81,7 +81,7 @@ export const useDownPayment = () => {
                 return;
             }
 
-            
+
             const transformedValue: string = value.trim()
                 .replace('k', '000')
                 .replace('K', '000')
@@ -106,11 +106,9 @@ export const useDownPayment = () => {
             const parsedInteger = parseInt(transformedValue);
             setValue(parsedInteger.toString());
             deal.setDownpayment(parsedInteger);
-            if (!passesFinalPriceCheck(parsedInteger)) {
-                deal.setIsValid(false);
-            } else {
-                deal.setIsValid(true);
-            };
+            const isValid = !passesFinalPriceCheck(parsedInteger);
+            deal.setIsValid(isValid);
+
             deal.setApprovalStatus({ isApproved: false });
         }
     }

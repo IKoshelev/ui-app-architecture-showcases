@@ -15,15 +15,10 @@ export const useCarModelsSelector = () => {
         handleSelect(item: CarModel) {
             deal.setCarModel(item)
             const finalPrice = calculateFinalPrice(item, deal.selectedInsurancePlans);
-            
-            if (!finalPrice) {
-                deal.setIsValid(true);
-            } else if (item && deal.downpayment > finalPrice) {
-                deal.setIsValid(false);
-            } else {
-                deal.setIsValid(true);
-            }
-            deal.setApprovalStatus({ isApproved: false })
+
+            const isValid = !finalPrice || !(item && deal.downpayment > finalPrice);
+            deal.setIsValid(isValid);
+            deal.setApprovalStatus({ isApproved: false });
         },
         handleClick: carModels.reloadAvailableModels
     }
