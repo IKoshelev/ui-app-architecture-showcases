@@ -5,7 +5,6 @@ import { hasDateExpired, timeRemainingBetween } from "../../../../util/date";
 import { useCurrentDate1secondResolution } from "../../../../util/useCurrentDate1seccondResolution";
 
 export const useDealState = () => {
-    const currentDateHook = useCurrentDate1secondResolution();
     const deal = useDeal();
 
     const getMessageFromDealStatus = (): string => {
@@ -34,6 +33,7 @@ export const useDealState = () => {
     }
 
     const expiration = deal.approvalStatus.expiration;
+    const currentDateHook = useCurrentDate1secondResolution(!!expiration && expiration > new Date());
     const timeRemaining = expiration ? timeRemainingBetween(expiration, currentDateHook) : undefined;
 
     useEffect(() => {
