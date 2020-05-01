@@ -1,7 +1,7 @@
 import { useInsurancePlans } from "../../../../contexts/InsurancePlans/InsurancePlans.Context";
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
 import { InsurancePlan } from "../../../../api/CarInsurance.Client";
-import { calculateFinalPrice, calculateisValidAndApproval } from "../../../../contexts/Deal/Deal.Sync";
+import { calculateisValidAndApproval } from "../../../../contexts/Deal/Deal.Sync";
 
 export const useInsurancePlanSelector = () => {
     const plans = useInsurancePlans();

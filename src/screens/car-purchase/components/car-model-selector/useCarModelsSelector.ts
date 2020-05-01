@@ -1,7 +1,7 @@
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
 import { useCarModels } from "../../../../contexts/CarModels/CarModels.Context";
 import { CarModel } from "../../../../api/CarInventory.Client";
-import { calculateFinalPrice, calculateisValidAndApproval } from "../../../../contexts/Deal/Deal.Sync";
+import { calculateisValidAndApproval } from "../../../../contexts/Deal/Deal.Sync";
 
 export const useCarModelsSelector = () => {
     const deal = useDeal();
