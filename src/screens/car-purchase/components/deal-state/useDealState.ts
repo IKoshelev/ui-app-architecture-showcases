@@ -5,11 +5,10 @@ import { hasDateExpired, timeRemainingBetween } from "../../../../util/date";
 import { useCurrentDate1secondResolution } from "../../../../util/useCurrentDate1seccondResolution";
 
 export const useDealState = () => {
-    const [message, setMessage] = useState<string>('message');
     const currentDateHook = useCurrentDate1secondResolution();
     const deal = useDeal();
 
-    const setMessageFromDealStatus = (): void => {
+    const getMessageFromDealStatus = (): string => {
         const status = getDealStatus(
             deal.isFinalized,
             deal.approvalStatus.isApproved,
@@ -18,35 +17,24 @@ export const useDealState = () => {
         )
 
         if (status === 'deal-finalized') {
-            setMessage('Congratulations! Deal is finalized.');
-            return;
+            return 'Congratulations! Deal is finalized.';
+
         }
         if (status === 'approval-with-expiry-date') {
-            setMessage(`Approval granted. Expires in ${timeRemaining} seconds.`);
-            return;
+            return `Approval granted. Expires in ${timeRemaining} seconds.`;
         }
         if (status === 'approval-expired') {
-            setMessage('Approval expired.');
-            return;
+            return 'Approval expired.';
         }
         if (status === 'approval-perpetual') {
-            setMessage('Approval granted.');
-            return;
+            return 'Approval granted.';
         }
-        setMessage('');
-        return;
+
+        return '';
     }
 
     const expiration = deal.approvalStatus.expiration;
     const timeRemaining = expiration ? timeRemainingBetween(expiration, currentDateHook) : undefined;
-
-    useEffect(() => {
-        setMessageFromDealStatus();
-    }, [
-        deal.approvalStatus,
-        deal.isFinalized,
-        timeRemaining
-    ]);
 
     useEffect(() => {
         if (!deal.approvalStatus.expiration) {
@@ -60,10 +48,10 @@ export const useDealState = () => {
             })
             return;
         }
-    }, [currentDateHook]);
+    }, [deal.approvalStatus.expiration && currentDateHook]);
 
     return {
-        message: message,
+        message: getMessageFromDealStatus(),
         showMessage: true
     }
 }
