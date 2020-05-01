@@ -1,6 +1,8 @@
 import { InsurancePlan } from "../../api/CarInsurance.Client";
 import { CarModel } from "../../api/CarInventory.Client";
 import { ApprovalStatus } from "./Deal.Types";
+import { IDealContext } from "./Deal.Context";
+import { PartialState } from "../../util/typing";
 
 export const calculateFinalPrice = (carModel: CarModel | undefined, insurancePlans: InsurancePlan[]): number | null => {
     if (!carModel) {
@@ -10,6 +12,21 @@ export const calculateFinalPrice = (carModel: CarModel | undefined, insurancePla
         .reduce((prev, cur) => prev + cur, 0) ?? 0;
 
     return carModel.basePrice + priceIncrease;
+}
+
+// does this belong here or in DealContext file? 
+export function calculateisValidAndApproval(
+    currentDealState: IDealContext,
+    newDealState: PartialState<IDealContext> = {}
+) {
+
+    const finalState: IDealContext = { ...currentDealState, ...newDealState };
+
+    const finalPrice = calculateFinalPrice(finalState.carModel, finalState.selectedInsurancePlans);
+
+    const isValid = !finalPrice || !(finalState.carModel && finalState.downpayment > finalPrice);
+    finalState.setIsValid(isValid);
+    finalState.setApprovalStatus({ isApproved: false });
 }
 
 export const canRequestApproval = (
@@ -24,7 +41,7 @@ export const canRequestApproval = (
     return !isLoading
         && hasCarModel
         && !isFinalized
-        && !approvalStatus.isApproved || (!!approvalStatus.expiration && approvalStatus.expiration <= new Date())
+        && (!approvalStatus.isApproved || (!!approvalStatus.expiration && approvalStatus.expiration <= new Date()))
         && isValid;
 };
 
