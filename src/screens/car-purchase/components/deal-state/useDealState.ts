@@ -1,13 +1,12 @@
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
 import { useState, useEffect } from "react";
 import { getDealStatus } from "../../../../contexts/Deal/Deal.Sync";
-import useInterval from "../../../../util/useInterval";
-import { hasDateExpired, timeRemainingBetweenDateAndNow } from "../../../../util/date";
+import { hasDateExpired, timeRemainingBetween } from "../../../../util/date";
+import { useCurrentDate1secondResolution } from "../../../../util/useCurrentDate1seccondResolution";
 
 export const useDealState = () => {
     const [message, setMessage] = useState<string>('message');
-    const [timeRemaining, setTimeRemaining] = useState<number>(0);
-    const [isRunning, setIsRunning] = useState(false);
+    const currentDateHook = useCurrentDate1secondResolution();
     const deal = useDeal();
 
     const setMessageFromDealStatus = (): void => {
@@ -38,42 +37,30 @@ export const useDealState = () => {
         return;
     }
 
+    const expiration = deal.approvalStatus.expiration;
+    const timeRemaining = expiration ? timeRemainingBetween(expiration, currentDateHook) : undefined;
+
     useEffect(() => {
         setMessageFromDealStatus();
-        if (deal.approvalStatus.isApproved && deal.approvalStatus.isExpired === false) {
-            setIsRunning(true);
-        }
     }, [
         deal.approvalStatus,
         deal.isFinalized,
         timeRemaining
-    ])
+    ]);
 
-    useInterval(() => {
+    useEffect(() => {
         if (!deal.approvalStatus.expiration) {
             return;
         }
-
-        const nextValue: number = timeRemainingBetweenDateAndNow(deal.approvalStatus.expiration);
-        setTimeRemaining(nextValue);
 
         if (hasDateExpired(deal.approvalStatus.expiration)) {
             deal.setApprovalStatus({
                 ...deal.approvalStatus,
                 isExpired: true
             })
-            setIsRunning(false);
             return;
         }
-
-    }, isRunning ? 1000 : null, true);
-
-    useEffect(() => {
-        if (deal.approvalStatus.expiration) {
-            const nextValue: number = timeRemainingBetweenDateAndNow(deal.approvalStatus.expiration);
-            setTimeRemaining(nextValue);
-        }
-    }, [deal.approvalStatus.expiration])
+    }, [currentDateHook]);
 
     return {
         message: message,

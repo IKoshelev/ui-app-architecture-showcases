@@ -8,3 +8,10 @@ export const timeRemainingBetweenDateAndNow = (date: Date): number => {
     const differenceRounded = Math.round(difference / 1000);
     return differenceRounded;
 }
+
+
+export const timeRemainingBetween = (futureDate: Date, currentDate: Date): number => {
+    const difference = futureDate.getTime() - currentDate.getTime();
+    const differenceRounded = Math.round(difference / 1000);
+    return differenceRounded;
+}

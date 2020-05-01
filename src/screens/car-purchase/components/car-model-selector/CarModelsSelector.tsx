@@ -6,11 +6,10 @@ import { CarModel } from "../../../../api/CarInventory.Client";
 export const CarModelsSelector: React.FunctionComponent = () => {
 
     const hook = useCarModelsSelector();
-
     if (hook.isLoading) {
         return <div className='car-model-selector-loading'>Loading</div>
     }
-    
+
     return <>
         <SelectDropdown
             selectAttributes={{ className: 'car-model-selector-select' }}
@@ -22,6 +21,7 @@ export const CarModelsSelector: React.FunctionComponent = () => {
             getDescription={(item: CarModel) => item?.description}
             handleSelect={(item: CarModel) => hook.handleSelect(item)}
         />
+
         <button
             className='car-model-selector-refresh-btn'
             onClick={hook.handleClick}
