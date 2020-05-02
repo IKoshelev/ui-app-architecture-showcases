@@ -1,8 +1,8 @@
 import { useDeal } from "../../../../contexts/Deal/Deal.Context";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { getDealStatus } from "../../../../contexts/Deal/Deal.Sync";
-import { hasDateExpired, timeRemainingBetween } from "../../../../util/date";
-import { useCurrentDate1secondResolution } from "../../../../util/useCurrentDate1seccondResolution";
+import { hasDateExpired, secondsBetween } from "../../../../util/date";
+import { useCurrentDate } from "../../../../util/useCurrentDate";
 
 export const useDealState = () => {
     const deal = useDeal();
@@ -17,7 +17,6 @@ export const useDealState = () => {
 
         if (status === 'deal-finalized') {
             return 'Congratulations! Deal is finalized.';
-
         }
         if (status === 'approval-with-expiry-date') {
             return `Approval granted. Expires in ${timeRemaining} seconds.`;
@@ -33,8 +32,8 @@ export const useDealState = () => {
     }
 
     const expiration = deal.approvalStatus.expiration;
-    const currentDateHook = useCurrentDate1secondResolution(!!expiration && expiration > new Date());
-    const timeRemaining = expiration ? timeRemainingBetween(expiration, currentDateHook) : undefined;
+    const currentDateHook = useCurrentDate(() => !!expiration && expiration > currentDateHook);
+    const timeRemaining = expiration ? secondsBetween(expiration, currentDateHook) : undefined;
 
     useEffect(() => {
         if (!deal.approvalStatus.expiration) {
