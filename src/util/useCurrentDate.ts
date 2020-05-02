@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 
-export let currentResolution = 1000;
-let tickerHandle = setInterval(tick, currentResolution);
+export let currentResolutionMs = 1000;
+let tickerHandle = setInterval(tick, currentResolutionMs);
 
 export function setCurrentResolution(newResolutionMs: number) {
     clearInterval(tickerHandle);
-    currentResolution = newResolutionMs;
-    tickerHandle = setInterval(tick, currentResolution);
+    currentResolutionMs = newResolutionMs;
+    tickerHandle = setInterval(tick, currentResolutionMs);
 }
 
 export let lastCurrentDate = new Date();
@@ -35,4 +35,11 @@ export function useCurrentDate(shouldUpdateDateState: (newDate: Date) => boolean
     }, [shouldUpdateDateState]);
 
     return date;
+}
+
+// use this method to have access to latest ticked date outside of hooks
+export function onCurrentDateTick(action: (newDate: Date) => void): () => void {
+    const id = idCounter++;
+    activeListeners.set(id, action);
+    return () => void activeListeners.delete(id);
 }
