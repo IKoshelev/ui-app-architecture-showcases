@@ -1,6 +1,6 @@
 import { observable, computed, action } from "mobx";
 import { CarModel } from "../../../api/CarInventory.Client";
-import { EnsurancePlanType } from "../../../api/CarEnsurance.Client";
+import { InsurancePlanType } from "../../../api/CarInsurance.Client";
 import { financingClient } from "../../../api/Financing.Client";
 import { setsMatch, getSorterByLatest, PromiseValueType } from "../../../util/util";
 import { ticker1second } from "../../../util/observable-ticker";
@@ -15,7 +15,7 @@ export class CarPurchaseModel {
     public carModel: CarModel | undefined = undefined;
 
     @observable
-    public ensurancePlansSelected: EnsurancePlanType[] = [];
+    public insurancePlansSelected: InsurancePlanType[] = [];
 
     @observable
     public downpayment: number = 0;
@@ -46,7 +46,7 @@ export class CarPurchaseModel {
             .filter(x =>
                 this.carModel?.id === x.carModelId
                 && this.downpayment === x.downpayment
-                && setsMatch(this.ensurancePlansSelected, x.ensurancePlansSelected)
+                && setsMatch(this.insurancePlansSelected, x.insurancePlansSelected)
             )
             .sort(getSorterByLatest(x => x.timestamp))
         [0]?.approvalResponse;
@@ -55,7 +55,7 @@ export class CarPurchaseModel {
     @observable
     private fincingApprovalsCache: {
         carModelId: number,
-        ensurancePlansSelected: EnsurancePlanType[],
+        insurancePlansSelected: InsurancePlanType[],
         downpayment: number,
         timestamp: Date,
         approvalResponse: PromiseValueType<ReturnType<typeof financingClient.getApproval>>
@@ -75,12 +75,12 @@ export class CarPurchaseModel {
         try {
             const response = await financingClient.getApproval(
                 this.carModel!,
-                this.ensurancePlansSelected,
+                this.insurancePlansSelected,
                 this.downpayment);
 
             this.fincingApprovalsCache.push({
                 carModelId: this.carModel!.id,
-                ensurancePlansSelected: [...this.ensurancePlansSelected],
+                insurancePlansSelected: [...this.insurancePlansSelected],
                 downpayment: this.downpayment,
                 timestamp: new Date(),
                 approvalResponse: response

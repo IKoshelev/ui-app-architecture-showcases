@@ -2,7 +2,7 @@ import { observer, Observer } from "mobx-react";
 import React from "react";
 import { CarPurchaseVM } from "./CarPurchase.VM";
 import { CarModelsSelector } from "./car-model-selector/CarModelsSelector";
-import { EnsurancePlanSelector } from "./ensurance-plan-selector/EnsurancePlanSelector";
+import { InsurancePlanSelector } from "./insurance-plan-selector/InsurancePlanSelector";
 import { NumericInput } from "../../../generic-components/numeric-input/NumericInput";
 import './CarPurchase.css';
 
@@ -16,10 +16,10 @@ export const CarPurchase: React.FunctionComponent<{
             Please select model
         </div>
         <CarModelsSelector vm={vm.carModelSelectorVM} />
-        <div className='car-purchase-ensurance-selector-label'>
+        <div className='car-purchase-insurance-selector-label'>
             Please select insurance options
         </div>
-        <EnsurancePlanSelector vm={vm.ensurancePlanSelectorVM} />
+        <InsurancePlanSelector vm={vm.insurancePlanSelectorVM} />
         <div className='car-purchase-downpayment-label'>
             Please select downpayment
         </div>

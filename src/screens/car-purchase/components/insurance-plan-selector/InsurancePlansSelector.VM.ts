@@ -1,8 +1,8 @@
 import { observable, action, computed } from "mobx";
 import { CarPurchaseModel } from "../../model/CarPurchase.Model";
-import { EnsurancePlan, carEnsuranceClient } from "../../../../api/CarEnsurance.Client";
+import { InsurancePlan, carInsuranceClient } from "../../../../api/CarInsurance.Client";
 
-export class EnsurancePlansSelectorVM {
+export class InsurancePlansSelectorVM {
 
     public constructor(carPurchaseModel: CarPurchaseModel) {
         this.carPurchaseModel = carPurchaseModel;
@@ -12,7 +12,7 @@ export class EnsurancePlansSelectorVM {
     private readonly carPurchaseModel: CarPurchaseModel;
 
     @observable
-    public availablePlans: EnsurancePlan[] = [];
+    public availablePlans: InsurancePlan[] = [];
 
     @observable
     public isLoading: boolean = false;
@@ -21,7 +21,7 @@ export class EnsurancePlansSelectorVM {
     public async reloadAvailablePlans() {
         this.isLoading = true;
         try {
-            this.availablePlans = await carEnsuranceClient.getAvaliableEnsurancePlans();
+            this.availablePlans = await carInsuranceClient.getAvaliableInsurancePlans();
         }
         finally {
             this.isLoading = false;
@@ -37,13 +37,13 @@ export class EnsurancePlansSelectorVM {
     public get selectedPlans() {
         return this.availablePlans
             .filter(x =>
-                this.carPurchaseModel.ensurancePlansSelected.some(y => y === x.type));
+                this.carPurchaseModel.insurancePlansSelected.some(y => y === x.type));
     }
 
     @action.bound
-    public async setSelectedPlans(newSelectedPlans: EnsurancePlan[]) {
+    public async setSelectedPlans(newSelectedPlans: InsurancePlan[]) {
 
         const selectedPlanTypes = newSelectedPlans.map(x => x.type);
-        this.carPurchaseModel.ensurancePlansSelected = selectedPlanTypes;
+        this.carPurchaseModel.insurancePlansSelected = selectedPlanTypes;
     }
 }

@@ -1,5 +1,5 @@
 import { delay } from "../util/delay";
-import { EnsurancePlanType } from "./CarEnsurance.Client";
+import { InsurancePlanType } from "./CarInsurance.Client";
 import { CarModel } from "./CarInventory.Client";
 import moment from 'moment';
 
@@ -36,13 +36,13 @@ class FinancingClient {
 
     public async getMinimumPossibleDownpayment(
         carModel: CarModel,
-        ensurancePlans: EnsurancePlanType[]): Promise<number> {
+        insurancePlans: InsurancePlanType[]): Promise<number> {
 
         console.log(`server call getMinimumPossibleDownpayment`);
 
         await delay(1000);
 
-        if (ensurancePlans.some(x => x === EnsurancePlanType.assetProtection)) {
+        if (insurancePlans.some(x => x === InsurancePlanType.assetProtection)) {
             return carModel.basePrice / 10;
         }
 
@@ -51,7 +51,7 @@ class FinancingClient {
 
     public async getApproval(
         carModel: CarModel,
-        ensurancePlans: EnsurancePlanType[],
+        insurancePlans: InsurancePlanType[],
         downpayment: number): Promise<GetApprovalResult> {
 
         console.log(`server call getApproval`);
@@ -60,7 +60,7 @@ class FinancingClient {
 
         //this would be calculated on the server
 
-        if (ensurancePlans.some(x => x === EnsurancePlanType.assetProtection)
+        if (insurancePlans.some(x => x === InsurancePlanType.assetProtection)
             && carModel.basePrice / 10 <= downpayment) {
             return getApprovedFinancing();
         }
@@ -73,7 +73,7 @@ class FinancingClient {
 
         return {
             isApproved: false,
-            message: "Approval denied. Downpayment should be over 20% of base price (10% with 'asset protection' ensurance)."
+            message: "Approval denied. Downpayment should be over 20% of base price (10% with 'asset protection' insurance)."
         }
     }
 

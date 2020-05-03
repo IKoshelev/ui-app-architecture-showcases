@@ -1,7 +1,7 @@
 import { computed, action, observable, runInAction } from "mobx";
 import { CarPurchaseModel } from "../model/CarPurchase.Model";
 import { CarModelsSelectorVM } from "./car-model-selector/CarModelsSelector.VM";
-import { EnsurancePlansSelectorVM } from "./ensurance-plan-selector/EnsurancePlansSelector.VM";
+import { InsurancePlansSelectorVM } from "./insurance-plan-selector/InsurancePlansSelector.VM";
 import { ticker1second } from "../../../util/observable-ticker";
 import moment from "moment";
 import { PositiveIntegerVM } from "../../../generic-components/numeric-input/NumericInputVM";
@@ -15,7 +15,7 @@ export class CarPurchaseVM {
         this.carPurchaseModel = new CarPurchaseModel();
 
         this.carModelSelectorVM = new CarModelsSelectorVM(this.carPurchaseModel);
-        this.ensurancePlanSelectorVM = new EnsurancePlansSelectorVM(this.carPurchaseModel);
+        this.insurancePlanSelectorVM = new InsurancePlansSelectorVM(this.carPurchaseModel);
 
         this.downpaymentInputVm = this.createDownpaymentVM();
     }
@@ -27,7 +27,7 @@ export class CarPurchaseVM {
 
     public readonly carPurchaseModel: CarPurchaseModel;
     public readonly carModelSelectorVM: CarModelsSelectorVM;
-    public readonly ensurancePlanSelectorVM: EnsurancePlansSelectorVM;
+    public readonly insurancePlanSelectorVM: InsurancePlansSelectorVM;
 
     @observable
     private _isLoading: boolean = false;
@@ -42,7 +42,7 @@ export class CarPurchaseVM {
     @computed
     public get isLoading() {
         return this._isLoading
-            || this.ensurancePlanSelectorVM.isLoading
+            || this.insurancePlanSelectorVM.isLoading
             || this.carModelSelectorVM.isLoading
             || this.carPurchaseModel.isLoading;
     }
@@ -73,7 +73,7 @@ export class CarPurchaseVM {
             return undefined;
         }
 
-        const priceIncrease = this.ensurancePlanSelectorVM
+        const priceIncrease = this.insurancePlanSelectorVM
             .selectedPlans
             .map(x => basePrice * x.rate)
             .reduce((prev, cur) => prev + cur, 0);
@@ -179,7 +179,7 @@ export class CarPurchaseVM {
         try {
             const minimumDownpayment = await financingClient.getMinimumPossibleDownpayment(
                 this.carPurchaseModel.carModel!,
-                this.carPurchaseModel.ensurancePlansSelected
+                this.carPurchaseModel.insurancePlansSelected
             );
 
             runInAction(() => {
