@@ -1,6 +1,6 @@
 # Requirments
 
-**Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures.
+**Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures. Unless someone specifically told you otherwise, this task is not about aesthetics or CSS. This task is about code quality and architecture. Final result does not have to look exactly like sketch, or be beautiful, but must have correct behavior. 
 
 Desired final result sketch: 
 
