@@ -1,13 +1,52 @@
 ## Requirments
 
-*Disclaimer*: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures.
+**Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures.
 
 Desired final result sketch: 
 
 ![](/requirments-sketches/1.png)
 
+1.	Api is emulated by 3 client classes in https://github.com/IKoshelev/react-mobx-mvvm-showcase/tree/starter/src/api . Files in that folder are to be used as-is (no modifications to them).
+
+2.	App is to use tabs, 1 deal per tab. Many independent deals can be in-process at the same time. App must have buttons to create a new tab and close existing tab (see sketch).
+
+3.	When a new tab is open – list of possible car models must be retrieved from `getAvaliableCarModels` and of possible insurance plans from `getAvaliableInsurancePlans`. This lists are not shared between tabs – each tab has its own. Each list can be refreshed from the api via a button. User must select 1 car model and can select 0 or more insurance plans. Once car model is chosen – it is displayed in tab header.
+
+4.	Final price of the deal formula: 
+
+**Final price = car base price + sum(insurance plan rate * car base price) for each insurance plan.**
+
+5.	For downpayment, user can enter any string, but it is only valid when a positive whole number is entered. If anything else is entered – an error message is shown:
+
+*For invalid number:*
+![](/requirments-sketches/2.png)
+
+*For negative number:*
+![](/requirments-sketches/3.png)
+
+*If final price is available and downpayment exceeds it:*
+![](/requirments-sketches/4.png)
 
 
+6.	‘Set minimum possible’ button calls `getMinimumPossibleDownpayment` method from api and sets provided value to ui.
+
+7.	When a car model is selected and valid downpayment is available – user can press ‘Request approval’ button to call `getApproval`. If failure meesage is returned – it must be shown:
+
+![](/requirments-sketches/5.png)
+
+If approval is granted – notifying message is shown. If approval has expiration date – a timer in seconds is shown in that message and in tab header:
+
+![](/requirments-sketches/6.png)
+
+When timer runs out:
+
+![](/requirments-sketches/7.png)
+
+8.	Approvals must be cached for a combination of car model, insurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. 
+
+9.	If user has valid approval – they can finalize deal via `finalizeFinancing`. If not successful – received error message must be shown. Otherwise:
+
+![](/requirments-sketches/8.png)
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
