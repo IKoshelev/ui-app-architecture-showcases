@@ -6,7 +6,7 @@ Desired final result sketch:
 
 ![](/requirments-sketches/1.png)
 
-1.	Api is emulated by 3 client classes in https://github.com/IKoshelev/react-mobx-mvvm-showcase/tree/starter/src/api . Files in that folder are to be used as-is (no modifications to them).
+1.	Api is emulated by 3 client classes in `./src/api` . Files in that folder are to be used as-is (no modifications to them).
 
 2.	App is to use tabs, 1 deal per tab. Many independent deals can be in-process at the same time. App must have buttons to create a new tab and close existing tab (see sketch).
 
