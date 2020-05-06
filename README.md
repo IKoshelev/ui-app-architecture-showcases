@@ -1,4 +1,4 @@
-## Requirments
+# Requirments
 
 **Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures.
 
@@ -19,12 +19,15 @@ Desired final result sketch:
 5.	For downpayment, user can enter any string, but it is only valid when a positive whole number is entered. If anything else is entered – an error message is shown:
 
 *For invalid number:*
+
 ![](/requirments-sketches/2.png)
 
 *For negative number:*
+
 ![](/requirments-sketches/3.png)
 
 *If final price is available and downpayment exceeds it:*
+
 ![](/requirments-sketches/4.png)
 
 
@@ -42,14 +45,16 @@ When timer runs out:
 
 ![](/requirments-sketches/7.png)
 
-8.	Approvals must be cached for a combination of car model, insurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. 
+8.	Approvals must be cached for a combination of car model, insurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. User can have approvals for several valid combinations within 1 deal. Given approval is used as long as current deal params match the ones for which it was approved. Approvals are not shared between deals. 
 
 9.	If user has valid approval – they can finalize deal via `finalizeFinancing`. If not successful – received error message must be shown. Otherwise:
 
 ![](/requirments-sketches/8.png)
 
+# App basis
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Consult whoever gave you the task for additional constraints / expectations int terms of frameworks / libraries / patterns. 
 
 ## Available Scripts
 
