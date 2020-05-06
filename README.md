@@ -45,7 +45,9 @@ When timer runs out:
 
 ![](/requirments-sketches/7.png)
 
-8.	Approvals must be cached for a combination of car model, insurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. User can have approvals for several valid combinations within 1 deal. Given approval is used as long as current deal params match the ones for which it was approved. Approvals are not shared between deals. 
+Approval may be granted without expiration, in which case - it is perpetual. 
+
+8.	Approvals must be cached for a combination of car model, insurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. User can have approvals for several valid combinations within 1 deal. Given approval is used as long as current deal params match the ones for which it was given. Approvals are not shared between deals. 
 
 9.	If user has valid approval – they can finalize deal via `finalizeFinancing`. If not successful – received error message must be shown. Otherwise:
 
@@ -54,7 +56,7 @@ When timer runs out:
 # App basis
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-Consult whoever gave you the task for additional constraints / expectations int terms of frameworks / libraries / patterns. 
+Consult whoever gave you the task for additional constraints / expectations in terms of frameworks / libraries / patterns. 
 
 ## Available Scripts
 
