@@ -4,7 +4,7 @@
 
 Desired final result sketch: 
 
-!(/requirments-sketches/1.png)
+![](/requirments-sketches/1.png)
 
 
 
