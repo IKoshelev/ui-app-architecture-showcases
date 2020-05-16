@@ -1,4 +1,4 @@
-#Good new Everyone!
+# Good new Everyone!
 Crazy Ivan Motors has really extended its business thanks to the app you've made! Now we are getting international customers and need to handle deals in foreign currencies! Check latest commit in this branch to see how the API was extended to handle foreign currencies.  Here is a mockup of what our business needs for now:
 
 ![](/requirments-sketches/9.png)
