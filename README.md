@@ -30,6 +30,7 @@ Desired final result sketch:
 
 ![](/requirments-sketches/4.png)
 
+*User is allowed to enter K for 000 and M for 000000*
 
 6.	‘Set minimum possible’ button calls `getMinimumPossibleDownpayment` method from api and sets provided value to ui.
 
