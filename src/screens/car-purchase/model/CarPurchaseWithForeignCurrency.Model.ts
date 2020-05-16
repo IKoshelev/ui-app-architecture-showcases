@@ -29,13 +29,13 @@ export class CarPurchaseWithForeignCurrencyModel extends CarPurchaseModel {
         try {
             const response = await financingClient.getApprovalWithForeignCurrency(
                 this.carModel!,
-                this.ensurancePlansSelected,
+                this.insurancePlansSelected,
                 this.downpayment,
                 this.downpaymentCurrency);
 
             this.fincingApprovalsCache.push({
                 carModelId: this.carModel!.id,
-                ensurancePlansSelected: [...this.ensurancePlansSelected],
+                insurancePlansSelected: [...this.insurancePlansSelected],
                 downpayment: this.downpayment,
                 timestamp: new Date(),
                 approvalResponse: response,

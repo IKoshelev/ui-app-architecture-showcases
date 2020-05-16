@@ -75,7 +75,7 @@ export class CarPurchaseWithForeignCurrencyVM extends CarPurchaseVM {
   protected async getMinimumPossibleDownpaymentFromServer() {
     return financingClient.getMinimumPossibleDownpaymentInForeignCurrency(
       this.carPurchaseModel.carModel!,
-      this.carPurchaseModel.ensurancePlansSelected,
+      this.carPurchaseModel.insurancePlansSelected,
       this.carPurchaseModel.downpaymentCurrency
     );
   }

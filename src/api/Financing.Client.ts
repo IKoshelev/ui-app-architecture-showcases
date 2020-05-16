@@ -1,5 +1,5 @@
 import { delay } from "../util/delay";
-import { EnsurancePlanType } from "./CarEnsurance.Client";
+import { InsurancePlanType } from "./CarInsurance.Client";
 import { CarModel } from "./CarInventory.Client";
 import moment from 'moment';
 import { Currency, currencyExchangeClient } from "./CurrencyExchange.Client";
@@ -37,13 +37,13 @@ class FinancingClient {
 
     public async getMinimumPossibleDownpayment(
         carModel: CarModel,
-        ensurancePlans: EnsurancePlanType[]): Promise<number> {
+        insurancePlans: InsurancePlanType[]): Promise<number> {
 
         console.log(`server call getMinimumPossibleDownpayment`);
 
         await delay(1000);
 
-        if (ensurancePlans.some(x => x === EnsurancePlanType.assetProtection)) {
+        if (insurancePlans.some(x => x === InsurancePlanType.assetProtection)) {
             return carModel.basePriceUSD / 10;
         }
 
@@ -52,13 +52,13 @@ class FinancingClient {
 
     public async getMinimumPossibleDownpaymentInForeignCurrency(
         carModel: CarModel,
-        ensurancePlans: EnsurancePlanType[],
+        insurancePlans: InsurancePlanType[],
         currency: Currency): Promise<number> {
 
         console.log(`server call getMinimumPossibleDownpaymentInForeignCurrency`);
 
         const [minDownpayment, rate] = await Promise.all([
-            this.getMinimumPossibleDownpayment(carModel, ensurancePlans),
+            this.getMinimumPossibleDownpayment(carModel, insurancePlans),
             currencyExchangeClient.getExchangeRate(currency)
         ]);
 
@@ -67,7 +67,7 @@ class FinancingClient {
 
     public async getApproval(
         carModel: CarModel,
-        ensurancePlans: EnsurancePlanType[],
+        insurancePlans: InsurancePlanType[],
         downpayment: number): Promise<GetApprovalResult> {
 
         console.log(`server call getApproval`);
@@ -76,7 +76,7 @@ class FinancingClient {
 
         //this would be calculated on the server
 
-        if (ensurancePlans.some(x => x === EnsurancePlanType.assetProtection)
+        if (insurancePlans.some(x => x === InsurancePlanType.assetProtection)
             && carModel.basePriceUSD / 10 <= downpayment) {
             return getApprovedFinancing();
         }
@@ -89,13 +89,13 @@ class FinancingClient {
 
         return {
             isApproved: false,
-            message: "Approval denied. Downpayment should be over 20% of base price (10% with 'asset protection' ensurance)."
+            message: "Approval denied. Downpayment should be over 20% of base price (10% with 'asset protection' insurance)."
         }
     }
 
     public async getApprovalWithForeignCurrency(
         carModel: CarModel,
-        ensurancePlans: EnsurancePlanType[],
+        insurancePlans: InsurancePlanType[],
         downpayment: number,
         currency: Currency): Promise<GetApprovalResult> {
 
@@ -104,7 +104,7 @@ class FinancingClient {
         const rate = await currencyExchangeClient.getExchangeRate(currency);
         const downpaymentInUsd = (downpayment / rate) + 1;
 
-        return this.getApproval(carModel, ensurancePlans, downpaymentInUsd);
+        return this.getApproval(carModel, insurancePlans, downpaymentInUsd);
     }
 
     public async finalizeFinancing(approvalToken: string) {
