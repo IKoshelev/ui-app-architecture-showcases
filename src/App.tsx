@@ -5,6 +5,9 @@ import { CarPurchase } from './screens/car-purchase/components/CarPurchase';
 import { appVm } from './App.VM';
 
 import './App.css';
+import { CarPurchaseWithForeignCurrencyVM } from "./screens/car-purchase/components/CarPurchaseWithForeignCurrency.VM";
+import { CarPurchaseVM } from "./screens/car-purchase/components/CarPurchase.VM";
+import { CarPurchaseWithForeignCurrency } from "./screens/car-purchase/components/CarPurchaseWithForeignCurrency";
 
 export const App = observer(() => {
   return <div id='app-root'>
@@ -20,6 +23,13 @@ export const App = observer(() => {
           onClick={appVm.addNewDeal}
         >
           Add deal
+        </button>
+
+        <button
+          className="button-add-new-deal"
+          onClick={appVm.addForeignCurrencyDeal}
+        >
+          Add foreign currency deal
         </button>
 
         {
@@ -55,11 +65,20 @@ export const App = observer(() => {
       <div className={`active-tab`}>
         {
           appVm.activeCapPurchaseVM &&
-          <CarPurchase vm={appVm.activeCapPurchaseVM} />
+          renderActiveDeal(appVm.activeCapPurchaseVM)
         }
       </div>
-
     </div>
-  </div>
+  </div>;
+
+  function renderActiveDeal(vm: CarPurchaseVM | CarPurchaseWithForeignCurrencyVM) {
+    if (vm instanceof CarPurchaseWithForeignCurrencyVM) {
+      return <CarPurchaseWithForeignCurrency vm={vm} />;
+    }
+
+    if (vm instanceof CarPurchaseVM) {
+      return <CarPurchase vm={vm} />;
+    }
+  }
 
 });

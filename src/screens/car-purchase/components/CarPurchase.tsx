@@ -8,21 +8,26 @@ import './CarPurchase.css';
 
 export const CarPurchase: React.FunctionComponent<{
     vm: CarPurchaseVM
-}> = observer(({ vm }) => {
-    console.log('Rendering CarPurchase', new Date());
+}> = observer(({ vm }) => (<div className='car-purchase-deal'>
+    <CarPurchaseBare vm={vm} />
+</div>));
 
-    return <div className='car-purchase-deal'>
+export const CarPurchaseBare: React.FunctionComponent<{
+    vm: CarPurchaseVM
+}> = observer(({ vm }) => {
+
+    return <>
         <div className='car-purchase-model-selector-label'>
             Please select model
-        </div>
+    </div>
         <CarModelsSelector vm={vm.carModelSelectorVM} />
         <div className='car-purchase-ensurance-selector-label'>
             Please select insurance options
-        </div>
+    </div>
         <EnsurancePlanSelector vm={vm.ensurancePlanSelectorVM} />
         <div className='car-purchase-downpayment-label'>
             Please select downpayment
-        </div>
+    </div>
         <NumericInput
             inputAttributes={{ className: 'car-purchase-downpayment' }}
             messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
@@ -34,10 +39,10 @@ export const CarPurchase: React.FunctionComponent<{
             onClick={vm.setMinimumPossibleDownpayment}
         >
             Set minimum possible
-        </button>
+    </button>
         <div className='car-purchase-final-price-label'>
             Final price
-        </div>
+    </div>
         <div className='car-final-price'>
             {vm.finalPrice}
         </div>
@@ -60,27 +65,27 @@ export const CarPurchase: React.FunctionComponent<{
             onClick={vm.getApproval}
         >
             Request approval
-        </button>
+    </button>
         <button
             className='button-close-active-deal'
             onClick={vm.close}
         >
             Close this deal
-        </button>
+    </button>
         <button
             className='button-finalzie-deal'
             disabled={!vm.canFinalizeDeal}
             onClick={vm.finalzieDeal}
         >
             Finalize deal
-        </button>
+    </button>
         {
             vm.messages.length > 0 &&
             <div className='car-purchase-messages'>
                 {vm.messages.map(x => (<div key={x}>{x}</div>))}
             </div>
         }
-    </div>
+    </>;
 
     function getDealStateDescription(state: typeof vm.dealState) {
         if (state === 'deal-finalized') {

@@ -12,12 +12,17 @@ export class CarPurchaseVM {
     constructor(id: string, onClose?: (_this: CarPurchaseVM) => void) {
         this.id = id;
         this.onClose = onClose;
-        this.carPurchaseModel = new CarPurchaseModel();
+
+        this.carPurchaseModel = this.createModel();
 
         this.carModelSelectorVM = new CarModelsSelectorVM(this.carPurchaseModel);
         this.ensurancePlanSelectorVM = new EnsurancePlansSelectorVM(this.carPurchaseModel);
 
         this.downpaymentInputVm = this.createDownpaymentVM();
+    }
+
+    protected createModel(): CarPurchaseModel {
+        return new CarPurchaseModel();
     }
 
     public readonly cssClassName = 'car-purchase-deal' as const;
@@ -30,7 +35,7 @@ export class CarPurchaseVM {
     public readonly ensurancePlanSelectorVM: EnsurancePlansSelectorVM;
 
     @observable
-    private _isLoading: boolean = false;
+    protected _isLoading: boolean = false;
 
     @computed
     public get messages() {
@@ -62,16 +67,25 @@ export class CarPurchaseVM {
             state = `${this.dealState.approvalExpiresInSeconds} sec`;
         }
 
-        return `${this.carPurchaseModel.carModel.description} ${state}`;
+        return `${this.carPurchaseModel.carModel.description} ${this.headerAdditionalDescription()} ${state}`;
+    }
+
+    protected headerAdditionalDescription() {
+        return '';
     }
 
     @computed
     public get finalPrice() {
-        const basePrice = this.carPurchaseModel.carModel?.basePrice;
+        const basePrice = this.carPurchaseModel.carModel?.basePriceUSD;
 
         if (basePrice === undefined) {
             return undefined;
         }
+
+        return this.calculateFinalPriceFromBase(basePrice);
+    }
+
+    protected calculateFinalPriceFromBase(basePrice: number): number | undefined {
 
         const priceIncrease = this.ensurancePlanSelectorVM
             .selectedPlans
@@ -177,10 +191,7 @@ export class CarPurchaseVM {
     public async setMinimumPossibleDownpayment() {
         this._isLoading = true;
         try {
-            const minimumDownpayment = await financingClient.getMinimumPossibleDownpayment(
-                this.carPurchaseModel.carModel!,
-                this.carPurchaseModel.ensurancePlansSelected
-            );
+            const minimumDownpayment = await this.getMinimumPossibleDownpaymentFromServer();
 
             runInAction(() => {
                 if (this.carPurchaseModel.downpayment !== minimumDownpayment) {
@@ -193,6 +204,13 @@ export class CarPurchaseVM {
         } finally {
             this._isLoading = false;
         }
+    }
+
+    protected async getMinimumPossibleDownpaymentFromServer() {
+        return financingClient.getMinimumPossibleDownpayment(
+            this.carPurchaseModel.carModel!,
+            this.carPurchaseModel.ensurancePlansSelected
+        );
     }
 
     @action.bound

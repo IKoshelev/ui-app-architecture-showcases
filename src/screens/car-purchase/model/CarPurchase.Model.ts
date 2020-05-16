@@ -5,6 +5,14 @@ import { financingClient } from "../../../api/Financing.Client";
 import { setsMatch, getSorterByLatest, PromiseValueType } from "../../../util/util";
 import { ticker1second } from "../../../util/observable-ticker";
 
+export type DealApprovalCacheItem = {
+    carModelId: number,
+    ensurancePlansSelected: EnsurancePlanType[],
+    downpayment: number,
+    timestamp: Date,
+    approvalResponse: PromiseValueType<ReturnType<typeof financingClient.getApproval>>
+}
+
 export class CarPurchaseModel {
 
     public construtor() {
@@ -43,23 +51,20 @@ export class CarPurchaseModel {
     @computed
     public get financingApprovalResponseForCurrentDeal() {
         return this.fincingApprovalsCache
-            .filter(x =>
-                this.carModel?.id === x.carModelId
-                && this.downpayment === x.downpayment
-                && setsMatch(this.ensurancePlansSelected, x.ensurancePlansSelected)
-            )
+            .filter(x => this.currentStateMatchesApprovalItem(x))
             .sort(getSorterByLatest(x => x.timestamp))
         [0]?.approvalResponse;
     }
 
+    protected currentStateMatchesApprovalItem(item: DealApprovalCacheItem): boolean {
+
+        return this.carModel?.id === item.carModelId
+            && this.downpayment === item.downpayment
+            && setsMatch(this.ensurancePlansSelected, item.ensurancePlansSelected);
+    }
+
     @observable
-    private fincingApprovalsCache: {
-        carModelId: number,
-        ensurancePlansSelected: EnsurancePlanType[],
-        downpayment: number,
-        timestamp: Date,
-        approvalResponse: PromiseValueType<ReturnType<typeof financingClient.getApproval>>
-    }[] = [];
+    protected fincingApprovalsCache: DealApprovalCacheItem[] = [];
 
     @computed
     public get canRequestApproval() {
