@@ -17,6 +17,7 @@ export const CarModelsSelector: React.FunctionComponent<{
             vm={{
                 availableItems: vm.availableModels,
                 selectedItem: vm.selectedModel,
+                hasEmptyOption: true,
                 disabled: vm.isDealFinilized,
                 getKeyValue: (item) => item.id.toString(),
                 getDescription: (item) => item.description,

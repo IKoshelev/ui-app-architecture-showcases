@@ -7,15 +7,20 @@ type SelectDropdownProps<T> =
         emptyPlaceholder: string,
         vm: {
             availableItems: T[],
-            selectedItem: T | undefined,
-
 
             getKeyValue: (item: T) => string,
             getDescription: (item: T) => string,
 
-            handleSelect: (item: T | undefined) => void,
             disabled?: boolean
-        }
+        } & ({
+            hasEmptyOption: false,
+            selectedItem: T,
+            handleSelect: (item: T) => void,
+        } | {
+            hasEmptyOption: true,
+            selectedItem: T | undefined,
+            handleSelect: (item: T | undefined) => void,
+        })
     };
 
 
@@ -32,9 +37,12 @@ export const SelectDropdown =
                 : ''}
             onChange={handleSelect}
         >
-            <option value={''}>
-                {props.emptyPlaceholder}
-            </option>
+            {
+                vm.hasEmptyOption &&
+                <option value={''}>
+                    {props.emptyPlaceholder}
+                </option>
+            }
 
             {
                 vm.availableItems.map(x => {
@@ -58,7 +66,16 @@ export const SelectDropdown =
             const selectedItem = vm.availableItems
                 .find(i => value === vm.getKeyValue(i));
 
-            vm.handleSelect(selectedItem);
-        }
+            // sattisfy compiler
+            if (vm.hasEmptyOption === true) {
+                vm.handleSelect(selectedItem);
+            } else {
+                if (selectedItem === undefined) {
+                    throw new Error();
+                }
+                vm.handleSelect(selectedItem);
+            }
 
+
+        }
     });
