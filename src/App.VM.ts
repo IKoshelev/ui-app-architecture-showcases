@@ -5,7 +5,7 @@ import { CarPurchaseWithForeignCurrencyVM } from './screens/car-purchase/compone
 
 type CarDealVM = CarPurchaseVM | CarPurchaseWithForeignCurrencyVM;
 
-class AppVM {
+export class AppVM {
 
     public constructor() {
         this.addNewDeal();
