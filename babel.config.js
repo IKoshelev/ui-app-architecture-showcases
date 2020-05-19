@@ -1,14 +1,18 @@
-process.env.NODE_ENV = 'test';
-
 module.exports = function (api) {
     // https://babeljs.io/docs/en/config-files#apicache
-    // api.cache(true);
+    api.cache(true);
 
     return {
         presets: [
+            [
+                "@babel/env",
+                {
+                    "useBuiltIns": "entry",
+                    "corejs": "3.0.0"
+                }
+            ],
             '@babel/preset-react',
             '@babel/preset-typescript',
-            '@babel/preset-env'
         ],
         plugins: [
             ['@babel/plugin-proposal-decorators', { legacy: true }],
@@ -18,7 +22,6 @@ module.exports = function (api) {
             '@babel/plugin-proposal-object-rest-spread',
             '@babel/plugin-syntax-dynamic-import',
             ["babel-plugin-rewire"]
-            ['inline-react-svg', { ignorePattern: /^(.(?!\.Component\.svg$))+$/ }]
         ]
     };
 };

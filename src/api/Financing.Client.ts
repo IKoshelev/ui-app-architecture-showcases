@@ -17,7 +17,6 @@ export type FinancingNotApproved = {
 
 type GetApprovalResult = FinancingApproved | FinancingNotApproved;
 
-
 const approvedFinacings: FinancingApproved[] = [];
 
 function getApprovedFinancing(expiration?: Date) {
