@@ -1,13 +1,13 @@
 import assert from 'assert';
 import proxyquire from 'proxyquire';
 import { delay } from '../../../util/delay';
-import { DeepPartial } from '../../../util/util';
+import { LooseMock } from '../../../util/util';
 
 const getApprovalMarker = 'MARKER1';
 
 // typing is optional, and serves to provide intellisense
 const { CarPurchaseModel } = <typeof import('./CarPurchase.Model')>proxyquire('./CarPurchase.Model', {
-    '../../../api/Financing.Client': <DeepPartial<typeof import('../../../api/Financing.Client')>>{
+    '../../../api/Financing.Client': <LooseMock<typeof import('../../../api/Financing.Client')>>{
         financingClient: {
             getApproval: async () => {
                 await delay();

@@ -20,3 +20,20 @@ export type DeepPartial<T> = Expand<{
     ? ReadonlyArray<DeepPartial<U>>
     : DeepPartial<T[P]>
 }>;
+
+export type LooseMock<T> = DeepPartial<T>;
+
+export type StrictMock<T> = {
+    [K in keyof T]?:
+
+    T[K] extends new (...args: any[]) => any
+    //? 'constructor' :
+    ? (DeepPartial<T[K]> & (new (...args: ConstructorParameters<T[K]>) => DeepPartial<InstanceType<T[K]>>)) :
+
+    T[K] extends (...args: any[]) => any
+    //? 'function' :
+    ? (DeepPartial<T[K]> & ((...args: Parameters<T[K]>) => DeepPartial<ReturnType<T[K]>>)) :
+
+    //'rest'
+    DeepPartial<T[K]>;
+}

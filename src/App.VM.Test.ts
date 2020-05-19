@@ -1,15 +1,20 @@
 import assert from 'assert';
 import proxyquire from 'proxyquire';
+import { StrictMock } from './util/util';
+import { observable } from 'mobx';
 
-const { AppVM } = proxyquire('./App.VM', {
-    './screens/car-purchase/components/CarPurchase.VM': {
-        CarPurchaseVM: function () {
-            return {
-                foo: 'bar'
-            }
+const CarPurchaseVM_module: StrictMock<typeof import('./screens/car-purchase/components/CarPurchase.VM')> = {
+    CarPurchaseVM: (class {
+        id = 'bar';
+        constructor() {
+            observable.object(this);
         }
-    }
-}) as typeof import('./App.VM');
+    }),
+}
+
+const { AppVM } = <typeof import('./App.VM')>proxyquire('./App.VM', {
+    './screens/car-purchase/components/CarPurchase.VM': CarPurchaseVM_module
+});
 
 describe('AppVM', () => {
     it('existst', () => {
@@ -20,6 +25,14 @@ describe('AppVM', () => {
     it('gets proxquire mocks', () => {
         const inst = new AppVM();
         const mocked = inst.activeCapPurchaseVM;
-        assert((mocked as any).foo === 'bar');
+        assert(mocked!.id === 'bar');
+        assert(inst.activeCarPurchaseId === 'bar');
+
+        //bypass readonly
+        (mocked as any).id = 'mmm';
+
+        //computed reacts to mocked value change, mocked value is observable
+        assert(inst.activeCarPurchaseId === 'mmm');
+
     });
 });

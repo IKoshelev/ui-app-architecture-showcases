@@ -1,5 +1,5 @@
 import { CarPurchaseVM } from './screens/car-purchase/components/CarPurchase.VM';
-import { observable, action } from 'mobx';
+import { observable, action, computed } from 'mobx';
 import { CarPurchaseWithForeignCurrencyVM } from './screens/car-purchase/components/CarPurchaseWithForeignCurrency.VM';
 
 
@@ -18,6 +18,11 @@ export class AppVM {
 
     @observable
     public activeCapPurchaseVM: CarDealVM | undefined;
+
+    @computed
+    public get activeCarPurchaseId() {
+        return this.activeCapPurchaseVM?.id;
+    }
 
     @action.bound
     public addNewDeal() {
