@@ -20,8 +20,8 @@ module.exports = function (api) {
             ['@babel/plugin-proposal-optional-chaining', { loose: true }],
             '@babel/plugin-proposal-nullish-coalescing-operator',
             '@babel/plugin-proposal-object-rest-spread',
-            '@babel/plugin-syntax-dynamic-import',
-            ["babel-plugin-rewire"]
+            '@babel/plugin-syntax-dynamic-import'//,
+            //["babel-plugin-rewire"]
         ]
     };
 };

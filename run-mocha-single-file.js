@@ -20,7 +20,9 @@ filePathToRun = filePathToRun.replace(/^src/, './build-test')
 
 console.log(filePathToRun);
 
-const mocha = new Mocha({});
+const mocha = new Mocha({
+
+});
 mocha.addFile(filePathToRun);
 
 // Run the tests.
