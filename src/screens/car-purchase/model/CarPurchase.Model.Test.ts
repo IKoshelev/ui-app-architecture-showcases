@@ -5,9 +5,7 @@ import { DeepPartial } from '../../../util/util';
 
 const getApprovalMarker = 'MARKER1';
 
-// typing is options, and server to provide intellisense
-// with some research, we can probable also come up with types mapped types that will
-// reduce the amount of errors 
+// typing is optional, and serves to provide intellisense
 const { CarPurchaseModel } = <typeof import('./CarPurchase.Model')>proxyquire('./CarPurchase.Model', {
     '../../../api/Financing.Client': <DeepPartial<typeof import('../../../api/Financing.Client')>>{
         financingClient: {
