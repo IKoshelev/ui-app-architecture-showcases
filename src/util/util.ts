@@ -10,3 +10,13 @@ export const getSorterByLatest = <T>(getProp: (item: T) => Date) => (a: T, b: T)
 }
 
 export type PromiseValueType<T> = T extends Promise<infer TValuteType> ? TValuteType : never;
+
+export type Expand<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
+
+export type DeepPartial<T> = Expand<{
+    [P in keyof T]?: T[P] extends Array<infer U>
+    ? Array<DeepPartial<U>>
+    : T[P] extends ReadonlyArray<infer U>
+    ? ReadonlyArray<DeepPartial<U>>
+    : DeepPartial<T[P]>
+}>;

@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Mocha debug current file",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "vscode:task:tsc:test:watch",
+      "program": "${workspaceFolder}/mocha-run-single-test.js",
+      "args": [
+        "${relativeFile}"
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "env": {
+        "NODE_ENV": "testing"
+      },
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "Mocha debug all",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "vscode:task:tsc:test:watch",
+      "program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
+      "args": [
+        "--exit",
+        "./build-test/**/*.Test.js"
+      ],
+      "stopOnEntry": false,
+      "cwd": "${workspaceRoot}",
+      "runtimeExecutable": null,
+      "env": {
+        "NODE_ENV": "testing"
+      }
+    }
+  ]
+}
