@@ -41,7 +41,7 @@ export class CarPurchaseWithForeignCurrencyVM extends CarPurchaseVM {
     this._isLoading = true;
     this.exchangeRate = undefined;
     try {
-      this.exchangeRate = await currencyExchangeClient.getExchangeRate(
+      this.exchangeRate = await currencyExchangeClient.val.getExchangeRate(
         this.carPurchaseModel.downpaymentCurrency
       );
 
@@ -73,7 +73,7 @@ export class CarPurchaseWithForeignCurrencyVM extends CarPurchaseVM {
   }
 
   protected async getMinimumPossibleDownpaymentFromServer() {
-    return financingClient.getMinimumPossibleDownpaymentInForeignCurrency(
+    return financingClient.val.getMinimumPossibleDownpaymentInForeignCurrency(
       this.carPurchaseModel.carModel!,
       this.carPurchaseModel.insurancePlansSelected,
       this.carPurchaseModel.downpaymentCurrency

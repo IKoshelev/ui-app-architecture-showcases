@@ -27,7 +27,7 @@ export class CarPurchaseWithForeignCurrencyModel extends CarPurchaseModel {
         this.isLoading = true;
 
         try {
-            const response = await financingClient.getApprovalWithForeignCurrency(
+            const response = await financingClient.val.getApprovalWithForeignCurrency(
                 this.carModel!,
                 this.insurancePlansSelected,
                 this.downpayment,

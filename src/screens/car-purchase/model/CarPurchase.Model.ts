@@ -10,7 +10,7 @@ export type DealApprovalCacheItem = {
     insurancePlansSelected: InsurancePlanType[],
     downpayment: number,
     timestamp: Date,
-    approvalResponse: PromiseValueType<ReturnType<typeof financingClient.getApproval>>
+    approvalResponse: PromiseValueType<ReturnType<typeof financingClient.val.getApproval>>
 }
 
 export class CarPurchaseModel {
@@ -78,7 +78,7 @@ export class CarPurchaseModel {
         this.isLoading = true;
 
         try {
-            const response = await financingClient.getApproval(
+            const response = await financingClient.val.getApproval(
                 this.carModel!,
                 this.insurancePlansSelected,
                 this.downpayment);
@@ -121,7 +121,7 @@ export class CarPurchaseModel {
             if (!this.financingApprovalResponseForCurrentDeal?.isApproved) {
                 throw new Error('Invalid state.');
             }
-            const result = await financingClient.finalizeFinancing(
+            const result = await financingClient.val.finalizeFinancing(
                 this.financingApprovalResponseForCurrentDeal.approvalToken
             );
 

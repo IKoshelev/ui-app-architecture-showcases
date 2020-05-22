@@ -3,6 +3,7 @@ import { InsurancePlanType } from "./CarInsurance.Client";
 import { CarModel } from "./CarInventory.Client";
 import moment from 'moment';
 import { Currency, currencyExchangeClient } from "./CurrencyExchange.Client";
+import { Lazy } from "../util/util";
 
 export type FinancingApproved = {
     isApproved: true,
@@ -59,7 +60,7 @@ class FinancingClient {
 
         const [minDownpayment, rate] = await Promise.all([
             this.getMinimumPossibleDownpayment(carModel, insurancePlans),
-            currencyExchangeClient.getExchangeRate(currency)
+            currencyExchangeClient.val.getExchangeRate(currency)
         ]);
 
         return minDownpayment * rate;
@@ -101,7 +102,7 @@ class FinancingClient {
 
         console.log(`server call getApprovalWithForeignCurrency`);
 
-        const rate = await currencyExchangeClient.getExchangeRate(currency);
+        const rate = await currencyExchangeClient.val.getExchangeRate(currency);
         const downpaymentInUsd = (downpayment / rate) + 1;
 
         return this.getApproval(carModel, insurancePlans, downpaymentInUsd);
@@ -120,4 +121,4 @@ class FinancingClient {
     };
 }
 
-export const financingClient = new FinancingClient();
+export const financingClient = new Lazy(() => new FinancingClient());

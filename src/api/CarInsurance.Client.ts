@@ -1,4 +1,5 @@
 import { delay } from "../util/delay";
+import { Lazy } from "../util/util";
 
 
 export enum InsurancePlanType {
@@ -31,4 +32,4 @@ class CarInsuranceClient {
     }
 }
 
-export const carInsuranceClient = new CarInsuranceClient();
+export const carInsuranceClient = new Lazy(() => new CarInsuranceClient());

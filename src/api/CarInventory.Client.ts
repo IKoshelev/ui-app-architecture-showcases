@@ -1,4 +1,5 @@
 import { delay } from "../util/delay";
+import { Lazy } from "../util/util";
 
 export type CarModel = {
     id: number,
@@ -32,4 +33,4 @@ class CarInventoryClient {
 }
 
 
-export const carInvenotryClient = new CarInventoryClient();
+export const carInvenotryClient = new Lazy(() => new CarInventoryClient());

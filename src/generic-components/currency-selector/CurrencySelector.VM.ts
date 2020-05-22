@@ -2,7 +2,7 @@ import { Currency, currencyExchangeClient } from "../../api/CurrencyExchange.Cli
 import { observable, action, computed } from "mobx";
 
 // a bit naive, in real world we would probably have a few retries built in.
-const availableCurrencies = currencyExchangeClient.getCurrencies();
+const availableCurrencies = currencyExchangeClient.val.getCurrencies();
 
 export class CurrencySelectorVM {
     public constructor(

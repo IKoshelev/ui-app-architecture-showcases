@@ -1,4 +1,5 @@
 import { delay } from "../util/delay";
+import { Lazy } from "../util/util";
 
 export enum Currency {
     USD = 'USD', EUR = 'EUR', GBP = 'GBP', CHF = 'CHF'
@@ -40,4 +41,4 @@ class CurrencyExchangeClient {
     }
 }
 
-export const currencyExchangeClient = new CurrencyExchangeClient();
+export const currencyExchangeClient = new Lazy(() => new CurrencyExchangeClient());

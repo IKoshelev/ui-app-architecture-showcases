@@ -21,7 +21,7 @@ export class CarModelsSelectorVM {
     public async reloadAvailableModels() {
         this.isLoading = true;
         try {
-            this.availableModels = await carInvenotryClient.getAvaliableCarModels();
+            this.availableModels = await carInvenotryClient.val.getAvaliableCarModels();
         }
         finally {
             this.isLoading = false;

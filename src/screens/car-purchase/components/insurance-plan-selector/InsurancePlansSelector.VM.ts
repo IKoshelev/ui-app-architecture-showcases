@@ -21,7 +21,7 @@ export class InsurancePlansSelectorVM {
     public async reloadAvailablePlans() {
         this.isLoading = true;
         try {
-            this.availablePlans = await carInsuranceClient.getAvaliableInsurancePlans();
+            this.availablePlans = await carInsuranceClient.val.getAvaliableInsurancePlans();
         }
         finally {
             this.isLoading = false;

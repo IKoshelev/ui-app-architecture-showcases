@@ -207,7 +207,7 @@ export class CarPurchaseVM {
     }
 
     protected async getMinimumPossibleDownpaymentFromServer() {
-        return financingClient.getMinimumPossibleDownpayment(
+        return financingClient.val.getMinimumPossibleDownpayment(
             this.carPurchaseModel.carModel!,
             this.carPurchaseModel.insurancePlansSelected
         );

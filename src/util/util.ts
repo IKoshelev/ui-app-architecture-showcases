@@ -10,3 +10,19 @@ export const getSorterByLatest = <T>(getProp: (item: T) => Date) => (a: T, b: T)
 }
 
 export type PromiseValueType<T> = T extends Promise<infer TValuteType> ? TValuteType : never;
+
+export class Lazy<T> {
+
+    constructor(initialize: () => T) {
+        this._initialize = initialize;
+    }
+
+    private _instance: T | undefined;
+    private readonly _initialize: () => T;
+
+    public get val() {
+        this._instance = this._instance ?? this._initialize();
+        return this._instance;
+    }
+
+}
