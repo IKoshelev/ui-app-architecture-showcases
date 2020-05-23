@@ -1,5 +1,5 @@
 import { CarPurchaseModel, DealApprovalCacheItem } from "./CarPurchase.Model";
-import { observable, action } from "mobx";
+import { observable, action, runInAction } from "mobx";
 import { Currency } from "../../../api/CurrencyExchange.Client";
 import { financingClient } from "../../../api/Financing.Client";
 
@@ -33,18 +33,22 @@ export class CarPurchaseWithForeignCurrencyModel extends CarPurchaseModel {
                 this.downpayment,
                 this.downpaymentCurrency);
 
-            this.fincingApprovalsCache.push({
-                carModelId: this.carModel!.id,
-                insurancePlansSelected: [...this.insurancePlansSelected],
-                downpayment: this.downpayment,
-                timestamp: new Date(),
-                approvalResponse: response,
-                downpaymentCurrency: this.downpaymentCurrency
+            runInAction(() => {
+                this.fincingApprovalsCache.push({
+                    carModelId: this.carModel!.id,
+                    insurancePlansSelected: [...this.insurancePlansSelected],
+                    downpayment: this.downpayment,
+                    timestamp: new Date(),
+                    approvalResponse: response,
+                    downpaymentCurrency: this.downpaymentCurrency
+                });
             });
 
         }
         finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 }

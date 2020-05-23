@@ -40,7 +40,6 @@ export const App = observer(() => {
             >
               <Observer>
                 {() => {
-                  console.log(`rendering header for ${x.id}`);
                   return (<>
                     <div
                       className='header-text'

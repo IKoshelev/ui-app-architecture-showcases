@@ -1,4 +1,4 @@
-import { observable, computed, action } from "mobx";
+import { observable, computed, action, runInAction } from "mobx";
 import { CarModel } from "../../../api/CarInventory.Client";
 import { InsurancePlanType } from "../../../api/CarInsurance.Client";
 import { financingClient } from "../../../api/Financing.Client";
@@ -83,17 +83,21 @@ export class CarPurchaseModel {
                 this.insurancePlansSelected,
                 this.downpayment);
 
-            this.fincingApprovalsCache.push({
-                carModelId: this.carModel!.id,
-                insurancePlansSelected: [...this.insurancePlansSelected],
-                downpayment: this.downpayment,
-                timestamp: new Date(),
-                approvalResponse: response
+            runInAction(() => {
+                this.fincingApprovalsCache.push({
+                    carModelId: this.carModel!.id,
+                    insurancePlansSelected: [...this.insurancePlansSelected],
+                    downpayment: this.downpayment,
+                    timestamp: new Date(),
+                    approvalResponse: response
+                })
             });
 
         }
         finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 
@@ -125,15 +129,19 @@ export class CarPurchaseModel {
                 this.financingApprovalResponseForCurrentDeal.approvalToken
             );
 
-            if (!result) {
-                this._messages.push('Deal finalization failed.');
-                return;
-            }
+            runInAction(() => {
+                if (!result) {
+                    this._messages.push('Deal finalization failed.');
+                    return;
+                }
 
-            this.isDealFinalized = true;
+                this.isDealFinalized = true;
+            });
         }
         finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 }

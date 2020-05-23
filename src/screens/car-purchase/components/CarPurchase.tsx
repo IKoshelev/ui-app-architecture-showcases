@@ -48,7 +48,6 @@ export const CarPurchaseBare: React.FunctionComponent<{
         </div>
         <Observer>
             {() => {
-                console.log('Rendering deal state', new Date());
                 return <>
                     {
                         vm.dealState !== 'no-approval' &&

@@ -3,7 +3,7 @@ import { CarPurchaseWithForeignCurrencyModel } from "../model/CarPurchaseWithFor
 import { CurrencySelectorVM } from "../../../generic-components/currency-selector/CurrencySelector.VM";
 import { Currency, currencyExchangeClient } from "../../../api/CurrencyExchange.Client";
 import { financingClient } from "../../../api/Financing.Client";
-import { observable, reaction, action } from "mobx";
+import { observable, reaction, action, runInAction } from "mobx";
 
 export class CarPurchaseWithForeignCurrencyVM extends CarPurchaseVM {
 
@@ -41,12 +41,17 @@ export class CarPurchaseWithForeignCurrencyVM extends CarPurchaseVM {
     this._isLoading = true;
     this.exchangeRate = undefined;
     try {
-      this.exchangeRate = await currencyExchangeClient.val.getExchangeRate(
+
+      const rate = await currencyExchangeClient.val.getExchangeRate(
         this.carPurchaseModel.downpaymentCurrency
       );
 
+      runInAction(() => this.exchangeRate = rate);
+
     } finally {
-      this._isLoading = false;
+      runInAction(() => {
+        this._isLoading = false;
+      });
     }
   }
 

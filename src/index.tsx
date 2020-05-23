@@ -3,6 +3,11 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import { App } from './App';
 import * as serviceWorker from './serviceWorker';
+import { configure } from 'mobx';
+
+configure({
+  enforceActions: 'always'
+});
 
 ReactDOM.render(
   <React.StrictMode>

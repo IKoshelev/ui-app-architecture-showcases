@@ -1,4 +1,4 @@
-import { observable, action, computed } from "mobx";
+import { observable, action, computed, runInAction } from "mobx";
 import { CarPurchaseModel } from "../../model/CarPurchase.Model";
 import { InsurancePlan, carInsuranceClient } from "../../../../api/CarInsurance.Client";
 
@@ -21,10 +21,13 @@ export class InsurancePlansSelectorVM {
     public async reloadAvailablePlans() {
         this.isLoading = true;
         try {
-            this.availablePlans = await carInsuranceClient.val.getAvaliableInsurancePlans();
+            const plans = await carInsuranceClient.val.getAvaliableInsurancePlans();
+            runInAction(() => this.availablePlans = plans);
         }
         finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 

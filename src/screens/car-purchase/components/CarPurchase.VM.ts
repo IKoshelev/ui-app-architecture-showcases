@@ -202,7 +202,9 @@ export class CarPurchaseVM {
             });
 
         } finally {
-            this._isLoading = false;
+            runInAction(() => {
+                this._isLoading = false;
+            });
         }
     }
 
