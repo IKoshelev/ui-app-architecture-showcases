@@ -27,7 +27,7 @@ export class Observer extends React.Component<{
 
         app.componentDependencyListeneres[this.state.observerId] = (mutatedId) => {
             if (dependencies.has(mutatedId)) {
-                setTimeout(() => this.forceUpdate());
+                this.forceUpdate();
             }
         }
 

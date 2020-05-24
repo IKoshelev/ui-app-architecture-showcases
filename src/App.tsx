@@ -28,24 +28,35 @@ export class App extends React.Component<{}> {
 
     app.onStateChanged = () => this.forceUpdate();
 
-    return <div>
-      <FilterSelector
-        listRef={app.root!}
-      />
-      <div>
-        <Todos
+    return <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 400px 1fr'
+      }}
+    >
+      <div
+        style={{
+          gridColumn: '2'
+        }}
+      >
+        <FilterSelector
           listRef={app.root!}
         />
-      </div>
+        <div>
+          <Todos
+            listRef={app.root!}
+          />
+        </div>
 
-      <div>
-        <TodoAdder onAdd={(text) => addTodo(app.root!, createTodo({
-          description: text,
-          isDone: false
-        }))} />
-      </div>
+        <div>
+          <TodoAdder onAdd={(text) => addTodo(app.root!, createTodo({
+            description: text,
+            isDone: false
+          }))} />
+        </div>
 
-      <SnapshotControlls />
+        <SnapshotControlls />
+      </div>
     </div>
   }
 
