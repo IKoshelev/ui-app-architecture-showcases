@@ -1,11 +1,17 @@
-export type EntityId = {
-    __type__: string;
+export type EntityRef<T extends string> = {
+    __type__: T;
     __id__: number;
 }
 
-type EntityIdFor<T extends EntityId> = {
-    __type__: T['__type__'];
-    __id__: number;
+export type Entity<T extends string> = {
+    __ref__: EntityRef<T>
+}
+
+export function getRefWithoutID<T extends string>(__type__: T): EntityRef<T> {
+    return {
+        __type__,
+        __id__: 0
+    }
 }
 
 type ImmutablePrimitive = undefined | null | boolean | string | number | Function;
@@ -24,10 +30,7 @@ export type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
 //todo garbage-collect unused references :-)
 export const app = {
     entites: {} as { [type: string]: { [id: number]: any } },   // todo this would probably be maps
-    root: undefined as ({
-        __id__: number,
-        __type__: 'TODO_LIST'
-    } | undefined),
+    root: undefined as (EntityRef<'TODO_LIST'> | undefined),
     onStateChanged: () => { }
 };
 
@@ -47,32 +50,30 @@ export const app = {
 };
 
 let idCounter = 1;
-export function createEntityState<T extends EntityId>(entity: T): EntityIdFor<T> {
+export function createEntityState<T extends Entity<string>>(entity: T): T['__ref__'] {
     const id = (idCounter += 1);
-    (entity as any).__id__ = id;
+    entity.__ref__.__id__ = id;
     setEntitySate(entity);
-    return {
-        __id__: id,
-        __type__: entity.__type__
-    }
+    return entity.__ref__;
 }
 
-export function getEntitySate<T extends EntityId>(entity: EntityIdFor<T>): Immutable<T> {
-    const ent = app.entites[entity.__type__][entity.__id__];
+export function getEntitySate<T extends Entity<string>>(ref: T['__ref__']): Immutable<T> {
+    const ent = app.entites[ref.__type__][ref.__id__];
     if (!ent) {
         throw new Error();
     }
     return ent;
 }
 
-function setEntitySate(entity: EntityId) {
-    app.entites[entity.__type__] = app.entites[entity.__type__] ?? {};
-    return app.entites[entity.__type__][entity.__id__] = entity;
+function setEntitySate<T extends Entity<string>>(entity: T) {
+    const ref = entity.__ref__;
+    app.entites[ref.__type__] = app.entites[ref.__type__] ?? {};
+    return app.entites[ref.__type__][ref.__id__] = entity;
 }
 
 //todo introduce counter for nested dispatches?
-export function dispatch<T extends EntityId>(entity: EntityIdFor<T>, action: (state: Immutable<T>) => undefined | Partial<T>) {
-    const prevState = getEntitySate(entity);
+export function dispatch<T extends Entity<string>>(ref: T['__ref__'], action: (state: Immutable<T>) => undefined | Partial<T>) {
+    const prevState = getEntitySate(ref);
     const newStateDiff = action(prevState);
 
     if (newStateDiff) {

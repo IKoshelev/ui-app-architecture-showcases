@@ -1,33 +1,33 @@
-import { EntityId, createEntityState, dispatch } from "../util/Entity";
+import { EntityRef, createEntityState, dispatch, Entity, getRefWithoutID } from "../util/Entity";
 
-export type TodoRef = EntityId & { __type__: 'TODO' };
+export type TODO = 'TODO';
 
 type TodoState = {
     description: string;
     isDone: boolean;
 }
 
-export type Todo = TodoRef & TodoState;
+export type Todo = Entity<TODO> & TodoState;
 
 export function createTodo(state: TodoState) {
     const fullState = state as Todo;
-    fullState.__type__ = 'TODO';
+    fullState.__ref__ = getRefWithoutID('TODO');
     return createEntityState(fullState);
 }
 
-export function setTodoDescription(ref: TodoRef, description: string) {
+export function setTodoDescription(ref: EntityRef<TODO>, description: string) {
     dispatch<Todo>(ref, () => ({
         description
     }));
 }
 
-export function setIsDone(ref: TodoRef, isDone: boolean) {
+export function setIsDone(ref: EntityRef<TODO>, isDone: boolean) {
     dispatch<Todo>(ref, () => ({
         isDone
     }));
 }
 
-export function toggleIsDone(ref: TodoRef) {
+export function toggleIsDone(ref: EntityRef<TODO>) {
     dispatch<Todo>(ref, (current) => ({
         isDone: !current.isDone
     }));
