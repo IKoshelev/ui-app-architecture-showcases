@@ -1,4 +1,5 @@
 import { forEach } from 'lodash';
+import { Immutable } from './Immutable';
 
 export type EntityRef<T extends string> = {
     __type__: T;
@@ -15,19 +16,6 @@ export function getRefWithoutID<T extends string>(__type__: T): EntityRef<T> {
         __id__: 0
     }
 }
-
-type ImmutablePrimitive = undefined | null | boolean | string | number | Function;
-
-export type Immutable<T> =
-    T extends ImmutablePrimitive ? T :
-    T extends Array<infer U> ? ImmutableArray<U> :
-    T extends Map<infer K, infer V> ? ImmutableMap<K, V> :
-    T extends Set<infer M> ? ImmutableSet<M> : ImmutableObject<T>;
-
-export type ImmutableArray<T> = ReadonlyArray<Immutable<T>>;
-export type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
-export type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
-export type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
 
 //todo garbage-collect unused references :-)
 export const app = {

@@ -1,5 +1,5 @@
 import React from "react";
-import { startNewRenderingFrame, endRenderingFrame, app } from "./util/Entity";
+import { startNewRenderingFrame, endRenderingFrame, app } from "./Entity";
 
 // this is veru basic, but it works
 let observerIdCounter = 1;
