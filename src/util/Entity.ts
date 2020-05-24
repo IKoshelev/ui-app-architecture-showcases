@@ -1,3 +1,5 @@
+import { forEach } from 'lodash';
+
 export type EntityRef<T extends string> = {
     __type__: T;
     __id__: number;
@@ -31,6 +33,7 @@ export type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
 export const app = {
     entites: {} as { [type: string]: { [id: number]: any } },   // todo this would probably be maps
     root: undefined as (EntityRef<'TODO_LIST'> | undefined),
+    componentDependencyListeneres: {} as { [componentId: number]: (mutatedEntity: number) => void },
     onStateChanged: () => { }
 };
 
@@ -57,7 +60,31 @@ export function createEntityState<T extends Entity<string>>(entity: T): T['__ref
     return entity.__ref__;
 }
 
+
+const renderingFramesStack: Set<number>[] = [];
+function trackInCurrentFrame(id: number) {
+    if (renderingFramesStack.length === 0) {
+        return;
+    }
+    renderingFramesStack[renderingFramesStack.length - 1].add(id);
+}
+export function startNewRenderingFrame() {
+    renderingFramesStack.push(new Set<number>());
+}
+export function endRenderingFrame() {
+    const frame = renderingFramesStack.pop();
+    if (!frame) {
+        throw new Error();
+    }
+    return frame;
+}
+
 export function getEntitySate<T extends Entity<string>>(ref: T['__ref__']): Immutable<T> {
+    trackInCurrentFrame(ref.__id__);
+    return getEntitySateNoTrack(ref);
+}
+
+export function getEntitySateNoTrack<T extends Entity<string>>(ref: T['__ref__']): Immutable<T> {
     const ent = app.entites[ref.__type__][ref.__id__];
     if (!ent) {
         throw new Error();
@@ -81,7 +108,9 @@ export function dispatch<T extends Entity<string>>(ref: T['__ref__'], action: (s
             ...prevState,
             ...newStateDiff
         });
-        app.onStateChanged?.();
 
+        forEach(app.componentDependencyListeneres, (fn) => {
+            fn(ref.__id__);
+        });
     }
 }
