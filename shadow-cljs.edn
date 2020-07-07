@@ -1,0 +1,13 @@
+{:source-paths ["src"]
+
+ :nrepl {:port 8458}
+ :dev-http {7777 "public"}
+
+ :dependencies [[re-frame "1.0.0-rc2"]
+                [reagent "1.0.0-alpha2"]
+                [org.clojure/clojure "1.10.0"]
+                [org.clojure/test.check "0.9.0"]]
+ :builds {:app {:target :browser
+                :modules {:main {:init-fn app.core/init}}
+                :output-dir "public/js"
+                :asset-path "/js"}}}
