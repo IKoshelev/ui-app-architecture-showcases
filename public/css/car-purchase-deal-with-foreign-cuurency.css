@@ -1,0 +1,75 @@
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal {
+    display: grid;
+    grid-template-columns:  16em 12em 12em;
+    grid-template-rows: 2em 5em 2em 2em auto 2em auto 2em auto;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-downpayment-currency-label {
+    grid-row: 3;
+    grid-column: 1;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-downpayment-currency {
+    grid-row: 3;
+    grid-column: 2;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-downpayment-label {  
+    grid-row: 4;
+    grid-column:1;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-downpayment {
+    grid-row: 4;
+    grid-column: 2;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-downpayment.invalid {
+    border: 2px solid red;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.button-set-minimum-possible-downpayment {
+    grid-row: 4;
+    grid-column: 3;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-downpayment-messages {
+    grid-row: 5;
+    grid-column: 2/ span 2;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-final-price-label {
+    grid-row: 6;
+    grid-column:1;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-final-price {
+    grid-row: 6;
+    grid-column:2;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-deal-state {
+    grid-row: 7;
+    grid-column: 1 / span 3;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.button-close-active-deal {
+    grid-row: 8;
+    grid-column: 1;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.button-request-approval {
+    grid-row: 8;
+    grid-column: 2;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.button-finalzie-deal {
+    grid-row: 8;
+    grid-column: 3;
+}
+
+.car-purchase-deal-with-foreign-currency.car-purchase-deal>.car-purchase-messages {
+    grid-row: 9;
+    grid-column: 1/ span 3;
+}
