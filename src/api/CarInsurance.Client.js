@@ -1,18 +1,7 @@
 import { delay } from "../util/delay";
 
-
-export enum InsurancePlanType {
-    base, thridParty, assetProtection
-}
-
-export type InsurancePlan = {
-    type: InsurancePlanType,
-    description: string,
-    rate: number
-}
-
 class CarInsuranceClient {
-    public async getAvaliableInsurancePlans(): Promise<InsurancePlan[]> {
+    async getAvaliableInsurancePlans() {
         console.log(`server call getAvaliableInsurancePlans`);
         await delay(1500);
         return [{

@@ -1,29 +1,15 @@
 import { delay } from "../util/delay";
 import { InsurancePlanType } from "./CarInsurance.Client";
-import { CarModel } from "./CarInventory.Client";
 import moment from 'moment';
-import { Currency, currencyExchangeClient } from "./CurrencyExchange.Client";
-
-export type FinancingApproved = {
-    isApproved: true,
-    approvalToken: string,
-    expiration?: Date
-}
-
-export type FinancingNotApproved = {
-    isApproved: false,
-    message: string
-}
-
-type GetApprovalResult = FinancingApproved | FinancingNotApproved;
+import { currencyExchangeClient } from "./CurrencyExchange.Client";
 
 
-const approvedFinacings: FinancingApproved[] = [];
+const approvedFinacings = [];
 
-function getApprovedFinancing(expiration?: Date) {
+function getApprovedFinancing(expiration) {
 
     const res = {
-        isApproved: true as const,
+        isApproved: true,
         expiration: expiration,
         approvalToken: Math.random().toString()
     };
@@ -35,9 +21,9 @@ function getApprovedFinancing(expiration?: Date) {
 
 class FinancingClient {
 
-    public async getMinimumPossibleDownpayment(
-        carModel: CarModel,
-        insurancePlans: InsurancePlanType[]): Promise<number> {
+    async getMinimumPossibleDownpayment(
+        carModel,
+        insurancePlans) {
 
         console.log(`server call getMinimumPossibleDownpayment`);
 
@@ -50,10 +36,10 @@ class FinancingClient {
         return carModel.basePriceUSD / 5;
     }
 
-    public async getMinimumPossibleDownpaymentInForeignCurrency(
-        carModel: CarModel,
-        insurancePlans: InsurancePlanType[],
-        currency: Currency): Promise<number> {
+    async getMinimumPossibleDownpaymentInForeignCurrency(
+        carModel,
+        insurancePlans,
+        currency) {
 
         console.log(`server call getMinimumPossibleDownpaymentInForeignCurrency`);
 
@@ -65,10 +51,10 @@ class FinancingClient {
         return minDownpayment * rate;
     }
 
-    public async getApproval(
-        carModel: CarModel,
-        insurancePlans: InsurancePlanType[],
-        downpayment: number): Promise<GetApprovalResult> {
+    async getApproval(
+        carModel,
+        insurancePlans,
+        downpayment) {
 
         console.log(`server call getApproval`);
 
@@ -93,11 +79,11 @@ class FinancingClient {
         }
     }
 
-    public async getApprovalWithForeignCurrency(
-        carModel: CarModel,
-        insurancePlans: InsurancePlanType[],
-        downpayment: number,
-        currency: Currency): Promise<GetApprovalResult> {
+    async getApprovalWithForeignCurrency(
+        carModel,
+        insurancePlans,
+        downpayment,
+        currency){
 
         console.log(`server call getApprovalWithForeignCurrency`);
 
@@ -107,7 +93,7 @@ class FinancingClient {
         return this.getApproval(carModel, insurancePlans, downpaymentInUsd);
     }
 
-    public async finalizeFinancing(approvalToken: string) {
+    async finalizeFinancing(approvalToken) {
 
         console.log(`server call finalizeFinancing`);
 

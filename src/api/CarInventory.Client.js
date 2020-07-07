@@ -1,14 +1,8 @@
 import { delay } from "../util/delay";
 
-export type CarModel = {
-    id: number,
-    description: string,
-    basePriceUSD: number
-}
-
 class CarInventoryClient {
 
-    public async getAvaliableCarModels(): Promise<CarModel[]> {
+    async getAvaliableCarModels() {
         console.log(`server call getAvaliableCarModels`);
         await delay(500);
         return [
