@@ -1,27 +1,27 @@
 (ns app.core
   (:require
-   [cljs.core.async :refer [go]]
-   [cljs.core.async.interop :refer-macros [<p!]]
-
+   
    [reagent.core :as r]
    [reagent.dom  :as rdom]
-   ["react" :as react]
 
-   ["/js/api/CarInsurance.Client.js"
-    :refer [InsurancePlanType carInsuranceClient]
-    :rename {InsurancePlanType insurance-plan-type
-             carInsuranceClient car-insurance-client}]
-   ;;todo make a wrapper
+   [generic-components.numeric-input.view :refer [numeric-input] ]
    ))
 
 ;;todo research loading css via webpack
 
+(defn root []
+  (let [input-val (r/atom "dv")]
+    (fn [] [:div#app-root
+     [:div.main-logo "Welcome to Crazy Ivan Motors"]
+     [:div.screens
+      [numeric-input {:display-value (or @input-val "") ;todo how do we get nil here?
+                      :is-valid true
+                      :handle-change #(reset! input-val %)
+                      :handle-blur #(reset! input-val %)}]]])))
+
 (defn ^:dev/after-load start []
   (rdom/render
-
-   [:div#app-root
-    [:div.main-logo "Welcome to Crazy Ivan Motors"]
-    [:div.screens]]
+   [root]
 
    (js/document.getElementById "app")
 
@@ -30,5 +30,3 @@
 
 (defn ^:export init []
   (start))
-
-
