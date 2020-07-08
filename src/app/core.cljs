@@ -17,7 +17,8 @@
       [numeric-input {:display-value (or @input-val "") ;todo how do we get nil here?
                       :is-valid true
                       :handle-change #(reset! input-val %)
-                      :handle-blur #(reset! input-val %)}]]])))
+                      :handle-blur #(reset! input-val %)
+                      }]]])))
 
 (defn ^:dev/after-load start []
   (rdom/render
