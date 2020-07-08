@@ -23,9 +23,9 @@
   {assoc model :uncommited-value val})
 
 (defn commit-positive-integer [model]
-  (let [{uncommited-value :uncommited-value
-         raw-messages :messages} model
-         messages (js/.trim raw-messages)]
+  (let [{uncommited-value :uncommited-value} model
+         ;;uncommited-value (js/.trim uncommited-value-raw)
+        ]
     (cond  (not uncommited-value) {:model model}
            (re-matches #"^\-d+$" uncommited-value) {:model (assoc model :messages ["Value must be 0 or positive"])}
            (re-matches #"^\d+$" uncommited-value) {:model {}
