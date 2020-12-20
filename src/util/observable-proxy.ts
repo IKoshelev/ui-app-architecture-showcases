@@ -9,9 +9,15 @@ type ObservailityCallbacks = {
     notifyWriteAccess(object: object, key: Key): void
 };
 
-function makeObservableProxy<T extends object>(initialState: T, observabilityCallbacks: ObservailityCallbacks): T {
+export const proxyRegistry = new WeakMap<object, object>();
 
-    return new Proxy(initialState as any, {
+function makeObservableProxy<T extends object>(state: T, observabilityCallbacks: ObservailityCallbacks): T {
+
+    if(proxyRegistry.has(state)){
+        return proxyRegistry.get(state) as T;
+    }
+
+    const proxy = new Proxy(state as any, {
         get: function (oTarget, sKey) {
             observabilityCallbacks.notifyReadAccess(oTarget, sKey);
             const result = oTarget[sKey];
@@ -55,6 +61,9 @@ function makeObservableProxy<T extends object>(initialState: T, observabilityCal
             return true;
         },
     }) as unknown as T;
+
+    proxyRegistry.set(state, proxy);
+    return proxy;
 }
 
 // todo implemet all of:
@@ -78,7 +87,7 @@ export function makeApp<T extends object>(initialState: T) {
 
     let app = {
         root: makeObservableProxy(initialState, observabilityCallbacks),
-        dependencyMap_Object_Key_ObserverIds: new WeakMap<
+        dependencyMap_Object_Key_ObserverIds: new Map<//new WeakMap<
             object,
             Map<
                 Key | EntireObjectSymbol,
