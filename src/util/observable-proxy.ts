@@ -87,7 +87,7 @@ export function makeApp<T extends object>(initialState: T) {
 
     let app = {
         root: makeObservableProxy(initialState, observabilityCallbacks),
-        dependencyMap_Object_Key_ObserverIds: new Map<//new WeakMap<
+        dependencyMap_Object_Key_ObserverIds: new WeakMap<
             object,
             Map<
                 Key | EntireObjectSymbol,
