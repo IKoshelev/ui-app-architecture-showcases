@@ -37,9 +37,7 @@ export function observer2<T>(WrappedComponent: T): T {
         const children = WrappedComponentAny(...arguments);
 
         const dependencies = endRenderingFrame();
-        //console.log('Captured deps', Array.from(dependencies.values()));
-
-        //console.log(app);
+        
         //todo move into separate function
         for (const [obj, keys] of dependencies) {
 

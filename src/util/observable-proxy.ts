@@ -52,7 +52,7 @@ function makeObservableProxy<T extends object>(state: T, observabilityCallbacks:
                 //and tryies to work on it directly, expecting observability
                 //lets try a trick here.
                 //todo this needs to be deep...
-                const clone = {...vValue};
+                const clone = Array.isArray(vValue) ? [...vValue] : {...vValue};
                 oTarget[sKey] = clone;
                 const protoProxy = makeObservableProxy(clone, observabilityCallbacks);
                 Object.keys(vValue).forEach(key => {
@@ -113,7 +113,7 @@ export function makeApp<T extends object>(initialState: T) {
     let observabilityCallbacks: ObservailityCallbacks = {} as any; 
 
     let app = {
-        root: makeObservableProxy(initialState, observabilityCallbacks),
+        state: makeObservableProxy(initialState, observabilityCallbacks),
         dependencyMap_Object_Key_ObserverIds: new WeakMap<
             object,
             Map<

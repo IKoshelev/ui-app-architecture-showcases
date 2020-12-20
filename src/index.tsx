@@ -1,34 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import { app, JsObjectView } from './App';
+import { app, TodoListCmp } from './App';
 import * as serviceWorker from './serviceWorker';
 import { useState } from 'react';
 import { AppContext, observer2 } from './util/observer';
 
 (window as any).app = app;
 
-
 ReactDOM.render(
   <div>
     <AppContext.Provider value={{ app }}>
-
-      <JsObjectView target={app.root} indentation={0} />
-
-      <button onClick={() => {
-        Object.assign(app.root, {
-          counter1: 1,
-          bar: {
-            counter2: 1,
-            baz: {
-              stringProp: 'abcd',
-              counter3: 1,
-              bac: {}
-            }
-          }
-        });
-      }}>Add showcase structure</button>
-
+      <TodoListCmp appState={app.state} />
     </AppContext.Provider>
   </div>,
   document.getElementById('root')

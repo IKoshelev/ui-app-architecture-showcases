@@ -1,89 +1,129 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { makeApp } from "./util/observable-proxy";
 import './index.css';
-import { useState } from 'react';
 import { observer2 } from './util/observer';
 
-type App = {
-    message: string,
-    counter: number
+type Todo = {
+    id: number,
+    text: string,
+    done: boolean
+};
+
+type Filter = "ALL" | "DONE" | "NOT_DONE";
+
+type State = {
+    todos: Todo[]
+    filter: Filter
 }
 
 export const app = makeApp({
-    message: 'start adding arbitrary sub-objects and observe reactions',
-    counter: 1
-} as App);
+    todos: [],
+    filter: "ALL"
+} as State);
 
-export const JsObjectView = React.memo(observer2(({ target, indentation }: {
-    target: any,
-    indentation: number
+(window as any).app = app;
+
+export const TodoCmp = React.memo(observer2(({ todo }: {
+    todo: Todo
+}) => {
+    return <>
+        <input
+            type="text"
+            onChange={({ target: { value } }) => todo.text = value}
+            value={todo.text}
+        />
+        <input
+            type="checkbox"
+            onChange={({ target: { checked } }) => todo.done = checked}
+            checked={todo.done}
+        />
+    </>
+}));
+
+export const TodoAdderCmp = React.memo(observer2(({ todoList }: {
+    todoList: Todo[]
 }) => {
 
-    console.log(`rendering JsObjectView`);
+    const [text, setText] = useState("");
 
-    const [newKey, setNewKey] = useState("");
-    const [newVal, setNewVal] = useState("");
-
-    //show border on render (without needing dev tools)
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    useEffect(() => {
-        const style =  (containerRef?.current as any)?.style as React.CSSProperties;
-        if(!style) {
-            return;
-        }
-        style.border = "solid 2px red";
-        setTimeout(() => {
-            style.border = "solid 2px white";
-        }, 1000);
-    });
-
-    const indentationStr = '\u00A0'.repeat(indentation);
-    return <div ref={containerRef}>
-        {indentationStr}{"\{"}
-        <button style={{ display: 'inline-block' }} onClick={() => {
-            let json: any;
-            try {
-                json = JSON.parse(newVal);
-            } catch (er) {
-                window.alert("Oops... could not parse JSON. Remember to quote prop names with \".");
-                return;
-            }
-            target[newKey] = json;
-            setNewKey('');
-            setNewVal('');
-        }} >add</button>  
-        
+    return <div>
         <input
-            style={{ display: 'inline', width: '100px' }}
             type="text"
-            value={newKey}
-            placeholder="key"
+            onChange={({ target: { value } }) => setText(value)}
+            value={text}
+        />
+        <button onClick={() => {
+            const id = Math.max(0, ...todoList.map(x => x.id)) + 1;
+            todoList.push({
+                id,
+                text,
+                done: false
+            });
+            setText("");
+        }}>
+            Add
+        </button>
+    </div>
+}));
 
-            onChange={({ target: { value } }) => setNewKey(value)} />
+export const StateSaveLoadCmp = React.memo(observer2(({ appState }: { appState: State }) => {
 
-        <input
-            style={{ display: 'inline', width: '150px' }}
-            type="text" value={newVal}
-            placeholder="json value"
-            onChange={({ target: { value } }) => setNewVal(value)} />
+    const [savedState, setSavedState] = useState("");
 
+    return <div>
+        <button
+            onClick={() => {
+                const json = JSON.stringify(appState, undefined, 4);
+                setSavedState(json);
+            }}
+        >Save state</button>
+        <button
+            onClick={() => {
+                const state = JSON.parse(savedState);
+                Object.assign(appState, state);
+            }}
+        >Load state</button>
+        <div>
+            {savedState}
+        </div>
 
-        {Object.getOwnPropertyNames(target).map(key => {
-            const val = target[key];
-            return <div key={key.toString()} style={{ width: '500px' }}>
-                {indentationStr}
-                "{key.toString()}":{
-                    typeof val === 'object'
-                        ? <JsObjectView target={val} indentation={indentation + 4} />
-                        : typeof val === 'string' 
-                            ? `"${val}"`
-                            : val.toString()
-                }
-                {typeof val === 'number' && <button onClick={(() => { target[key] = val + 1 })}>+</button>}
+    </div>;
+}));
 
-            </div>;
-        })}
-        {indentationStr}{"\}"}
+export const TodoListCmp = React.memo(observer2(({ appState }: { appState: State }) => {
+    return <div>
+        <div>
+            {
+                appState.todos.filter(x =>
+                    appState.filter === 'DONE' ? x.done === true :
+                        appState.filter === 'NOT_DONE' ? x.done === false :
+                            true
+                ).map(x => (
+                    <div key={x.id}>
+                        <TodoCmp todo={x} />
+                        <button onClick={() => { appState.todos.splice(appState.todos.indexOf(x), 1) }}>
+                            X
+                        </button>
+                    </div>))
+            }
+        </div>
+        <div>
+            {
+                (["ALL", "DONE", "NOT_DONE"] as const).map(x => (
+                    <button
+                        key={x}
+                        onClick={() => appState.filter = x}
+                        style={{
+                            border: appState.filter === x ? "2px solid black" : ""
+                        }}
+                    >
+                        {x}
+                    </button>
+                ))
+            }
+        </div>
+        <TodoAdderCmp todoList={appState.todos} />
+        <StateSaveLoadCmp appState={appState} />
     </div>
 }));
