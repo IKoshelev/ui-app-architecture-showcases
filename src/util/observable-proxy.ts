@@ -9,12 +9,16 @@ type ObservailityCallbacks = {
     notifyWriteAccess(object: object, key: Key): void
 };
 
-export const proxyRegistry = new WeakMap<object, object>();
+export const mapObjectToProxy = new WeakMap<object, object>();
+export const mapProxyToObject = new WeakMap<object, object>();
 
 function makeObservableProxy<T extends object>(state: T, observabilityCallbacks: ObservailityCallbacks): T {
 
-    if(proxyRegistry.has(state)){
-        return proxyRegistry.get(state) as T;
+    if(mapObjectToProxy.has(state)){
+        return mapObjectToProxy.get(state) as T;
+    } else if(mapProxyToObject.has(state)) {
+        //state is already proxy? not sure if this can happen
+        return state;
     }
 
     const proxy = new Proxy(state as any, {
@@ -31,11 +35,33 @@ function makeObservableProxy<T extends object>(state: T, observabilityCallbacks:
                 observabilityCallbacks.notifyWriteAccess(oTarget, entireObjectAccessSymbol);
             } 
             observabilityCallbacks.notifyWriteAccess(oTarget, sKey);
-            const result = oTarget[sKey] = vValue;
-            if (typeof result === 'object') {
-                return makeObservableProxy(result, observabilityCallbacks);
+
+            if(typeof vValue !== 'object') {
+                oTarget[sKey] = vValue;
+                return true;
+            } 
+
+            if(mapProxyToObject.has(vValue)) {
+                // retrieve original object from behind proxy
+                const originalObject = mapProxyToObject.get(vValue);
+                oTarget[sKey] = originalObject;
+                return true;
+            } else {
+                //we are dealing with a new non-proxy object
+                //this may cause issues, if calling code holds on to its reference
+                //and tryies to work on it directly, expecting observability
+                //lets try a trick here.
+                //todo this needs to be deep...
+                const clone = {...vValue};
+                oTarget[sKey] = clone;
+                const protoProxy = makeObservableProxy(clone, observabilityCallbacks);
+                Object.keys(vValue).forEach(key => {
+                    delete vValue[key];
+                });
+                //the only way i can thing of to approach transfroming existing object into proxy
+                Object.setPrototypeOf(vValue, protoProxy);
+                return true;
             }
-            return true;
         },
         deleteProperty: function (oTarget, sKey) {
             if(sKey in oTarget) {
@@ -62,7 +88,8 @@ function makeObservableProxy<T extends object>(state: T, observabilityCallbacks:
         },
     }) as unknown as T;
 
-    proxyRegistry.set(state, proxy);
+    mapProxyToObject.set(proxy, state);
+    mapObjectToProxy.set(state, proxy);
     return proxy;
 }
 
