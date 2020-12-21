@@ -90,7 +90,7 @@ export const StateSaveLoadCmp = React.memo(observer2(({ appState }: { appState: 
     return <div>
         <button
             onClick={() => {
-                const json = JSON.stringify(appState, undefined, 4).replace(/ /g, "\u00A0")
+                const json = JSON.stringify(appState, undefined, 4);
                 setSavedState(json);
             }}
         >Save state</button>
