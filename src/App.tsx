@@ -17,10 +17,10 @@ type State = {
     filter: Filter
 }
 
-export const app = makeApp({
-    todos: [],
-    filter: "ALL"
-} as State);
+export const app = makeApp({} as State);
+
+app.state.todos = [];
+app.state.filter = "ALL";
 
 (window as any).app = app;
 

@@ -25,10 +25,10 @@ type State = {
     filter: Filter
 }
 
-export const app = makeApp({
-    todos: [],
-    filter: "ALL"
-} as State);
+export const app = makeApp({} as State);
+
+app.state.todos = []; //despite being added later, these are fully observable
+app.state.filter = "ALL";
 ```
 
 Yet, any changes to state tree are fully observable and React components will re-render when needed (smartly too, just the ones relying on the state that changed).
