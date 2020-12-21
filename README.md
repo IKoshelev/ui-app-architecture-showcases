@@ -76,3 +76,33 @@ export const TodoAdderCmp = React.memo(observer2(({ todoList }: {
     </div>
 }));
 ```
+
+As a result, you can save and load application state by simple converting it to/from JSON.
+
+```Typescript
+
+export const StateSaveLoadCmp = React.memo(observer2(({ appState }: { appState: State }) => {
+
+    const [savedState, setSavedState] = useState("");
+
+    return <div>
+        <button
+            onClick={() => {
+                const json = JSON.stringify(appState, undefined, 4).replace(/ /g, "\u00A0")
+                setSavedState(json);
+            }}
+        >Save state</button>
+        <button
+            onClick={() => {
+                const state = JSON.parse(savedState);
+                Object.assign(appState, state);
+            }}
+        >Load state</button>
+        <div style={{ whiteSpace: "pre" }}>
+            {savedState}
+        </div>
+    </div>;
+}));
+```
+
+![](screenshot-1.png)
