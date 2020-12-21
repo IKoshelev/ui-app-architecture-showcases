@@ -79,7 +79,7 @@ export const TodoAdderCmp = React.memo(observer2(({ todoList }: {
 }));
 ```
 
-As a result, you can save and load application state by simple converting it to/from JSON.
+As a result, you can save and load application state by simply converting it to/from JSON.
 
 ```Typescript
 
