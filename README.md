@@ -1,4 +1,6 @@
-#Proof of concept for React observing a tree of POJO state that is all Proxies under the hood
+# Proof of concept for React observing a tree of POJO state that is all Proxies under the hood
+
+To try out, make sure you use `observable-proxy-proof-of-concept` branch and run:
 
 ```
 npm install
