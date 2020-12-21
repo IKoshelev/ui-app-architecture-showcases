@@ -7,6 +7,8 @@ npm install
 npm start
 ```
 
+or check-out hosted build (with source maps) at https://observableproxyshowcase.z33.web.core.windows.net/ 
+
 This showcases how we can have a tree of state that looks like Plain Old JS Objects to the outside world, but is actually made of proxies and thus fully observable. 
 
 In short, your state definition comes down to:
