@@ -1,3 +1,9 @@
+# Welcome to react app architecture showcase
+
+It is customary in frontend world to demonstrate different architecutres by implementing a simple counter and then a TODO list app. The problem is, both cases are quite simple and neither showcase nor test a given apporach against real world requirments. This project attempts to bridge the gap by implementing a minimal set of requirments such as tabbed ui, user input validation, derived fields, timed actions etc. that you are likely to have in the real world. The goal is to provide standrtised prooving ground, where same app implementations can be compared (much like TODO list apps projecs) and people looking for hints at code organization can study them. My initial personal goal was to have a set of requirments to test new frameworks before using them in my proffesional projects.
+
+Individual implementations are contained in branches. To make your own - start in the `main` branch, `src` folder contains app entry ooint and mock `api` clients to be used.  
+
 # Requirments
 
 **Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures. Unless someone specifically told you otherwise, this task is not about aesthetics or CSS. This task is about code quality and architecture. Final result does not have to look exactly like sketch, or be beautiful, but must have correct behavior. 
@@ -38,11 +44,11 @@ Desired final result sketch:
 
 ![](/requirments-sketches/5.png)
 
-If approval is granted – notifying message is shown. If approval has expiration date – a timer in seconds is shown in that message and in tab header:
+If approval is granted – notifying message is shown. If approval has expiration date – a timer in seconds is shown in that message and in tab header (header timer keeps ticking even when tab is not active):
 
 ![](/requirments-sketches/6.png)
 
-When timer runs out:
+When timer runs out - "Approval expired message" is shown inside tab:
 
 ![](/requirments-sketches/7.png)
 
@@ -53,6 +59,8 @@ Approval may be granted without expiration, in which case - it is perpetual.
 9.	If user has valid approval – they can finalize deal via `finalizeFinancing`. If not successful – received error message must be shown. Otherwise:
 
 ![](/requirments-sketches/8.png)
+
+10. Once you are done, **and only then!** check additional requirments in `advanced` branch, to check flexibility of you approach aganist incoming changes.
 
 # App basis
 
