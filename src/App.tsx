@@ -5,41 +5,36 @@ import { RootState, Dispatch, store } from './store'
 
 import './App.css';
 
-function getSecondsDvividedBy3(date: Date){
-  return Math.round(date.getSeconds() / 3);
-}
+const DealsCmp = () => {
 
-const ClockCmp = () => {
-  //with this selector, even though model updates every second, component only redraws every 3 serconds
-  const currentDate = useSelector((state: RootState) => getSecondsDvividedBy3(state.clock.currentDate)); 
+  const dealsState = useSelector((state: RootState) => state.deals); 
+
+  const dispatch = useDispatch<Dispatch>();
 
   return <div>
-      {currentDate.toString()}
+      {dealsState.deals.map(deal => <div key={deal.dealId}>
+        {JSON.stringify(deal)}
+      </div>)}
+      <button
+        onClick={() => dispatch.deals.loadNewDeal()}
+        disabled={dealsState.newDealIsLoading}
+      >
+        Add new deal
+      </button>
+      {/* <div>{isLoading.toString()}</div> */}
     </div>;
 }
 
 const AppRoot = () => {
 
-  const dispatch = useDispatch<Dispatch>();
-
   return <div id='app-root'>
 
     <div className='main-logo'>
-      Welcome to Crazy Ivan Motors
+      Crazy Ivan Motors (Rematch 2)
     </div>
 
     <div className='screens'>
-      <ClockCmp/>
-      <button
-        onClick={() => dispatch.clock.start()}
-      >
-        start
-      </button>
-      <button
-        onClick={() => dispatch.clock.stop()}
-      >
-        stop
-      </button>    
+      <DealsCmp/>
     </div>
   </div>
 
