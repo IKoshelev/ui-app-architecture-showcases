@@ -1,5 +1,5 @@
-# Good new Everyone!
-Crazy Ivan Motors has really extended its business thanks to the app you've made! Now we are getting international customers and need to handle deals in foreign currencies! Check [this commit](https://github.com/IKoshelev/react-mobx-mvvm-showcase/commit/806b014a00aa383a337da7d01ffb2bf378f8731b) to see how the API was extended to handle foreign currencies.  Here is a mockup of what our business needs for now:
+# Good news everyone!
+Crazy Ivan Motors has really extended its business thanks to the app you've made! Now we are getting international customers and need to handle deals in foreign currencies! Check [this commit](https://github.com/IKoshelev/react-app-architecture-showcases/commit/806b014a00aa383a337da7d01ffb2bf378f8731b) to see how the API was extended to handle foreign currencies.  Here is a mockup of what our business needs for now:
 
 ![](/requirments-sketches/9.png)
 
@@ -8,10 +8,10 @@ Crazy Ivan Motors has really extended its business thanks to the app you've made
 
 2.	Add button to create a foreign currency deal tab.
 
-3.	Foreign currency deal allows user to select a currency. All payments are converted from bas price in USD to that currency. New API methods are called for ‘set minimum possible currency’ and ‘request approval’.
+3.	Foreign currency deal allows user to select a currency. All payments are converted from base price in USD to that currency. New API methods are called for ‘set minimum possible currency’ and ‘request approval’.
 
 4.	Header shows selected currency (this also lets our users easily see foreign currency deal tabs).
 
 5.	Otherwise – foreign currency deal tab behaves the same as existing deal tab
 
-**Note**: Foreign currency deal is just the first of many planed new deal types, each with its own little pricing quirk – the purpose of this new requirements is to show, how a given architecutre approach allows to reuse existing code in new situations. Please don’t hide this functionality behind a flag in existing deal code, since you will soon have 10 such flags for new deal types. Existing deal code may have extensibility points added, or made reusable in some other way you come up with, but it should not know, how exactly it will be extended. Keep it SOLID ;-) .
+**Note**: Foreign currency deal is just the first of many planed new deal types (well, it would be in real world), each with its own little pricing quirk – the purpose of this new requirements is to show, how a given architecutre approach allows to reuse existing code in new situations. Please don’t hide this functionality behind a flag in existing deal code, since you will soon have 10 such flags for new deal types. Existing deal code may have extensibility points added, or made reusable in some other way you come up with, but it should not know, how exactly it will be extended. Keep it SOLID ;-) .
