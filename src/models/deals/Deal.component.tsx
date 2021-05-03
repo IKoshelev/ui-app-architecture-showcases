@@ -1,4 +1,7 @@
 import React from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { NumericInput } from "../../models-generic/NumericInput.component";
+import { Dispatch, RootState } from "../../store";
 import { Deal, DealProgressState } from "./deal";
 // import { CarModelsSelector } from "./car-model-selector/CarModelsSelector";
 // import { InsurancePlanSelector } from "./insurance-plan-selector/InsurancePlanSelector";
@@ -15,6 +18,11 @@ const DealCmpBare: React.FunctionComponent<{
     dealId: number
 }> = (props) => {
 
+    const dispatch = useDispatch<Dispatch>();
+
+    const dealState = useSelector((state: RootState) => 
+                        state.deals.deals.find(x => x.businessParams.dealId === props.dealId))!;
+
     return <>
         <div className='car-purchase-model-selector-label'>
             Please select model
@@ -27,11 +35,17 @@ const DealCmpBare: React.FunctionComponent<{
         <div className='car-purchase-downpayment-label'>
             Please select downpayment
     </div>
-        {/* <NumericInput
+        <NumericInput
             inputAttributes={{ className: 'car-purchase-downpayment' }}
             messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
-            vm={vm.downpaymentInputVm}
-        /> */}
+            modelState={dealState.businessParams.downpayment}
+            inputState={dealState.downplaymentInputState}
+            onChange={(newModelState, newInputState) => {
+                dispatch.deals.updateDownpayment(
+                    dealState.businessParams.dealId, 
+                    [newModelState ?? 0, newInputState]);
+            }}
+        />
         {/* <button
             className='button-set-minimum-possible-downpayment'
             disabled={!vm.canSetMinimumPossibleDownpayment}

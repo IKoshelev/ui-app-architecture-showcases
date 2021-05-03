@@ -2,6 +2,7 @@ import { createModel } from '@rematch/core'
 import { loadNewDeal, Deal } from './deals/deal';
 import type { RootModel } from '.'
 import moment from 'moment';
+import { NumericInputState } from '../models-generic/numeric-input';
 
 //this is needed to be able to type generic `set` reducer
 const defaultState = {
@@ -40,6 +41,13 @@ export const deals = createModel<RootModel>()({
 
     removeDeal(state, dealId: number) {
       state.deals = state.deals.filter(x => x.businessParams.dealId != dealId);
+      return state;
+    },
+
+    updateDownpayment(state, dealId: number, [newModelState, newIpnutState]: [number, NumericInputState]) {
+      const deal = state.deals.find(x => x.businessParams.dealId === dealId)!;
+      deal.businessParams.downpayment = newModelState;
+      deal.downplaymentInputState = newIpnutState;
       return state;
     }
 
