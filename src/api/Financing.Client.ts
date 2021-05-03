@@ -14,8 +14,7 @@ export type FinancingNotApproved = {
     message: string
 }
 
-type GetApprovalResult = FinancingApproved | FinancingNotApproved;
-
+export type GetApprovalResult = FinancingApproved | FinancingNotApproved;
 
 const approvedFinacings: FinancingApproved[] = [];
 

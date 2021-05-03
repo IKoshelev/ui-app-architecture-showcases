@@ -1,21 +1,26 @@
+import moment from "moment";
 import { carInsuranceClient, InsurancePlan } from "../../api/CarInsurance.Client";
 import { carInvenotryClient, CarModel } from "../../api/CarInventory.Client";
+import { GetApprovalResult } from "../../api/Financing.Client";
 
-const defaultDeal = {
-    dealId: 0,
-    isDealFinalized: true,
+export const createBlankDeal = () => ({
+    
+    businessParams: {
+        dealId: 0,
+        isDealFinalized: false,
+        downpayment: 0,
+        insurancePlanSelected: undefined as InsurancePlan | undefined,
+        carModelSelected: undefined as CarModel | undefined,
+    },
+   
     isLoading: false,
-    downpayment: 0,
     insurancePlansAvailable: [] as InsurancePlan[],
-    insurancePlanSelected: undefined as InsurancePlan | undefined,
     carModelsAvailable: [] as CarModel[],
-    carModelSelected: undefined as CarModel | undefined,
-    messages: [] as string[]
-}
+    messages: [] as string[],
+    approval: undefined as GetApprovalResult | undefined, //todo move approval to store
+});
 
-export type Deal = typeof defaultDeal;
-
-export const createBlankDeal = () => ({...defaultDeal});
+export type Deal = ReturnType<typeof createBlankDeal>;
 
 let dealIdCount = 1;
 
@@ -23,7 +28,7 @@ export async function loadNewDeal(){
 
     const deal = createBlankDeal();
 
-    deal.dealId = dealIdCount++;
+    deal.businessParams.dealId = dealIdCount++;
 
     await Promise.all([
         carInvenotryClient.getAvaliableCarModels().then(x => deal.carModelsAvailable = x),
@@ -32,3 +37,32 @@ export async function loadNewDeal(){
 
     return deal;      
 }
+
+export function getDealProgresssState(deal: Deal, currentDate: Date) {
+
+    if (deal.businessParams.isDealFinalized) {
+        return 'deal-finalized' as const;
+    }
+
+    const approval = deal.approval;
+
+    if (!approval || approval.isApproved === false) {
+        return 'no-approval' as const;
+    }
+
+    const expiration = approval.expiration;
+    if (!expiration) {
+        return 'approval-perpetual' as const;
+    }
+
+    var duration = moment.duration(moment(expiration).diff(currentDate));
+    var seconds = Math.round(duration.asSeconds());
+
+    if (seconds <= 0) {
+        return 'approval-expired' as const;
+    }
+
+    return { approvalExpiresInSeconds: seconds } as const;
+}
+
+export type DealProgressState = ReturnType<typeof getDealProgresssState>;

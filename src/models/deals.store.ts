@@ -1,35 +1,62 @@
 import { createModel } from '@rematch/core'
 import { loadNewDeal, Deal } from './deals/deal';
 import type { RootModel } from '.'
+import moment from 'moment';
+
+//this is needed to be able to type generic `set` reducer
+const defaultState = {
+  deals: [] as Deal[],
+  activeDealId: undefined as number | undefined,
+  newDealIsLoading: false
+};
+
+type DealsState = typeof defaultState;
 
 export const deals = createModel<RootModel>()({
-  state: {
-    deals: [] as Deal[],
-    activeDeal: undefined as Deal | undefined,
-    newDealIsLoading: false
-  },
+  state: defaultState,
   reducers: {
 
-    pushNewDeal(state, deal: Deal) {
-      state.deals.push(deal);
+    set(state: DealsState, diff: Partial<DealsState>) {
+      Object.assign(state, diff);
       return state;
     },
 
-    setLoading(state, newState: boolean) {
-      state.newDealIsLoading = newState;
+    pushNewDeal(state, deal: Deal, setActive = true) {
+      state.deals.push(deal);
+      if(setActive) {
+        state.activeDealId = deal.businessParams.dealId;
+      }
+
+      //todo remove
+      deal.approval = {
+        isApproved: true,
+        expiration: moment(new Date()).add(3, 'seconds').toDate(),
+        approvalToken: ''
+      }
+      deal.businessParams.carModelSelected = deal.carModelsAvailable[0];
+
       return state;
     },
+
+    removeDeal(state, dealId: number) {
+      state.deals = state.deals.filter(x => x.businessParams.dealId != dealId);
+      return state;
+    }
 
   },
   effects: (dispatch) => ({
 
     async loadNewDeal(_, rootState) {
-      dispatch.deals.setLoading(true);
+      dispatch.deals.set({newDealIsLoading: true});
 
       dispatch.deals.pushNewDeal(await loadNewDeal());
 
-      dispatch.deals.setLoading(false);
+      dispatch.deals.set({newDealIsLoading: false});
     }
 
   })
 });
+
+export function getActiveDeal(state: DealsState) {
+  return state.deals.find(x => x.businessParams.dealId === state.activeDealId);
+}

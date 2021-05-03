@@ -11,7 +11,7 @@ export const store = init<RootModel, RootModel>({
 	],
 });
 
-//store.dispatch.clock.start();
+store.dispatch.clock.start();
 
 (window as any).store = store;
 
