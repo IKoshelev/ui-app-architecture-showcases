@@ -1,6 +1,6 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { NumericInput } from "../../models-generic/NumericInput.component";
+import { NumericInput } from "../../generic-components/NumericInput.component";
 import { Dispatch, RootState } from "../../store";
 import { Deal, DealProgressState } from "./deal";
 // import { CarModelsSelector } from "./car-model-selector/CarModelsSelector";

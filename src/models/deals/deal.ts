@@ -2,7 +2,7 @@ import moment from "moment";
 import { carInsuranceClient, InsurancePlan } from "../../api/CarInsurance.Client";
 import { carInvenotryClient, CarModel } from "../../api/CarInventory.Client";
 import { GetApprovalResult } from "../../api/Financing.Client";
-import { getBlankNumericInputState } from "../../models-generic/numeric-input";
+import { getBlankNumericInputState } from "../../generic-components/numeric-input";
 
 export const createBlankDeal = () => ({
     

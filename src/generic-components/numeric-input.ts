@@ -28,7 +28,10 @@ export function tryCommitValue(
 
     if (inputState.currentUnsavedValue === undefined) {
         return {
-            newInputState: getBlankNumericInputState(),
+            newInputState: { 
+                ...getBlankNumericInputState(),
+                disabled: inputState.disabled
+            },
             newModelState: undefined
         };
     }

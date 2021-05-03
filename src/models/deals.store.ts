@@ -2,7 +2,7 @@ import { createModel } from '@rematch/core'
 import { loadNewDeal, Deal } from './deals/deal';
 import type { RootModel } from '.'
 import moment from 'moment';
-import { NumericInputState } from '../models-generic/numeric-input';
+import { NumericInputState } from '../generic-components/numeric-input';
 
 //this is needed to be able to type generic `set` reducer
 const defaultState = {
