@@ -1,5 +1,5 @@
 import React from "react";
-import { NumericInputState, setCurrentUnsavedValue, tryCommitValue } from "./numeric-input";
+import { NumericInputState } from "./numeric-input";
 
 type NumericInputProps =
     {
@@ -9,7 +9,8 @@ type NumericInputProps =
         disabled?: boolean,
         modelState: number | undefined,
         inputState: NumericInputState,
-        onChange: (newModelState: number | undefined, newInputState: NumericInputState) => void,
+        onChange: (newVal: string) => void,
+        onBlur: () => void
     };
 
 export const NumericInput = (props: NumericInputProps) => {
@@ -21,15 +22,8 @@ export const NumericInput = (props: NumericInputProps) => {
                 value={props.inputState.currentUnsavedValue ?? props.modelState?.toString() ?? ''}
                 placeholder={props.placeholder}
                 disabled={props.disabled}
-                onChange={(e) => {
-                    const newInputState = setCurrentUnsavedValue(props.inputState, e.target.value);
-                    props.onChange(props.modelState, newInputState);
-
-                }}
-                onBlur={(e) => {
-                    const res = tryCommitValue(props.inputState, props.modelState);
-                    props.onChange(res.newModelState, res.newInputState);
-                }}
+                onChange={(e) => props.onChange(e.target.value)}
+                onBlur={(e) => props.onBlur()}
             />
 
             {

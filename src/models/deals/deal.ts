@@ -2,7 +2,7 @@ import moment from "moment";
 import { carInsuranceClient, InsurancePlan } from "../../api/CarInsurance.Client";
 import { carInvenotryClient, CarModel } from "../../api/CarInventory.Client";
 import { GetApprovalResult } from "../../api/Financing.Client";
-import { getBlankNumericInputState } from "../../generic-components/numeric-input";
+import { getBlankNumericInputState, tryCommitValue } from "../../generic-components/numeric-input";
 
 export const createBlankDeal = () => ({
     
@@ -93,4 +93,16 @@ export function getFinalPrice(deal: DealBusinessParams){
             .reduce((prev, cur) => prev + cur, 0);
 
         return basePrice + priceIncrease;
+}
+
+export function getGeneralValidation(deal: Deal){
+    
+    const downpaymentExceedsPrice = !!(deal.businessParams.carModelSelected
+                                        && deal.businessParams.downpayment > getFinalPrice(deal.businessParams));
+
+    const validation = {
+        downpaymentExceedsPrice
+    }
+
+    return validation;
 }

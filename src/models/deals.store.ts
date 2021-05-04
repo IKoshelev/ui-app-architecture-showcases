@@ -1,8 +1,7 @@
 import { createModel } from '@rematch/core'
 import { loadNewDeal, Deal } from './deals/deal';
 import type { RootModel } from '.'
-import moment from 'moment';
-import { NumericInputState } from '../generic-components/numeric-input';
+import { setCurrentUnsavedValue, tryCommitValue } from '../generic-components/numeric-input';
 import { carInvenotryClient } from '../api/CarInventory.Client';
 import { carInsuranceClient } from '../api/CarInsurance.Client';
 import { financingClient } from '../api/Financing.Client';
@@ -41,10 +40,17 @@ export const deals = createModel<RootModel>()({
       return state;
     },
 
-    updateDownpayment(state, dealId: number, [newModelState, newIpnutState]: [number, NumericInputState]) {
+    updateDownpaymentInputValue(state, dealId: number, newValue: string) {
+      const deal = state.deals.find(x => x.businessParams.dealId === dealId)!;    
+       deal.downplaymentInputState = setCurrentUnsavedValue(deal.downplaymentInputState, newValue);
+      return state;
+    },
+
+    tryCommitDownpaymentInputValue(state, dealId: number) {
       const deal = state.deals.find(x => x.businessParams.dealId === dealId)!;
-      deal.businessParams.downpayment = newModelState;
-      deal.downplaymentInputState = newIpnutState;
+      let res = tryCommitValue(deal.downplaymentInputState, deal.businessParams.downpayment);
+      deal.downplaymentInputState = res.newInputState;
+      deal.businessParams.downpayment = res.newModelState ?? 0;
       return state;
     },
 
