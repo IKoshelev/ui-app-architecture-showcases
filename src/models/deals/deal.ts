@@ -10,19 +10,24 @@ export const createBlankDeal = () => ({
         dealId: 0,
         isDealFinalized: false,
         downpayment: 0,
-        insurancePlanSelected: undefined as InsurancePlan | undefined,
+        insurancePlansSelected: [] as InsurancePlan[],
         carModelSelected: undefined as CarModel | undefined,
     },
    
-    isLoading: false,
-    downplaymentInputState: getBlankNumericInputState(),
+    isLoadingItemized: {},
+    downplaymentInputState: getBlankNumericInputState({integer: true, positive: true}),
     insurancePlansAvailable: [] as InsurancePlan[],
     carModelsAvailable: [] as CarModel[],
     messages: [] as string[],
     approval: undefined as GetApprovalResult | undefined, //todo move approval to store
 });
 
-export type Deal = ReturnType<typeof createBlankDeal>;
+export type Deal = ReturnType<typeof createBlankDeal> 
+                        & {isLoadingItemized: {[K in 
+                            (keyof ReturnType<typeof createBlankDeal> | keyof ReturnType<typeof createBlankDeal>['businessParams']) ]?
+                            : boolean}};
+
+export type DealBusinessParams = Deal['businessParams'];
 
 let dealIdCount = 1;
 
@@ -68,3 +73,24 @@ export function getDealProgresssState(deal: Deal, currentDate: Date) {
 }
 
 export type DealProgressState = ReturnType<typeof getDealProgresssState>;
+
+export function canSetMinimumDownpayment(deal: DealBusinessParams){
+    return deal.carModelSelected 
+    && deal.isDealFinalized === false;
+}
+
+export function getFinalPrice(deal: DealBusinessParams){
+
+        const basePrice = deal.carModelSelected?.basePrice;
+
+        if(!basePrice) {
+            throw new Error(`Can't calculate price.`);
+        }
+
+        const priceIncrease = deal
+            .insurancePlansSelected
+            .map(x => basePrice * x.rate)
+            .reduce((prev, cur) => prev + cur, 0);
+
+        return basePrice + priceIncrease;
+}

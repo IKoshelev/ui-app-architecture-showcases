@@ -6,6 +6,7 @@ type NumericInputProps =
         inputAttributes?: React.HTMLAttributes<HTMLElement>,
         messageAttributes?: React.HTMLAttributes<HTMLElement>,
         placeholder?: string | undefined,
+        disabled?: boolean,
         modelState: number | undefined,
         inputState: NumericInputState,
         onChange: (newModelState: number | undefined, newInputState: NumericInputState) => void,
@@ -15,11 +16,11 @@ export const NumericInput = (props: NumericInputProps) => {
 
         return <>
             <input
-                {...props.inputAttributes ?? {}}
+                {...(props.inputAttributes ?? {})}
                 className={(props.inputAttributes?.className ?? '') + (props.inputState.isValid ? '' : ' invalid')}
                 value={props.inputState.currentUnsavedValue ?? props.modelState?.toString() ?? ''}
                 placeholder={props.placeholder}
-                disabled={props.inputState.disabled}
+                disabled={props.disabled}
                 onChange={(e) => {
                     const newInputState = setCurrentUnsavedValue(props.inputState, e.target.value);
                     props.onChange(props.modelState, newInputState);
@@ -34,7 +35,7 @@ export const NumericInput = (props: NumericInputProps) => {
             {
                 props.inputState.message &&
                 <div
-                    {...props.messageAttributes ?? {}}>
+                    {...(props.messageAttributes ?? {})}>
                     {props.inputState.message}
                 </div>
             }

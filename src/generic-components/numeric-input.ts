@@ -1,11 +1,17 @@
+import { expandMagnitudeShortcuts, isInteger } from "../util/numeric";
 
-
-export function getBlankNumericInputState() {
+export function getBlankNumericInputState(requirments?:  {
+    integer: boolean,
+    positive: boolean
+}) {
     return {
         currentUnsavedValue: undefined as string | undefined,
         message: undefined as string | undefined,
         isValid: true as boolean | undefined,
-        disabled: false as boolean | undefined
+        reuirments: requirments ?? {
+            integer: false,
+            positive: false
+        }
     }
 }
 
@@ -26,37 +32,39 @@ export function tryCommitValue(
         newModelState: number | undefined
     } {
 
-    if (inputState.currentUnsavedValue === undefined) {
+    if (!inputState.currentUnsavedValue) {
         return {
             newInputState: { 
-                ...getBlankNumericInputState(),
-                disabled: inputState.disabled
-            },
-            newModelState: undefined
-        };
-    }
-
-    let val = inputState.currentUnsavedValue;
-
-    val = val.trim()
-        .replace('k', '000')
-        .replace('K', '000')
-        .replace('m', '000000')
-        .replace('M', '000000');
-
-    if (val[0] === '-') {
-        return {
-            newInputState: {
                 ...inputState,
-                isValid: false,
-                message: 'Value must be 0 or positive'
+                currentUnsavedValue: undefined,
+                isValid: true,
+                message: undefined,
             },
             newModelState: modelState
         };
     }
 
-    const isInteger = /^\d+$/.test(val) === true;
-    if (!isInteger) {
+    let val = inputState.currentUnsavedValue;
+
+    val = expandMagnitudeShortcuts(val.trim());
+
+    const num = Number(val);
+
+    if(Number.isNaN(num) 
+        || !Number.isFinite(num)) {
+        return {
+            newInputState: {
+                ...inputState,
+                isValid: false,
+                message: 'Please enter a valid number'
+            },
+            newModelState: modelState
+        };
+    }
+
+
+    if (inputState.reuirments.integer 
+        && !Number.isInteger(num)) {
         return {
             newInputState: {
                 ...inputState,
@@ -67,9 +75,19 @@ export function tryCommitValue(
         };
     }
 
-    const int = Number(val);
+    if (inputState.reuirments.positive 
+        && num < 0) {
+        return {
+            newInputState: {
+                ...inputState,
+                isValid: false,
+                message: 'Value must be positive'
+            },
+            newModelState: modelState
+        };
+    }
 
-    const additionalValitidyCheck = additionalValidityCheck?.(int);
+    const additionalValitidyCheck = additionalValidityCheck?.(num);
     if(additionalValitidyCheck) {
         return {
             newInputState: {
@@ -82,7 +100,12 @@ export function tryCommitValue(
     }
 
     return {
-        newInputState: getBlankNumericInputState(),
-        newModelState: int
+        newInputState: { 
+            ...inputState,
+            currentUnsavedValue: undefined,
+            isValid: true,
+            message: undefined,
+        },
+        newModelState: num
     };
 }
