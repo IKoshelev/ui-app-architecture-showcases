@@ -4,6 +4,27 @@ import { carInvenotryClient, CarModel } from "../../api/CarInventory.Client";
 import type { financingClient, GetApprovalResult } from "../../api/Financing.Client";
 import { getBlankNumericInputState } from "../../generic-components/numeric-input";
 
+import { createSelector } from 'reselect';
+
+const makeSelectCompletedTodosCount = () =>
+  createSelector(
+    (state: Deal, _, x: string) => state.businessParams,
+    (state: Deal, val: number) => val,
+    (businessParams, val) => businessParams.downpayment > val);
+
+ const res1 = makeSelectCompletedTodosCount()(
+        {businessParams: { downpayment: 7 }} as unknown as Deal,
+        5,
+        "");
+
+ const res2 = makeSelectCompletedTodosCount()(
+        {businessParams: { downpayment: 7 }} as unknown as Deal,
+        9,
+        "");
+
+        debugger;
+
+
 export const createBlankDeal = () => ({
 
     businessParams: {
