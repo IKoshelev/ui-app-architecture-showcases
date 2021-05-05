@@ -7,7 +7,7 @@ export const store = init<RootModel, RootModel>({
 	models,
 	plugins: [
 		immerPlugin(),
-		//selectPlugin(),
+		selectPlugin(),
 	],
 });
 

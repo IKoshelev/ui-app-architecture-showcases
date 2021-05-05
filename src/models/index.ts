@@ -1,13 +1,12 @@
 import { Models } from '@rematch/core'
-// import { players } from './players'
-// import { settings } from './settings'
+import { approvals } from './approval.store'
 import { deals } from './deals.store'
 import { clock } from './clock.store';
 
 export interface RootModel extends Models<RootModel> {
-	clock: typeof clock
-	deals: typeof deals
-	// settings: typeof settings
+	clock: typeof clock,
+	deals: typeof deals,
+	approvals: typeof approvals
 }
 
-export const models: RootModel = { clock, deals }
+export const models: RootModel = { clock, deals, approvals }

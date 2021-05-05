@@ -3,10 +3,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { NumericInput } from "../../generic-components/NumericInput.component";
 import type { Dispatch, RootState } from "../../store";
 import { CarModelsSelector } from "./CarModelSelector.component";
-import { canSetMinimumDownpayment, Deal, DealProgressState, getDealProgresssState, getFinalPrice, getGeneralValidation } from "./deal";
+import { canBeFinalized, canSetMinimumDownpayment, Deal, DealProgressState, getDealProgresssState, getFinalPrice, getGeneralValidation } from "./deal";
 import './Deal.component.css';
 import { InsurancePlanSelector } from "./InsurancePlanSelector.component";
 import { isLoadingAny } from "../../util/isLoadingAny";
+import { ApprovalsState, getLatestMatchingApproval } from "../approval.store";
+import { GetApprovalResult } from "../../api/Financing.Client";
 
 export const DealCmp: React.FunctionComponent<{
     dealId: number
@@ -26,9 +28,16 @@ const DealCmpBare: React.FunctionComponent<{
     const dealProgresssState = useSelector((state: RootState) => {
         const deal = state.deals.deals.find(x => x.businessParams.dealId === props.dealId)!;
         const currentDate = state.clock.currentDate;
-        return getDealProgresssState(deal, currentDate);
+        const approval = getLatestMatchingApproval(state.approvals, deal);
+        return getDealProgresssState(deal, approval, currentDate);
     });
-    
+
+    const approvalsSate = useSelector((state: RootState) => state.approvals);
+
+    const clockState = useSelector((state: RootState) => state.clock);
+
+    const approval = getLatestMatchingApproval(approvalsSate, dealState);
+
     const generalValidaiton = getGeneralValidation(dealState);
 
     const isLoading = isLoadingAny(dealState.isLoadingItemized);
@@ -77,27 +86,30 @@ const DealCmpBare: React.FunctionComponent<{
         }
         <button
             className='button-request-approval'
-            disabled={isLoading 
-                        || dealState.businessParams.isDealFinalized
-                        || generalValidaiton.downpaymentExceedsPrice}
+            disabled={isLoading
+                || !dealState.businessParams.carModelSelected
+                || dealState.businessParams.isDealFinalized
+                || generalValidaiton.downpaymentExceedsPrice
+                || approvalsSate.isLoading[dealState.businessParams.dealId]}
             onClick={() => dispatch.deals.requestApproval(dealState.businessParams.dealId)}
         >
             Request approval
         </button>
-        {/* <button
+        <button
             className='button-close-active-deal'
-            onClick={vm.close}
+            onClick={() => dispatch.deals.removeDeal(dealState.businessParams.dealId)}
         >
             Close this deal
-    </button> */}
-        {/* <button
+    </button>
+        <button
             className='button-finalzie-deal'
-            disabled={!vm.canFinalizeDeal}
-            onClick={vm.finalzieDeal}
+            disabled={dealState.isLoadingItemized.isDealFinalized
+                        || !canBeFinalized(dealState, approval, clockState.currentDate)}
+            onClick={() => dispatch.deals.finalizeDeal(dealState.businessParams.dealId)}
         >
             Finalize deal
-    </button> */}
-        { renderMessages(dealState, generalValidaiton)}
+    </button>
+        { renderMessages(dealState, generalValidaiton, approval)}
     </>;
 
     function getDealStateDescription(state: DealProgressState) {
@@ -116,11 +128,15 @@ const DealCmpBare: React.FunctionComponent<{
         return `Approval granted. Expires in ${state.approvalExpiresInSeconds} seconds.`;
     }
 
-    function renderMessages(dealState: Deal, generalValidation: ReturnType<typeof getGeneralValidation>) {
+    function renderMessages(
+        dealState: Deal,
+        generalValidation: ReturnType<typeof getGeneralValidation>,
+        approval:  GetApprovalResult | undefined) {
 
         var messages = [
             ...dealState.messages,
-            ...(generalValidation.downpaymentExceedsPrice ? [`Downpayment can't exceed total price.`] : [])
+            ...(generalValidation.downpaymentExceedsPrice ? [`Downpayment can't exceed total price.`] : []),
+            ...(approval?.isApproved === false ? [approval.message] : [])
         ]
 
         if (messages.length > 0) {

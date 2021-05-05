@@ -1,10 +1,11 @@
 import { createModel } from '@rematch/core'
-import { loadNewDeal, Deal } from './deals/deal';
+import { loadNewDeal, Deal, getApprovalRequestArgs, validateDealBusinessParams } from './deals/deal';
 import type { RootModel } from '.'
 import { setCurrentUnsavedValue, tryCommitValue } from '../generic-components/numeric-input';
-import { carInvenotryClient } from '../api/CarInventory.Client';
+import { carInvenotryClient, CarModel } from '../api/CarInventory.Client';
 import { carInsuranceClient } from '../api/CarInsurance.Client';
 import { financingClient } from '../api/Financing.Client';
+import { getLatestMatchingApproval } from './approval.store';
 
 //this is needed to be able to type generic `set` reducer
 const defaultState = {
@@ -26,7 +27,7 @@ export const deals = createModel<RootModel>()({
 
     pushNewDeal(state, deal: Deal, setActive = true) {
       state.deals.push(deal);
-      if(setActive) {
+      if (setActive) {
         state.activeDealId = deal.businessParams.dealId;
       }
 
@@ -36,13 +37,23 @@ export const deals = createModel<RootModel>()({
     },
 
     removeDeal(state, dealId: number) {
-      state.deals = state.deals.filter(x => x.businessParams.dealId != dealId);
+
+      if (dealId === state.activeDealId) {
+        const index = state.deals.findIndex(x => x.businessParams.dealId === dealId);
+        const newActiveDealId = state.deals[index - 1]?.businessParams.dealId
+          ?? state.deals[index + 1]?.businessParams.dealId;
+        console.log(newActiveDealId);
+        state.activeDealId = newActiveDealId;
+      }
+
+      state.deals = state.deals.filter(x => x.businessParams.dealId !== dealId);
+
       return state;
     },
 
     updateDownpaymentInputValue(state, dealId: number, newValue: string) {
-      const deal = state.deals.find(x => x.businessParams.dealId === dealId)!;    
-       deal.downplaymentInputState = setCurrentUnsavedValue(deal.downplaymentInputState, newValue);
+      const deal = state.deals.find(x => x.businessParams.dealId === dealId)!;
+      deal.downplaymentInputState = setCurrentUnsavedValue(deal.downplaymentInputState, newValue);
       return state;
     },
 
@@ -77,54 +88,79 @@ export const deals = createModel<RootModel>()({
   effects: (dispatch) => ({
 
     async loadNewDeal(_, rootState) {
-      dispatch.deals.set({newDealIsLoading: true});
+      dispatch.deals.set({ newDealIsLoading: true });
 
       dispatch.deals.pushNewDeal(await loadNewDeal());
 
-      dispatch.deals.set({newDealIsLoading: false});
+      dispatch.deals.set({ newDealIsLoading: false });
     },
 
     async reloadAvailableCarModels(dealId: number, rootState) {
-      dispatch.deals.setIsLoadingItemized(dealId, {carModelsAvailable: true});
+      dispatch.deals.setIsLoadingItemized(dealId, { carModelsAvailable: true });
 
       const carModels = await carInvenotryClient.getAvaliableCarModels();
 
-      dispatch.deals.setInDeal(dealId, {carModelsAvailable: carModels});
+      dispatch.deals.setInDeal(dealId, { carModelsAvailable: carModels });
 
-      dispatch.deals.setIsLoadingItemized(dealId, {carModelsAvailable: false});
+      dispatch.deals.setIsLoadingItemized(dealId, { carModelsAvailable: false });
     },
 
     async reloadAvailableInsurancePlans(dealId: number, rootState) {
-      dispatch.deals.setIsLoadingItemized(dealId, {insurancePlansAvailable: true});
+      dispatch.deals.setIsLoadingItemized(dealId, { insurancePlansAvailable: true });
 
       const insurancePlans = await carInsuranceClient.getAvaliableInsurancePlans();
 
-      dispatch.deals.setInDeal(dealId, {insurancePlansAvailable: insurancePlans});
+      dispatch.deals.setInDeal(dealId, { insurancePlansAvailable: insurancePlans });
 
-      dispatch.deals.setIsLoadingItemized(dealId, {insurancePlansAvailable: false});
+      dispatch.deals.setIsLoadingItemized(dealId, { insurancePlansAvailable: false });
     },
 
     async setMinimumPossibleDownpayment(dealId: number, rootState) {
-      dispatch.deals.setIsLoadingItemized(dealId, {downpayment: true});
+      dispatch.deals.setIsLoadingItemized(dealId, { downpayment: true });
 
       const { businessParams } = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
-      
-      if(!businessParams.carModelSelected) {
-        throw new Error("Can't get minimum payments if no car model selected.");
-      }
-      
+
+      validateDealBusinessParams(businessParams);
+
       const minPayment = await financingClient.getMinimumPossibleDownpayment(
         businessParams.carModelSelected,
         businessParams.insurancePlansSelected.map(x => x.type)
       );
 
-      dispatch.deals.setInBusinessParams(dealId, {downpayment: minPayment});
+      dispatch.deals.setInBusinessParams(dealId, { downpayment: minPayment });
 
-      dispatch.deals.setIsLoadingItemized(dealId, {downpayment: false});
+      dispatch.deals.setIsLoadingItemized(dealId, { downpayment: false });
     },
 
     async requestApproval(dealId: number, rootState) {
 
+      const { businessParams } = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
+
+      validateDealBusinessParams(businessParams);
+
+      await dispatch.approvals.requestApproval({
+        dealId: businessParams.dealId,
+        args: getApprovalRequestArgs(businessParams)
+      });
+    },
+
+    async finalizeDeal(dealId: number, rootState) {
+
+      const dealState = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
+
+      const approval = getLatestMatchingApproval(rootState.approvals, dealState);
+
+      if (approval?.isApproved !== true) {
+        throw new Error("Attempt to finalize deal without approval.");
+      }
+
+      dispatch.deals.setIsLoadingItemized(dealId, { isDealFinalized: true });
+
+      const res = await financingClient.finalizeFinancing(approval.approvalToken);
+
+      dispatch.deals.setInBusinessParams(dealId, { isDealFinalized: res });
+
+      dispatch.deals.setIsLoadingItemized(dealId, { isDealFinalized: false });
     }
 
   })

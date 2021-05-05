@@ -7,6 +7,7 @@ import './App.css';
 import classNames from 'classnames';
 import { Deal, getDealProgresssState } from './models/deals/deal';
 import { DealCmp } from './models/deals/Deal.component';
+import { approvals, ApprovalsState, getLatestMatchingApproval } from './models/approval.store';
 
 const AppRoot = () => {
 
@@ -36,7 +37,7 @@ const AppRoot = () => {
           Add foreign currency deal
         </button> */}
 
-        { dealsState.deals.map(x => (<TabHeader 
+        { dealsState.deals.filter(x => !x.isClosed).map(x => (<TabHeader 
               key={x.businessParams.dealId} 
               dealId={x.businessParams.dealId}
             />))}
@@ -66,6 +67,10 @@ const TabHeader = (props: {dealId: number}) => {
 
   const dispatch = useDispatch<Dispatch>();
 
+  const clockState = useSelector((state: RootState) => state.clock);
+  const dealsState = useSelector((state: RootState) => state.deals);
+  const approvalState = useSelector((state: RootState) => state.approvals);
+
   return <div
     className={classNames({
       'deal-tab-header': true,
@@ -77,10 +82,10 @@ const TabHeader = (props: {dealId: number}) => {
       className='header-text'
       onClick={() => dispatch.deals.set({ activeDealId: props.dealId})}
     >
-      {useSelector((state: RootState) => getTabHeaderText(
-          state.deals.deals.find(x => x.businessParams.dealId === props.dealId)!,
-          state.clock.currentDate)
-      )}
+      {getTabHeaderText(
+          dealsState.deals.find(x => x.businessParams.dealId === props.dealId)!,
+          approvalState,
+          clockState.currentDate)}
     </div>
 
     <button
@@ -91,9 +96,11 @@ const TabHeader = (props: {dealId: number}) => {
     </button>
   </div>;
 
-  function getTabHeaderText(deal: Deal, currentDate: Date) {
+  function getTabHeaderText(deal: Deal, approvalsState: ApprovalsState, currentDate: Date) {
 
-    const dealState = getDealProgresssState(deal, currentDate);
+    const apprval = getLatestMatchingApproval(approvalsState, deal);
+
+    const dealState = getDealProgresssState(deal, apprval, currentDate);
 
     if (!deal.businessParams.carModelSelected) {
       return `blank deal`
