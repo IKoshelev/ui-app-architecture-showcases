@@ -89,6 +89,7 @@ const DealCmpBare: React.FunctionComponent<{
             disabled={isLoading
                 || !dealState.businessParams.carModelSelected
                 || dealState.businessParams.isDealFinalized
+                || !dealState.downplaymentInputState.isValid
                 || generalValidaiton.downpaymentExceedsPrice
                 || approvalsSate.isLoading[dealState.businessParams.dealId]}
             onClick={() => dispatch.deals.requestApproval(dealState.businessParams.dealId)}
