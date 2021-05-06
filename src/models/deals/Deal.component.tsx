@@ -1,22 +1,22 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NumericInput } from "../../generic-components/NumericInput.component";
-import type { Dispatch, RootState } from "../../store";
+import type { Dispatch, RootState } from "../store";
 import { CarModelsSelector } from "./CarModelSelector.component";
-import { DealProgressState, getCachedSelectorDealDerrivations } from "./deal";
+import { DealProgressState, getCachedSelectorDealDerrivations } from "./Deal";
 import './Deal.component.css';
 import { InsurancePlanSelector } from "./InsurancePlanSelector.component";
 import { diffSeconds } from "../../util/diffSeconds";
 
-export const DealCmp: React.FunctionComponent<{
+export const DealCmp = (props: {
     dealId: number
-}> = (props) => (<div className='car-purchase-deal'>
+}) => (<div className='car-purchase-deal'>
     <DealCmpBare {...props} />
 </div>);
 
-const DealCmpBare: React.FunctionComponent<{
+const DealCmpBare = (props: {
     dealId: number
-}> = (props) => {
+}) => {
 
     const dealState = useSelector((state: RootState) => getCachedSelectorDealDerrivations(props.dealId)(state));
 

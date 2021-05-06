@@ -1,13 +1,12 @@
-
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { SelectDropdown } from "../../generic-components/SelectDropdown.component";
-import type { Dispatch, RootState } from "../../store";
+import type { Dispatch, RootState } from "../store";
 import { isLoadingAny } from "../../util/isLoadingAny";
 
-export const CarModelsSelector: React.FunctionComponent<{
-    dealId: Number
-}> = (props) => {
+export const CarModelsSelector = (props: {
+    dealId: number
+}) => {
 
     const dispatch = useDispatch<Dispatch>();
 
@@ -32,7 +31,7 @@ export const CarModelsSelector: React.FunctionComponent<{
                     disabled={isLoading
                                 || dealState.businessParams.isDealFinalized}
                     onSelect={(item) => dispatch.deals.setInBusinessParams(
-                        dealState.businessParams.dealId,
+                        props.dealId,
                         {
                             carModelSelected: item
                         })}

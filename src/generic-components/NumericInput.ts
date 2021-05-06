@@ -1,4 +1,4 @@
-import { expandMagnitudeShortcuts, isInteger } from "../util/numeric";
+import { expandMagnitudeShortcuts } from "../util/numeric";
 
 export function getBlankNumericInputState(requirments?:  {
     integer: boolean,
@@ -17,11 +17,18 @@ export function getBlankNumericInputState(requirments?:  {
 
 export type NumericInputState = ReturnType<typeof getBlankNumericInputState>;
 
-export function setCurrentUnsavedValue(state: NumericInputState, currentUnsavedValue: string | undefined){
-    return {
+export function setCurrentUnsavedValue(state: NumericInputState, currentUnsavedValue: string | undefined, clearValidity = false){
+    const newState = {
         ...state,
         currentUnsavedValue,
     }
+
+    if(clearValidity) {
+        newState.message = undefined;
+        newState.isValid = true;
+    }
+
+    return newState;
 }
 
 export function tryCommitValue(

@@ -1,5 +1,5 @@
 import { createModel } from '@rematch/core'
-import type { RootModel } from '.'
+import type { RootModel } from './RootModel'
 import { financingClient, GetApprovalResult } from '../api/Financing.Client';
 
 type requestApprovalParams = Parameters<typeof financingClient.getApproval>;
@@ -8,7 +8,6 @@ type ApprovalRequestStatus = {
     result: GetApprovalResult,
     timestamp: Date
 };
-
 
 const defaultState = {
     approvals: {} as {

@@ -1,7 +1,7 @@
 import { init, RematchDispatch, RematchRootState } from '@rematch/core'
 import immerPlugin from '@rematch/immer'
-import selectPlugin from '@rematch/select'
-import { models, RootModel } from './models'
+//import selectPlugin from '@rematch/select'
+import { models, RootModel } from './RootModel'
 
 export const store = init<RootModel, RootModel>({
 	models,

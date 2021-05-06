@@ -1,13 +1,14 @@
 import { createModel } from '@rematch/core'
-import { loadNewDeal, Deal, getApprovalRequestArgs, validateDealBusinessParams, getCachedSelectorDealDerrivations } from './deals/deal';
-import type { RootModel } from '.'
-import { setCurrentUnsavedValue, tryCommitValue } from '../generic-components/numeric-input';
-import { carInvenotryClient, CarModel } from '../api/CarInventory.Client';
-import { carInsuranceClient } from '../api/CarInsurance.Client';
-import { financingClient } from '../api/Financing.Client';
+import { Deal, getApprovalRequestArgs, validateDealBusinessParams, getCachedSelectorDealDerrivations, createBlankDeal } from './Deal';
+import type { RootModel } from '../RootModel'
+import { setCurrentUnsavedValue, tryCommitValue } from '../../generic-components/NumericInput';
+import { carInvenotryClient } from '../../api/CarInventory.Client';
+import { carInsuranceClient } from '../../api/CarInsurance.Client';
+import { financingClient } from '../../api/Financing.Client';
 
 //this is needed to be able to type generic `set` reducer
 const defaultState = {
+  nextDealId: 1,
   deals: [] as Deal[],
   activeDealId: undefined as number | undefined,
   newDealIsLoading: false
@@ -89,7 +90,18 @@ export const deals = createModel<RootModel>()({
     async loadNewDeal(_, rootState) {
       dispatch.deals.set({ newDealIsLoading: true });
 
-      dispatch.deals.pushNewDeal(await loadNewDeal());
+      const newDeal = createBlankDeal();
+
+      newDeal.businessParams.dealId = rootState.deals.nextDealId;
+
+      dispatch.deals.set({nextDealId: rootState.deals.nextDealId + 1});
+  
+      await Promise.all([
+          carInvenotryClient.getAvaliableCarModels().then(x => newDeal.carModelsAvailable = x),
+          carInsuranceClient.getAvaliableInsurancePlans().then(x => newDeal.insurancePlansAvailable = x)
+      ]);
+
+      dispatch.deals.pushNewDeal(newDeal);
 
       dispatch.deals.set({ newDealIsLoading: false });
     },
@@ -117,7 +129,7 @@ export const deals = createModel<RootModel>()({
     async setMinimumPossibleDownpayment(dealId: number, rootState) {
       dispatch.deals.setIsLoadingItemized(dealId, { downpayment: true });
 
-      const { businessParams } = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
+      const { downplaymentInputState, businessParams } = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
 
       validateDealBusinessParams(businessParams);
 
@@ -127,6 +139,9 @@ export const deals = createModel<RootModel>()({
       );
 
       dispatch.deals.setInBusinessParams(dealId, { downpayment: minPayment });
+
+      const clearedDownpaymentInput = setCurrentUnsavedValue(downplaymentInputState, undefined, true);
+      dispatch.deals.setInDeal(dealId, {downplaymentInputState: clearedDownpaymentInput})
 
       dispatch.deals.setIsLoadingItemized(dealId, { downpayment: false });
     },

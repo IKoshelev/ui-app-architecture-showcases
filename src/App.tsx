@@ -1,13 +1,12 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Provider } from 'react-redux';
-import { RootState, Dispatch, store } from './store'
+import { RootState, Dispatch, store } from './models/store'
 
 import './App.css';
 import classNames from 'classnames';
-import { Deal, getCachedSelectorDealDerrivations } from './models/deals/deal';
+import { getCachedSelectorDealDerrivations } from './models/deals/Deal';
 import { DealCmp } from './models/deals/Deal.component';
-import { ApprovalsState } from './models/approval.store';
 import { diffSeconds } from './util/diffSeconds';
 
 const AppRoot = () => {
@@ -61,7 +60,6 @@ const AppRoot = () => {
     return <DealCmp dealId={dealId} />;
   }
 };
-
 
 const TabHeader = (props: {dealId: number}) => {
 

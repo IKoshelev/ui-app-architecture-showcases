@@ -1,12 +1,12 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { SelectMultiple } from "../../generic-components/SelectMultiple.component";
-import type { Dispatch, RootState } from "../../store";
+import type { Dispatch, RootState } from "../store";
 import { isLoadingAny } from "../../util/isLoadingAny";
 
-export const InsurancePlanSelector: React.FunctionComponent<{
+export const InsurancePlanSelector = (props:{
     dealId: number
-}> = (props) => {
+}) => {
 
     const dispatch = useDispatch<Dispatch>();
 
@@ -25,13 +25,13 @@ export const InsurancePlanSelector: React.FunctionComponent<{
                 disabled={isLoading}
                 getKeyValue={(item) => item.type.toString()}
                 getDescription={(item) => item.description}
-                onSelect={(items) => dispatch.deals.setInBusinessParams(dealState.businessParams.dealId,
+                onSelect={(items) => dispatch.deals.setInBusinessParams(props.dealId,
                     { insurancePlansSelected: items })}
             />
         }
         <button
             className='insurance-plan-selector-refresh-btn'
-            onClick={() => dispatch.deals.reloadAvailableInsurancePlans(dealState.businessParams.dealId)}
+            onClick={() => dispatch.deals.reloadAvailableInsurancePlans(props.dealId)}
             disabled={isLoading || dealState.businessParams.isDealFinalized}
         >
             Refresh available plans

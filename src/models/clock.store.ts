@@ -1,5 +1,5 @@
 import { createModel } from '@rematch/core'
-import type { RootModel } from '.'
+import type { RootModel } from './RootModel'
 
 const defaultState = {
     currentDate: new Date(),

@@ -1,5 +1,5 @@
 import React from "react";
-import { NumericInputState } from "./numeric-input";
+import { NumericInputState } from "./NumericInput";
 
 type NumericInputProps =
     {
