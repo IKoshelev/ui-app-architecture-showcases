@@ -1,4 +1,3 @@
-import moment from "moment";
 import { createSelector } from "reselect";
 import { carInsuranceClient, InsurancePlan } from "../../api/CarInsurance.Client";
 import { carInvenotryClient, CarModel } from "../../api/CarInventory.Client";

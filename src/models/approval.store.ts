@@ -1,7 +1,6 @@
 import { createModel } from '@rematch/core'
 import type { RootModel } from '.'
 import { financingClient, GetApprovalResult } from '../api/Financing.Client';
-import { Deal, getApprovalRequestArgs } from './deals/deal';
 
 type requestApprovalParams = Parameters<typeof financingClient.getApproval>;
 type ApprovalRequestStatus = {

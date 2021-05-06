@@ -6,7 +6,6 @@ import { CarModelsSelector } from "./CarModelSelector.component";
 import { DealProgressState, getCachedSelectorDealDerrivations } from "./deal";
 import './Deal.component.css';
 import { InsurancePlanSelector } from "./InsurancePlanSelector.component";
-import { GetApprovalResult } from "../../api/Financing.Client";
 import { diffSeconds } from "../../util/diffSeconds";
 
 export const DealCmp: React.FunctionComponent<{
