@@ -1,11 +1,10 @@
 import { createModel } from '@rematch/core'
-import { loadNewDeal, Deal, getApprovalRequestArgs, validateDealBusinessParams } from './deals/deal';
+import { loadNewDeal, Deal, getApprovalRequestArgs, validateDealBusinessParams, getCachedSelectorDealDerrivations } from './deals/deal';
 import type { RootModel } from '.'
 import { setCurrentUnsavedValue, tryCommitValue } from '../generic-components/numeric-input';
 import { carInvenotryClient, CarModel } from '../api/CarInventory.Client';
 import { carInsuranceClient } from '../api/CarInsurance.Client';
 import { financingClient } from '../api/Financing.Client';
-import { getLatestMatchingApproval } from './approval.store';
 
 //this is needed to be able to type generic `set` reducer
 const defaultState = {
@@ -14,7 +13,7 @@ const defaultState = {
   newDealIsLoading: false
 };
 
-type DealsState = typeof defaultState;
+export type DealsState = typeof defaultState;
 
 export const deals = createModel<RootModel>()({
   state: defaultState,
@@ -146,9 +145,7 @@ export const deals = createModel<RootModel>()({
 
     async finalizeDeal(dealId: number, rootState) {
 
-      const dealState = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
-
-      const approval = getLatestMatchingApproval(rootState.approvals, dealState);
+      const approval = getCachedSelectorDealDerrivations(dealId)(rootState).approval;
 
       if (approval?.isApproved !== true) {
         throw new Error("Attempt to finalize deal without approval.");
@@ -165,7 +162,3 @@ export const deals = createModel<RootModel>()({
 
   })
 });
-
-export function getActiveDeal(state: DealsState) {
-  return state.deals.find(x => x.businessParams.dealId === state.activeDealId);
-}

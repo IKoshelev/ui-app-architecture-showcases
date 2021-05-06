@@ -1,14 +1,13 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NumericInput } from "../../generic-components/NumericInput.component";
 import type { Dispatch, RootState } from "../../store";
 import { CarModelsSelector } from "./CarModelSelector.component";
-import { canBeFinalized, canSetMinimumDownpayment, Deal, DealProgressState, getDealProgresssState, getFinalPrice, getGeneralValidation } from "./deal";
+import { DealProgressState, getCachedSelectorDealDerrivations } from "./deal";
 import './Deal.component.css';
 import { InsurancePlanSelector } from "./InsurancePlanSelector.component";
-import { isLoadingAny } from "../../util/isLoadingAny";
-import { ApprovalsState, getLatestMatchingApproval } from "../approval.store";
 import { GetApprovalResult } from "../../api/Financing.Client";
+import { diffSeconds } from "../../util/diffSeconds";
 
 export const DealCmp: React.FunctionComponent<{
     dealId: number
@@ -20,55 +19,43 @@ const DealCmpBare: React.FunctionComponent<{
     dealId: number
 }> = (props) => {
 
+    const dealState = useSelector((state: RootState) => getCachedSelectorDealDerrivations(props.dealId)(state));
+
+    const messages = [
+        ...dealState.deal.messages,
+        ...(dealState.generalValidation.downpaymentExceedsPrice ? [`Downpayment can't exceed total price.`] : []),
+        ...(dealState.approval?.isApproved === false ? [dealState.approval.message] : [])
+    ];
+
     const dispatch = useDispatch<Dispatch>();
-
-    const dealState = useSelector((state: RootState) =>
-        state.deals.deals.find(x => x.businessParams.dealId === props.dealId))!;
-
-    const dealProgresssState = useSelector((state: RootState) => {
-        const deal = state.deals.deals.find(x => x.businessParams.dealId === props.dealId)!;
-        const currentDate = state.clock.currentDate;
-        const approval = getLatestMatchingApproval(state.approvals, deal);
-        return getDealProgresssState(deal, approval, currentDate);
-    });
-
-    const approvalsSate = useSelector((state: RootState) => state.approvals);
-
-    const clockState = useSelector((state: RootState) => state.clock);
-
-    const approval = getLatestMatchingApproval(approvalsSate, dealState);
-
-    const generalValidaiton = getGeneralValidation(dealState);
-
-    const isLoading = isLoadingAny(dealState.isLoadingItemized);
 
     return <>
         <div className='car-purchase-model-selector-label'>
             Please select model
     </div>
-        <CarModelsSelector dealId={dealState.businessParams.dealId} />
+        <CarModelsSelector dealId={props.dealId} />
         <div className='car-purchase-insurance-selector-label'>
             Please select insurance options
     </div>
-        <InsurancePlanSelector dealId={dealState.businessParams.dealId} />
+        <InsurancePlanSelector dealId={props.dealId} />
         <div className='car-purchase-downpayment-label'>
             Please select downpayment
     </div>
         <NumericInput
             inputAttributes={{ className: 'car-purchase-downpayment' }}
             messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
-            modelState={dealState.businessParams.downpayment}
-            inputState={dealState.downplaymentInputState}
-            disabled={dealState.isLoadingItemized.downpayment
-                || dealState.businessParams.isDealFinalized}
-            onChange={(inputVal) => dispatch.deals.updateDownpaymentInputValue(dealState.businessParams.dealId, inputVal)}
-            onBlur={() => dispatch.deals.tryCommitDownpaymentInputValue(dealState.businessParams.dealId)}
+            modelState={dealState.deal.businessParams.downpayment}
+            inputState={dealState.deal.downplaymentInputState}
+            disabled={dealState.deal.isLoadingItemized.downpayment
+                || dealState.deal.businessParams.isDealFinalized}
+            onChange={(inputVal) => dispatch.deals.updateDownpaymentInputValue(props.dealId, inputVal)}
+            onBlur={() => dispatch.deals.tryCommitDownpaymentInputValue(props.dealId)}
         />
         <button
             className='button-set-minimum-possible-downpayment'
-            disabled={isLoadingAny(dealState.isLoadingItemized)
-                || !canSetMinimumDownpayment(dealState.businessParams)}
-            onClick={() => dispatch.deals.setMinimumPossibleDownpayment(dealState.businessParams.dealId)}
+            disabled={dealState.isLoadingAny
+                || !dealState.canRequestMinimumDownpayment}
+            onClick={() => dispatch.deals.setMinimumPossibleDownpayment(props.dealId)}
         >
             Set minimum possible
         </button>
@@ -76,44 +63,56 @@ const DealCmpBare: React.FunctionComponent<{
             Final price
     </div>
         <div className='car-final-price'>
-            {getFinalPrice(dealState.businessParams)}
+            {dealState.finalPrice}
         </div>
         {
-            dealProgresssState !== 'no-approval' &&
-            <div className='car-purchase-deal-state'>
-                {getDealStateDescription(dealProgresssState)}
-            </div>
+            dealState.dealProgressState !== 'no-approval' &&
+            <DealDescription dealId={props.dealId}/>
         }
         <button
             className='button-request-approval'
-            disabled={isLoading
-                || !dealState.businessParams.carModelSelected
-                || dealState.businessParams.isDealFinalized
-                || !dealState.downplaymentInputState.isValid
-                || generalValidaiton.downpaymentExceedsPrice
-                || approvalsSate.isLoading[dealState.businessParams.dealId]}
-            onClick={() => dispatch.deals.requestApproval(dealState.businessParams.dealId)}
+            disabled={dealState.isLoadingAny
+                || dealState.isCurrentApprovalLoading
+                || !dealState.canRequestApproval}
+            onClick={() => dispatch.deals.requestApproval(props.dealId)}
         >
             Request approval
         </button>
         <button
             className='button-close-active-deal'
-            onClick={() => dispatch.deals.removeDeal(dealState.businessParams.dealId)}
+            onClick={() => dispatch.deals.removeDeal(props.dealId)}
         >
             Close this deal
     </button>
         <button
             className='button-finalzie-deal'
-            disabled={dealState.isLoadingItemized.isDealFinalized
-                        || !canBeFinalized(dealState, approval, clockState.currentDate)}
-            onClick={() => dispatch.deals.finalizeDeal(dealState.businessParams.dealId)}
+            disabled={dealState.deal.isLoadingItemized.isDealFinalized
+                        || !dealState.canBeFinalized}
+            onClick={() => dispatch.deals.finalizeDeal(props.dealId)}
         >
             Finalize deal
     </button>
-        { renderMessages(dealState, generalValidaiton, approval)}
+        {  
+            (messages.length > 0) &&
+            <div className='car-purchase-messages'>
+                {messages.map(x => (<div key={x}>{x}</div>))}
+            </div>
+        }
     </>;
+};
 
-    function getDealStateDescription(state: DealProgressState) {
+function DealDescription(props: {dealId: number}){
+
+    const text =  useSelector((state: RootState) => getDealStateDescription(
+        getCachedSelectorDealDerrivations(props.dealId)(state).dealProgressState,
+        state.clock.currentDate
+    ));
+
+    return <div className='car-purchase-deal-state'>
+        {text}
+    </div>;
+
+    function getDealStateDescription(state: DealProgressState, currentDate: Date) {
         if (state === 'deal-finalized') {
             return 'Congratulations! Deal is finalized.';
         }
@@ -126,26 +125,6 @@ const DealCmpBare: React.FunctionComponent<{
         if (state === 'approval-expired') {
             return 'Approval expired.';
         }
-        return `Approval granted. Expires in ${state.approvalExpiresInSeconds} seconds.`;
+        return `Approval granted. Expires in ${diffSeconds(state.approvalExpiresAt, currentDate)} seconds.`;
     }
-
-    function renderMessages(
-        dealState: Deal,
-        generalValidation: ReturnType<typeof getGeneralValidation>,
-        approval:  GetApprovalResult | undefined) {
-
-        var messages = [
-            ...dealState.messages,
-            ...(generalValidation.downpaymentExceedsPrice ? [`Downpayment can't exceed total price.`] : []),
-            ...(approval?.isApproved === false ? [approval.message] : [])
-        ]
-
-        if (messages.length > 0) {
-            return <div className='car-purchase-messages'>
-                {messages.map(x => (<div key={x}>{x}</div>))}
-            </div>
-        }
-
-        return <></>;
-    }
-};
+}

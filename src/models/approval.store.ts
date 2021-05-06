@@ -54,19 +54,3 @@ export const approvals = createModel<RootModel>()({
         },
     }),
 });
-
-
-export function getLatestMatchingApproval(
-    state: ApprovalsState,
-    deal: Deal): GetApprovalResult | undefined {
-
-    const args = getApprovalRequestArgs(deal.businessParams);
-
-    return state.approvals[deal.businessParams.dealId]
-        ?.filter(({ request }) => {
-            //relies on insurance plans always being in same order
-            return JSON.stringify(request) === JSON.stringify(args);
-        })
-        .sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf())
-    [0]?.result;
-}

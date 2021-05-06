@@ -1,28 +1,13 @@
 import moment from "moment";
+import { createSelector } from "reselect";
 import { carInsuranceClient, InsurancePlan } from "../../api/CarInsurance.Client";
 import { carInvenotryClient, CarModel } from "../../api/CarInventory.Client";
 import type { financingClient, GetApprovalResult } from "../../api/Financing.Client";
 import { getBlankNumericInputState } from "../../generic-components/numeric-input";
-
-import { createSelector } from 'reselect';
-
-const makeSelectCompletedTodosCount = () =>
-  createSelector(
-    (state: Deal, _, x: string) => state.businessParams,
-    (state: Deal, val: number) => val,
-    (businessParams, val) => businessParams.downpayment > val);
-
- const res1 = makeSelectCompletedTodosCount()(
-        {businessParams: { downpayment: 7 }} as unknown as Deal,
-        5,
-        "");
-
- const res2 = makeSelectCompletedTodosCount()(
-        {businessParams: { downpayment: 7 }} as unknown as Deal,
-        9,
-        "");
-
-        debugger;
+import { RootState } from "../../store";
+import type { ApprovalsState } from "../approval.store";
+import { isLoadingAny } from "../../util/isLoadingAny";
+import { createStructuralEqualSelector } from "../../util/selectors";
 
 
 export const createBlankDeal = () => ({
@@ -46,11 +31,72 @@ export const createBlankDeal = () => ({
 export type Deal = ReturnType<typeof createBlankDeal>
     & {
         isLoadingItemized: { [K in
+            //todo generi way to flatten keys
             (keyof ReturnType<typeof createBlankDeal> | keyof ReturnType<typeof createBlankDeal>['businessParams'])]?
             : boolean }
     };
 
 export type DealBusinessParams = Deal['businessParams'];
+
+//todo abstract pattern here
+const cachedDealDerrivationSelectors = new Map<number, ReturnType<typeof getSelectorDealDerrivations>>(); 
+export function getCachedSelectorDealDerrivations(dealId: number){
+    const cached = cachedDealDerrivationSelectors.get(dealId);
+    if(cached) {
+        return cached;
+    }
+    const selector = getSelectorDealDerrivations(dealId);
+    cachedDealDerrivationSelectors.set(dealId, selector);
+    return selector;
+}
+
+function getSelectorDealDerrivations(dealId: number) {
+
+    // these 3 selectors facilitate functional approach without unnecessary reacalculations
+    const currentApprovalSelector = createSelector(getCurrentApproval, x => x);
+    const getDealByIdSelector = createSelector(getDealById, x => x);
+    const getGeneralValidationSelector = createSelector(getGeneralValidation, x => x);
+
+    const selector = createSelector(
+        
+            (state: RootState) => getDealByIdSelector(state, dealId)!,
+
+            (state: RootState) => currentApprovalSelector(state, dealId),
+
+            (state: RootState) => state.approvals.isLoading[dealId],
+
+            createStructuralEqualSelector((state: RootState) => getDealProgressState(
+                getDealByIdSelector(state, dealId)!, 
+                currentApprovalSelector(state, dealId), 
+                state.clock.currentDate
+                ), x => x),
+        
+            (state: RootState) => canBeFinalized(            
+                getDealByIdSelector(state, dealId)!, 
+                currentApprovalSelector(state, dealId), 
+                state.clock.currentDate
+                ),
+          
+            (deal, approval, isCurrentApprovalLoading, dealProgressState, canBeFinalized) => ((console.log(`recalc ${dealId}`,[
+                deal, approval, isCurrentApprovalLoading, dealProgressState, canBeFinalized
+            ])), {
+                deal,
+                approval, 
+                isCurrentApprovalLoading,
+                canRequestMinimumDownpayment: canRequestMinimumDownpayment(deal.businessParams),
+                finalPrice: getFinalPrice(deal.businessParams),
+                generalValidation: getGeneralValidationSelector(deal),
+                dealProgressState,
+                canBeFinalized,
+                isLoadingAny: isLoadingAny(deal.isLoadingItemized),
+                canRequestApproval: deal.businessParams.carModelSelected
+                                    && deal.businessParams.isDealFinalized === false
+                                    && deal.downplaymentInputState.isValid
+                                    && getGeneralValidationSelector(deal).downpaymentExceedsPrice === false
+            }));
+    
+        return selector;
+    }
 
 let dealIdCount = 1;
 
@@ -68,7 +114,8 @@ export async function loadNewDeal() {
     return deal;
 }
 
-export function getDealProgresssState(deal: Deal, approval: GetApprovalResult | undefined, currentDate: Date) {
+
+function getDealProgressState(deal: Deal, approval: GetApprovalResult | undefined, currentDate: Date) {
 
     if (deal.businessParams.isDealFinalized) {
         return 'deal-finalized' as const;
@@ -83,24 +130,23 @@ export function getDealProgresssState(deal: Deal, approval: GetApprovalResult | 
         return 'approval-perpetual' as const;
     }
 
-    var duration = moment.duration(moment(expiration).diff(currentDate));
-    var seconds = Math.round(duration.asSeconds());
-
-    if (seconds <= 0) {
+    if (expiration <= currentDate) {
         return 'approval-expired' as const;
     }
 
-    return { approvalExpiresInSeconds: seconds } as const;
+    return { approvalExpiresAt: expiration } as const;
 }
 
-export type DealProgressState = ReturnType<typeof getDealProgresssState>;
+export type DealProgressState = ReturnType<typeof getDealProgressState>;
 
-export function canSetMinimumDownpayment(deal: DealBusinessParams) {
+
+function canRequestMinimumDownpayment(deal: DealBusinessParams) {
     return deal.carModelSelected
         && deal.isDealFinalized === false;
 }
 
-export function getFinalPrice(deal: DealBusinessParams) {
+
+function getFinalPrice(deal: DealBusinessParams) {
 
     const basePrice = deal.carModelSelected?.basePrice;
 
@@ -116,7 +162,8 @@ export function getFinalPrice(deal: DealBusinessParams) {
     return basePrice + priceIncrease;
 }
 
-export function getGeneralValidation(deal: Deal) {
+
+function getGeneralValidation(deal: Deal) {
 
     const downpaymentExceedsPrice = !!(deal.businessParams.carModelSelected
         && deal.businessParams.downpayment > getFinalPrice(deal.businessParams));
@@ -148,8 +195,41 @@ export function getApprovalRequestArgs(businessParams: Deal['businessParams']): 
     ];
 }
 
-export function canBeFinalized(deal: Deal, approval: GetApprovalResult | undefined, currentDate: Date) {
+function canBeFinalized(deal: Deal, approval: GetApprovalResult | undefined, currentDate: Date) {
     return deal.businessParams.isDealFinalized === false
         && approval?.isApproved
         && (!approval.expiration || approval.expiration >= currentDate);
+}
+
+export function getDealById(state: RootState, dealId: number) {
+    return state.deals.deals.find(x => x.businessParams.dealId === dealId);
+}
+
+export function getCurrentApproval(state: RootState, dealId: number) {
+
+    const deal = getDealById(state, dealId);
+
+    if (!deal) {
+        return undefined;
+    }
+
+    return getLatestMatchingApproval(
+        state.approvals,
+        deal
+    );
+}
+
+export function getLatestMatchingApproval(
+    state: ApprovalsState,
+    deal: Deal): GetApprovalResult | undefined {
+
+    const args = getApprovalRequestArgs(deal.businessParams);
+
+    return state.approvals[deal.businessParams.dealId]
+        ?.filter(({ request }) => {
+            //relies on insurance plans always being in same order
+            return JSON.stringify(request) === JSON.stringify(args);
+        })
+        .sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf())
+    [0]?.result;
 }

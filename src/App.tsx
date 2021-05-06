@@ -5,9 +5,10 @@ import { RootState, Dispatch, store } from './store'
 
 import './App.css';
 import classNames from 'classnames';
-import { Deal, getDealProgresssState } from './models/deals/deal';
+import { Deal, getCachedSelectorDealDerrivations } from './models/deals/deal';
 import { DealCmp } from './models/deals/Deal.component';
-import { approvals, ApprovalsState, getLatestMatchingApproval } from './models/approval.store';
+import { ApprovalsState } from './models/approval.store';
+import { diffSeconds } from './util/diffSeconds';
 
 const AppRoot = () => {
 
@@ -59,17 +60,31 @@ const AppRoot = () => {
 
     return <DealCmp dealId={dealId} />;
   }
-
 };
 
 
 const TabHeader = (props: {dealId: number}) => {
 
-  const dispatch = useDispatch<Dispatch>();
+  const headerText = useSelector((state: RootState) => {
+      const deatState = getCachedSelectorDealDerrivations(props.dealId)(state);
 
-  const clockState = useSelector((state: RootState) => state.clock);
-  const dealsState = useSelector((state: RootState) => state.deals);
-  const approvalState = useSelector((state: RootState) => state.approvals);
+      if (!deatState.deal.businessParams.carModelSelected) {
+        return `blank deal`
+      }
+  
+      let text: string = '';
+      if (deatState.dealProgressState === 'deal-finalized') {
+        text = 'done';
+      } else if (deatState.dealProgressState === 'approval-perpetual') {
+        text = 'approved'
+      } else if (typeof deatState.dealProgressState !== 'string') {
+        text = `${diffSeconds(deatState.dealProgressState.approvalExpiresAt, state.clock.currentDate)} sec`;
+      }
+  
+      return `${deatState.deal.businessParams.carModelSelected.description}  ${text}`; //${this.headerAdditionalDescription()}
+  });
+
+  const dispatch = useDispatch<Dispatch>();
 
   return <div
     className={classNames({
@@ -82,10 +97,7 @@ const TabHeader = (props: {dealId: number}) => {
       className='header-text'
       onClick={() => dispatch.deals.set({ activeDealId: props.dealId})}
     >
-      {getTabHeaderText(
-          dealsState.deals.find(x => x.businessParams.dealId === props.dealId)!,
-          approvalState,
-          clockState.currentDate)}
+      {headerText}
     </div>
 
     <button
@@ -95,28 +107,6 @@ const TabHeader = (props: {dealId: number}) => {
       X
     </button>
   </div>;
-
-  function getTabHeaderText(deal: Deal, approvalsState: ApprovalsState, currentDate: Date) {
-
-    const apprval = getLatestMatchingApproval(approvalsState, deal);
-
-    const dealState = getDealProgresssState(deal, apprval, currentDate);
-
-    if (!deal.businessParams.carModelSelected) {
-      return `blank deal`
-    }
-
-    let state: string = '';
-    if (dealState === 'deal-finalized') {
-      state = 'done';
-    } else if (dealState === 'approval-perpetual') {
-      state = 'approved'
-    } else if (typeof dealState !== 'string') {
-      state = `${dealState.approvalExpiresInSeconds} sec`;
-    }
-
-    return `${deal.businessParams.carModelSelected.description}  ${state}`; //${this.headerAdditionalDescription()}
-  }
 }
 
 export const App = () => (
