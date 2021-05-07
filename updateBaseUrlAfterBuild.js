@@ -1,7 +1,7 @@
-console.log(JSON.stringify(process.env));
 
-if(process.env['Build.SourceBranchName']){
-    const newBaseUrl = `https://uiappashowcases.blob.core.windows.net/$web/${process.env['Build.SourceBranchName']}/`;
+const branchNameFromEnv = process.env['BUILD_SOURCEBRANCHNAME'];
+if(branchNameFromEnv){
+    const newBaseUrl = `https://uiappashowcases.blob.core.windows.net/$web/${branchNameFromEnv}/`;
     console.log(`Setting url base to ${newBaseUrl}`);
     const fs = require('fs');
     const filePath = './build/index.html';
