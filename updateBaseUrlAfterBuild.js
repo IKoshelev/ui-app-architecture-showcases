@@ -9,10 +9,13 @@ if(branchNameFromEnv){
         encoding: 'UTF8'
     });
 
-    const newText = indexFileText.replace('<base href="./"/>', `<base href="${newBaseUrl}"/>`);
+    let newText = indexFileText.replace('<base href="./"/>', `<base href="${newBaseUrl}"/>`);
     if(indexFileText === newText) {
         throw Error('Replacing <base href="./"/> in index.html after build failed.');
     }
+
+    //force relative paths
+    newText = newText.replace(/href="\//g, 'href="./').replace(/src="\//g, 'src="./');
 
     fs.writeFileSync(filePath, newText);
 } 
