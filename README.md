@@ -67,8 +67,7 @@ Approval may be granted without expiration, in which case - it is perpetual (per
 
 # App basis
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-Consult whoever gave you the task for additional constraints / expectations in terms of frameworks / libraries / patterns. 
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app). If you are working on a case that does not use React at all - the setup is up to you. Consult whoever gave you the task for additional constraints / expectations in terms of frameworks / libraries / patterns. 
 
 ## Available Scripts
 
