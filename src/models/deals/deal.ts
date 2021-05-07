@@ -64,8 +64,8 @@ export const getCachedSelectorDealDerrivations = memoizeSelectorCreatorIndeffini
                 ),
           
             (deal, approval, isCurrentApprovalLoading, dealProgressState, canBeFinalized) => (
-                (console.log(`recalc ${dealId}`,[deal, approval, isCurrentApprovalLoading, dealProgressState, canBeFinalized]))
-                , {
+                //(console.log(`recalc ${dealId}`,[deal, approval, isCurrentApprovalLoading, dealProgressState, canBeFinalized])), 
+                {
                 deal,
                 approval, 
                 isCurrentApprovalLoading,
