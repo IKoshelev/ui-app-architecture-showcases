@@ -27,4 +27,4 @@ steps:
     azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
     scriptType: 'pscore'
     scriptLocation: 'inlineScript'
-    inlineScript: 'az storage blob upload-batch --account-name uiappashowcases --source build/ --destination `$`web/ --destination-path $(Build.SourceBranchName)'
+    inlineScript: 'az storage blob upload-batch --account-name uiappashowcases --source build/ --destination `$`web --destination-path $(Build.SourceBranchName)'
