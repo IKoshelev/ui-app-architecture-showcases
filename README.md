@@ -1,4 +1,5 @@
 # Proof of concept for a tree of POJO state that is all Proxies under the hood and observable by React
+### *After diging around, MobX 5+ already has this functionality based on Proxies, so this is just a small POC for anyone insterested in the core idea*
 
 To try out, make sure you use `observable-proxy-proof-of-concept` branch and run:
 
