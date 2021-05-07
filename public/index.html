@@ -2,17 +2,7 @@
 <html lang="en">
 
 <head>
-  <script>
-    // don't do this in production folks
-    const fullBaseUrl = window?.location?.href?.replace('index.html', '');
-    if(fullBaseUrl && /localhost/.test(fullBaseUrl) === false) {
-      console.log(`Setting base url (for relative links) to ${fullBaseUrl}`);
-      window.document.head.append(
-        window.document.createElement("base")
-      );
-      window.document.getElementsByTagName('base')[0].setAttribute('href', fullBaseUrl);
-    }
-    </script>
+  <base href="./"/>
   <meta charset="utf-8" />
   <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
