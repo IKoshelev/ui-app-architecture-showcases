@@ -21,6 +21,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "update-base-url": "node updateBaseUrlAfterBuild.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

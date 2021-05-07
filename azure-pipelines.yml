@@ -1,0 +1,31 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- manual
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: |
+    npm install
+    npm run build
+    npm run update-base-url
+  displayName: 'Npm install and build'
+- task: AzureCLI@2
+  displayName: 'Remove existing deployment blobs'
+  inputs:
+    azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
+    scriptType: 'pscore'
+    scriptLocation: 'inlineScript'
+    inlineScript: 'az storage blob delete-batch --account-name uiappashowcases --source `$`web --pattern $(Build.SourceBranchName)/*'
+- task: AzureCLI@2
+  displayName: 'Uplaod new blobs'
+  inputs:
+    azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
+    scriptType: 'pscore'
+    scriptLocation: 'inlineScript'
+    inlineScript: 'az storage blob upload-batch --account-name uiappashowcases --source build/ --destination `$`web --destination-path $(Build.SourceBranchName)'
