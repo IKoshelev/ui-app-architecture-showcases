@@ -27,4 +27,4 @@ steps:
     Destination: 'AzureBlob'
     storage: 'uiappashowcases'
     BlobPrefix: '$(Build.SourceBranchName)'
-    ContainerName: '$web'
+    ContainerName: '`$`web'
