@@ -15,16 +15,16 @@ steps:
     npm run build
   displayName: 'Npm install and build'
 - task: AzureCLI@2
+  displayName: 'Remove existing deployment blobs'
   inputs:
     azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
-    scriptType: 'ps'
+    scriptType: 'pscore'
     scriptLocation: 'inlineScript'
     inlineScript: 'az storage blob delete-batch --account-name uiappashowcases --source `$`web --pattern $(Build.SourceBranchName)/*'
-- task: AzureFileCopy@4
+- task: AzureCLI@2
+  displayName: 'Uplaod new blobs'
   inputs:
-    SourcePath: 'build/'
     azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
-    Destination: 'AzureBlob'
-    storage: 'uiappashowcases'
-    BlobPrefix: '$(Build.SourceBranchName)'
-    ContainerName: '`$`web'
+    scriptType: 'pscore'
+    scriptLocation: 'inlineScript'
+    inlineScript: 'az storage blob upload-batch --account-name uiappashowcases --source build/ --destination `$`web/ --destination-path $(Build.SourceBranchName)'
