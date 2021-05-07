@@ -63,7 +63,7 @@ Approval may be granted without expiration, in which case - it is perpetual (per
 
 ![](/requirments-sketches/8.png)
 
-10. Once you are done, **and only then!** check additional requirments in `requirments-advanced` branch, to check flexibility of you approach aganist incoming changes.
+10. Once you are done, **and only then!** check additional requirments in [`requirments-advanced` branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/requirments-advanced), to check flexibility of you approach aganist incoming changes.
 
 # App basis
 
