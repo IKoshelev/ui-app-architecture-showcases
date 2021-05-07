@@ -4,16 +4,27 @@
 # https://aka.ms/yaml
 
 trigger:
-- main
+- manual
 
 pool:
   vmImage: ubuntu-latest
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    npm install -g @angular/cli
+    npm run build
+  displayName: 'Npm install and build'
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
+    scriptType: 'ps'
+    scriptLocation: 'inlineScript'
+    inlineScript: 'az storage blob delete-batch --account-name uiappashowcases --source $web --pattern $(Build.SourceBranchName)/*'
+- task: AzureFileCopy@4
+  inputs:
+    SourcePath: 'build/'
+    azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
+    Destination: 'AzureBlob'
+    storage: 'uiappashowcases'
+    BlobPrefix: '$(Build.SourceBranchName)'
+    ContainerName: '$web'
