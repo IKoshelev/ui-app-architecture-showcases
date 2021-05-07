@@ -1,3 +1,5 @@
+console.log(JSON.stringify(process.env));
+
 if(process.env['Build.SourceBranchName']){
     const newBaseUrl = `https://uiappashowcases.blob.core.windows.net/$web/${process.env['Build.SourceBranchName']}/`;
     console.log(`Setting url base to ${newBaseUrl}`);
