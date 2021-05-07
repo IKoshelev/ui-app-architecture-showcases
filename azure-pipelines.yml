@@ -11,7 +11,7 @@ pool:
 
 steps:
 - script: |
-    npm install -g @angular/cli
+    npm install
     npm run build
   displayName: 'Npm install and build'
 - task: AzureCLI@2
