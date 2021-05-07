@@ -19,7 +19,7 @@ steps:
     azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
     scriptType: 'pscore'
     scriptLocation: 'inlineScript'
-    inlineScript: 'az storage blob delete-batch --account-name uiappashowcases --source "$web" --pattern $(Build.SourceBranchName)/*'
+    inlineScript: 'az storage blob delete-batch --account-name uiappashowcases --source `$`web --pattern $(Build.SourceBranchName)/*'
 - task: AzureFileCopy@4
   inputs:
     SourcePath: 'build/'
