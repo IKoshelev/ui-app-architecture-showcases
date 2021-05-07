@@ -1,14 +1,15 @@
-# Welcome to react app architecture showcase
+# Welcome to UI app architecture showcase
 
 It is customary in frontend world to demonstrate different architecutres by implementing a simple counter and then a TODO list app. The problem is, both cases are quite simple and neither showcase nor test a given apporach against real world requirments. This project attempts to bridge the gap by implementing a minimal set of requirments such as tabbed ui, user input validation, derived fields, timed actions etc. that you are likely to have in the real world. The goal is to provide standrtised prooving ground, where same app implementations can be compared (much like TODO list apps projecs) and people looking for hints at code organization can study them. My initial personal goal was to have a set of requirments to test new frameworks before using them in my proffesional projects.
 
-The set of requirments provided can also be used for learning purposes. I made the highly representative of enterprise app development process. 
+Set of requirments provided can also be used for learning purposes. I made them highly representative of enterprise app development process. 
 
-Individual implementations are contained in branches. To make your own - start in the `main` branch, `src` folder contains app entry ooint and mock `api` clients to be used.  
+Individual implementations are contained in branches. To make your own - start in the `main` branch, `src` folder contains app entry point and mock `api` clients to be used.  
 
 # Requirments
 
-**Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures. Unless someone specifically told you otherwise, this task is not about aesthetics or CSS. This task is about code quality and architecture. Final result does not have to look exactly like sketch, or be beautiful, but must have correct behavior. 
+**Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures. Unless someone specifically told you otherwise, this task is not about aesthetics or CSS. This task is about code quality and architecture. Final result does not have to look exactly like sketch, or be beautiful, but must have correct behavior.
+*That being said, you should probably reuse HTML and CSS from an existing implementation to make your life easier and maintain unified visuals.*
 
 Desired final result sketch: 
 
