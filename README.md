@@ -1,3 +1,3 @@
 ## MOBX MVVM pattern 
 
-See readme for `main` bracnh for details 
+See readme for `main` branch for details 
