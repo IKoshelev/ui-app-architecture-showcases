@@ -22,6 +22,17 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
+    <script>
+const fullBaseUrl = window?.location?.href?.replace('index.html', '');
+if(fullBaseUrl && /localhost/.test(fullBaseUrl) === false) {
+  console.log(`Setting base url (for relative links) to ${fullBaseUrl}`);
+  window.document.head.append(
+    window.document.createElement("base", {
+      href: fullBaseUrl
+    })
+  );
+}
+    </script>
   <title>Crazy Ivan Motors</title>
 </head>
 
