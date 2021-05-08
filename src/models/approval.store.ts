@@ -1,10 +1,10 @@
 import { createModel } from '@rematch/core'
 import type { RootModel } from './RootModel'
 import { financingClient, GetApprovalResult } from '../api/Financing.Client';
+import { Deal, prepareRequstApprovalCall } from './deals/Deal/Deal';
 
-type requestApprovalParams = Parameters<typeof financingClient.getApproval>;
 type ApprovalRequestStatus = {
-    request: requestApprovalParams,
+    request: any,
     result: GetApprovalResult,
     timestamp: Date
 };
@@ -37,18 +37,19 @@ export const approvals = createModel<RootModel>()({
         },
     },
     effects: (dispatch) => ({
-        async requestApproval(req: { dealId: number, args: requestApprovalParams }, rootState) {
-            dispatch.approvals.setIsLoading(req.dealId, true);
+        async requestApproval(deal: Deal, rootState) {
+            dispatch.approvals.setIsLoading(deal.businessParams.dealId, true);
 
-            const resp = await financingClient.getApproval(...req.args);
+            const call = prepareRequstApprovalCall(deal);
+            const resp = await call.makeCall();
 
-            dispatch.approvals.storeApprovalReqStatus(req.dealId, {
-                request: req.args,
+            dispatch.approvals.storeApprovalReqStatus(deal.businessParams.dealId, {
+                request: call.request,
                 result: resp,
                 timestamp: new Date()
             });
 
-            dispatch.approvals.setIsLoading(req.dealId, false);
+            dispatch.approvals.setIsLoading(deal.businessParams.dealId, false);
         },
     }),
 });

@@ -1,12 +1,14 @@
 import { createModel } from '@rematch/core'
-import { Deal, getApprovalRequestArgs, validateDealBusinessParams, getCachedSelectorDealDerrivations, createBlankDeal } from './Deal/Deal';
+import { Deal, validateDealBusinessParams, getCachedSelectorDealDerrivations, createBlankDeal, DealTag, getMinimumPossibleDownpayment } from './Deal/Deal';
 import type { RootModel } from '../RootModel'
 import { setCurrentUnsavedValue, tryCommitValue } from '../../generic-components/NumericInput';
 import { carInvenotryClient } from '../../api/CarInventory.Client';
 import { carInsuranceClient } from '../../api/CarInsurance.Client';
 import { financingClient } from '../../api/Financing.Client';
-import { createBlankDealForeignCurrency } from './DealForeignCurrency/DealForeignCurrency';
-import { currencyExchangeClient } from '../../api/CurrencyExchange.Client';
+import { createBlankDealForeignCurrency, DealForeignCurrency, DealForeignCurrencyTag, getDealForeignCurrencyById, isDealForeignCurrency } from './DealForeignCurrency/DealForeignCurrency';
+import { Currency, currencyExchangeClient } from '../../api/CurrencyExchange.Client';
+import { assert, DiffWithGuard, guard } from '../../util/assert';
+import { merge } from 'lodash';
 
 //this is needed to be able to type generic `set` reducer
 const defaultState = {
@@ -22,8 +24,20 @@ export const deals = createModel<RootModel>()({
   state: defaultState,
   reducers: {
 
+    // warning! all versions of set/merge are only for cases
+    // where tehre is no business logic involved, just straightfoward
+    // setting of properties. Any kind of conditional set/merge
+    // should have a specialized reducer.
     set(state: DealsState, diff: Partial<DealsState>) {
       Object.assign(state, diff);
+      return state;
+    },
+
+    //much more generazlied form of set
+    mergeWithGuard(state, dealId: number, payload: DiffWithGuard<Deal>) {
+      const deal = state.deals.find(x => x.businessParams.dealId === dealId)!;
+      assert(payload.guard(deal));
+      merge(deal,payload.diff);
       return state;
     },
 
@@ -82,10 +96,8 @@ export const deals = createModel<RootModel>()({
     setInBusinessParams(state, dealId: number, diff: Partial<Deal['businessParams']>) {
       const deal = state.deals.find(x => x.businessParams.dealId === dealId)!;
       Object.assign(deal.businessParams, diff);
-
       return state;
-    }
-
+    },
   },
   effects: (dispatch) => ({
 
@@ -120,7 +132,7 @@ export const deals = createModel<RootModel>()({
       await Promise.all([
           carInvenotryClient.getAvaliableCarModels().then(x => newDeal.carModelsAvailable = x),
           carInsuranceClient.getAvaliableInsurancePlans().then(x => newDeal.insurancePlansAvailable = x),
-          currencyExchangeClient.getCurrencies().then(x => newDeal.currencyiesAvailable = x)
+          currencyExchangeClient.getCurrencies().then(x => newDeal.currenciesAvailable = x)
       ]);
 
       dispatch.deals.pushNewDeal(newDeal);
@@ -151,18 +163,15 @@ export const deals = createModel<RootModel>()({
     async setMinimumPossibleDownpayment(dealId: number, rootState) {
       dispatch.deals.setIsLoadingItemized(dealId, { downpayment: true });
 
-      const { downplaymentInputState, businessParams } = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
+      const deal = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
 
-      validateDealBusinessParams(businessParams);
+      validateDealBusinessParams(deal.businessParams);
 
-      const minPayment = await financingClient.getMinimumPossibleDownpayment(
-        businessParams.carModelSelected,
-        businessParams.insurancePlansSelected.map(x => x.type)
-      );
+      const minPayment = await getMinimumPossibleDownpayment(deal);
 
       dispatch.deals.setInBusinessParams(dealId, { downpayment: minPayment });
 
-      const clearedDownpaymentInput = setCurrentUnsavedValue(downplaymentInputState, undefined, true);
+      const clearedDownpaymentInput = setCurrentUnsavedValue(deal.downplaymentInputState, undefined, true);
       dispatch.deals.setInDeal(dealId, {downplaymentInputState: clearedDownpaymentInput})
 
       dispatch.deals.setIsLoadingItemized(dealId, { downpayment: false });
@@ -170,14 +179,11 @@ export const deals = createModel<RootModel>()({
 
     async requestApproval(dealId: number, rootState) {
 
-      const { businessParams } = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
+      const deal = rootState.deals.deals.find(x => x.businessParams.dealId === dealId)!;
 
-      validateDealBusinessParams(businessParams);
+      validateDealBusinessParams(deal.businessParams);
 
-      await dispatch.approvals.requestApproval({
-        dealId: businessParams.dealId,
-        args: getApprovalRequestArgs(businessParams)
-      });
+      await dispatch.approvals.requestApproval(deal);
     },
 
     async finalizeDeal(dealId: number, rootState) {
@@ -195,6 +201,30 @@ export const deals = createModel<RootModel>()({
       dispatch.deals.setInBusinessParams(dealId, { isDealFinalized: res });
 
       dispatch.deals.setIsLoadingItemized(dealId, { isDealFinalized: false });
+    },
+
+    async setCurrncyAndReloadExchangeRate([dealId, currency]: [dealId: number, curreny: Currency], rootState) {
+      
+      //for deal type validation
+      getDealForeignCurrencyById(rootState, dealId);
+     
+      dispatch.deals.mergeWithGuard(dealId, guard(isDealForeignCurrency, {
+        businessParams: {
+          downpaymentCurrency: currency
+        }, 
+        isLoadingItemized: {
+          exchangeRate: true
+        }
+      }));
+
+      const exchangeRate = await currencyExchangeClient.getExchangeRate(currency);
+
+      dispatch.deals.mergeWithGuard(dealId, guard(isDealForeignCurrency, {
+        exchangeRate: exchangeRate, 
+        isLoadingItemized: {
+          exchangeRate: false
+        }
+      }));
     }
 
   })

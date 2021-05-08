@@ -2,14 +2,13 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Provider } from 'react-redux';
 import { RootState, Dispatch, store } from './models/store'
-
 import './App.css';
 import classNames from 'classnames';
 import { DealTag, getCachedSelectorDealDerrivations } from './models/deals/Deal/Deal';
 import { DealCmp } from './models/deals/Deal/Deal.component';
 import { diffSeconds } from './util/diffSeconds';
 import { CarPurchaseWithForeignCurrencyCmp } from './models/deals/DealForeignCurrency/DealForeignCurrency.component';
-import { DealForeignCurrency } from './models/deals/DealForeignCurrency/DealForeignCurrency';
+import { DealForeignCurrencyTag } from './models/deals/DealForeignCurrency/DealForeignCurrency';
 
 const AppRoot = () => {
 
@@ -20,7 +19,7 @@ const AppRoot = () => {
   return <div id='app-root'>
 
     <div className='main-logo'>
-      Crazy Ivan Motors (Rematch 2)
+      Crazy Ivan Motors (Rematch 2 advanced)
     </div>
 
     <div className='screens'>
@@ -35,6 +34,7 @@ const AppRoot = () => {
 
         <button
           className="button-add-new-deal"
+          disabled={dealsState.newDealIsLoading}
           onClick={dispatch.deals.loadNewDealForeignCurrency}
         >
           Add foreign currency deal
@@ -60,8 +60,7 @@ const AppRoot = () => {
       return <></>;
     }
 
-    // todo investigate why typescript 
-    if((dealType as string) === DealForeignCurrency) {
+    if(dealType === DealForeignCurrencyTag) {
       return <CarPurchaseWithForeignCurrencyCmp dealId={dealId} />;
     }
 
@@ -89,7 +88,7 @@ const TabHeader = (props: {dealId: number}) => {
         text = `${diffSeconds(deatState.dealProgressState.approvalExpiresAt, state.clock.currentDate)} sec`;
       }
   
-      return `${deatState.deal.businessParams.carModelSelected.description}  ${text}`; //${this.headerAdditionalDescription()}
+      return `${deatState.deal.businessParams.carModelSelected.description} ${deatState.headerAdditionalDescription}${text}`;
   });
 
   const dispatch = useDispatch<Dispatch>();
