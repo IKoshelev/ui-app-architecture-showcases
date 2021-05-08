@@ -6,6 +6,14 @@ Set of requirments provided can also be used for learning purposes. I made them 
 
 Individual implementations are contained in branches. To make your own - start in the `main` branch, `src` folder contains app entry point and mock `api` clients to be used.  
 
+# Successful implementations
+
+Rematch2 (Redux) [branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2) [demo](https://uiappashowcases.blob.core.windows.net/$web/rematch2/index.html) 
+
+Rematch2 advanced, with different deal types and Clojure inspired multimethods [branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2-advanced) [demo](https://uiappashowcases.blob.core.windows.net/$web/rematch2-advanced/index.html) 
+
+MobX MVVM, classes and observable decorators [branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/mobx-mvvm) [demo](https://uiappashowcases.blob.core.windows.net/$web/mobx-mvvm/index.html) 
+
 # Requirments
 
 **Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures. Unless someone specifically told you otherwise, this task is not about aesthetics or CSS. This task is about code quality and architecture. Final result does not have to look exactly like sketch, or be beautiful, but must have correct behavior.
