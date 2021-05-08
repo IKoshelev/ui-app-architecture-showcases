@@ -1,5 +1,5 @@
 # Good news everyone!
-Crazy Ivan Motors has really extended its business thanks to the app you've made! Now we are getting international customers and need to handle deals in foreign currencies! Check [this commit](https://github.com/IKoshelev/react-app-architecture-showcases/commit/806b014a00aa383a337da7d01ffb2bf378f8731b) to see how the API was extended to handle foreign currencies.  Here is a mockup of what our business needs for now:
+Crazy Ivan Motors has really extended its business thanks to the app you've made! Now we are getting international customers and need to handle deals in foreign currencies! Replace the content of [`api` folder](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/requirments-advanced/src/api) to see how the API was extended to handle foreign currencies. Here is a mockup of what our business needs for now:
 
 ![](/requirments-sketches/9.png)
 
