@@ -19,7 +19,7 @@ export const createBlankDealForeignCurrency = () => {
         exchangeRate: 1,
         businessParams: {
             foreignCuurencyHandlingCoeficient: 1.02,
-            downpaymentCurrency: Currency.USD
+            downpaymentCurrency: Currency.EUR
         }
     })
 };

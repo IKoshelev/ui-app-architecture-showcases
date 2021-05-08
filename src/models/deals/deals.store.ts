@@ -132,7 +132,8 @@ export const deals = createModel<RootModel>()({
       await Promise.all([
           carInvenotryClient.getAvaliableCarModels().then(x => newDeal.carModelsAvailable = x),
           carInsuranceClient.getAvaliableInsurancePlans().then(x => newDeal.insurancePlansAvailable = x),
-          currencyExchangeClient.getCurrencies().then(x => newDeal.currenciesAvailable = x)
+          currencyExchangeClient.getCurrencies().then(x => newDeal.currenciesAvailable = x),
+          currencyExchangeClient.getExchangeRate(newDeal.businessParams.downpaymentCurrency).then(x => newDeal.exchangeRate = x)
       ]);
 
       dispatch.deals.pushNewDeal(newDeal);
