@@ -1,11 +1,10 @@
 import { delay } from "../util/delay";
 
 export enum Currency {
-    USD = 'USD', EUR = 'EUR', GBP = 'GBP', CHF = 'CHF'
+    EUR = 'EUR', GBP = 'GBP', CHF = 'CHF'
 }
 
 export const rates = {
-    [Currency.USD]: 1,
     [Currency.EUR]: 0.93,
     [Currency.GBP]: 0.83,
     [Currency.CHF]: 0.97
@@ -20,7 +19,6 @@ class CurrencyExchangeClient {
         await delay(1000);
 
         return [
-            Currency.USD,
             Currency.EUR,
             Currency.GBP,
             Currency.CHF
