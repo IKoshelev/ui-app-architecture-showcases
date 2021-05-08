@@ -3,7 +3,7 @@ import { delay } from "../util/delay";
 export type CarModel = {
     id: number,
     description: string,
-    basePrice: number
+    basePriceUSD: number
 }
 
 class CarInventoryClient {
@@ -15,17 +15,17 @@ class CarInventoryClient {
             {
                 id: 1,
                 description: 'Ford Mustang',
-                basePrice: 100000
+                basePriceUSD: 100000
             },
             {
                 id: 2,
                 description: 'Kia Sorento',
-                basePrice: 26000
+                basePriceUSD: 26000
             },
             {
                 id: 3,
                 description: 'Porsche Cayene',
-                basePrice: 90000
+                basePriceUSD: 90000
             }
         ]
     }

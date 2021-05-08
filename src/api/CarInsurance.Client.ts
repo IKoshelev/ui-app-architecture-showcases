@@ -1,5 +1,6 @@
 import { delay } from "../util/delay";
 
+
 export enum InsurancePlanType {
     base, thridParty, assetProtection
 }

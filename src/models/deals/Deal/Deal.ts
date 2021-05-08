@@ -1,14 +1,17 @@
 import { createSelector } from "reselect";
-import { InsurancePlan } from "../../api/CarInsurance.Client";
-import { CarModel } from "../../api/CarInventory.Client";
-import type { financingClient, GetApprovalResult } from "../../api/Financing.Client";
-import { getBlankNumericInputState } from "../../generic-components/NumericInput";
-import { RootState } from "../store";
-import type { ApprovalsState } from "../approval.store";
-import { isLoadingAny } from "../../util/isLoadingAny";
-import { createStructuralEqualSelector, memoizeSelectorCreatorIndeffinitely } from "../../util/selectors";
+import { InsurancePlan } from "../../../api/CarInsurance.Client";
+import { CarModel } from "../../../api/CarInventory.Client";
+import type { financingClient, GetApprovalResult } from "../../../api/Financing.Client";
+import { getBlankNumericInputState } from "../../../generic-components/NumericInput";
+import { RootState } from "../../store";
+import type { ApprovalsState } from "../../approval.store";
+import { isLoadingAny } from "../../../util/isLoadingAny";
+import { createStructuralEqualSelector, memoizeSelectorCreatorIndeffinitely } from "../../../util/selectors";
+
+export const DealTag: `Deal${string}` = 'Deal';
 
 export const createBlankDeal = () => ({
+    type: DealTag,
 
     businessParams: {
         dealId: 0,
@@ -115,18 +118,18 @@ function canRequestMinimumDownpayment(deal: DealBusinessParams) {
 
 function getFinalPrice(deal: DealBusinessParams) {
 
-    const basePrice = deal.carModelSelected?.basePrice;
+    const basePriceUSD = deal.carModelSelected?.basePriceUSD;
 
-    if (!basePrice) {
+    if (!basePriceUSD) {
         throw new Error(`Can't calculate price.`);
     }
 
     const priceIncrease = deal
         .insurancePlansSelected
-        .map(x => basePrice * x.rate)
+        .map(x => basePriceUSD * x.rate)
         .reduce((prev, cur) => prev + cur, 0);
 
-    return basePrice + priceIncrease;
+    return basePriceUSD + priceIncrease;
 }
 
 function getGeneralValidation(deal: Deal) {

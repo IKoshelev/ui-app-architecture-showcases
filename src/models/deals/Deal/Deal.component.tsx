@@ -1,12 +1,12 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { NumericInput } from "../../generic-components/NumericInput.component";
-import type { Dispatch, RootState } from "../store";
+import { NumericInput } from "../../../generic-components/NumericInput.component";
+import type { Dispatch, RootState } from "../../store";
 import { CarModelsSelector } from "./CarModelSelector.component";
 import { DealProgressState, getCachedSelectorDealDerrivations } from "./Deal";
 import './Deal.component.css';
 import { InsurancePlanSelector } from "./InsurancePlanSelector.component";
-import { diffSeconds } from "../../util/diffSeconds";
+import { diffSeconds } from "../../../util/diffSeconds";
 
 export const DealCmp = (props: {
     dealId: number
@@ -14,7 +14,7 @@ export const DealCmp = (props: {
     <DealCmpBare {...props} />
 </div>);
 
-const DealCmpBare = (props: {
+export const DealCmpBare = (props: {
     dealId: number
 }) => {
 

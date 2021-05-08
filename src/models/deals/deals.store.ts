@@ -1,10 +1,12 @@
 import { createModel } from '@rematch/core'
-import { Deal, getApprovalRequestArgs, validateDealBusinessParams, getCachedSelectorDealDerrivations, createBlankDeal } from './Deal';
+import { Deal, getApprovalRequestArgs, validateDealBusinessParams, getCachedSelectorDealDerrivations, createBlankDeal } from './Deal/Deal';
 import type { RootModel } from '../RootModel'
 import { setCurrentUnsavedValue, tryCommitValue } from '../../generic-components/NumericInput';
 import { carInvenotryClient } from '../../api/CarInventory.Client';
 import { carInsuranceClient } from '../../api/CarInsurance.Client';
 import { financingClient } from '../../api/Financing.Client';
+import { createBlankDealForeignCurrency } from './DealForeignCurrency/DealForeignCurrency';
+import { currencyExchangeClient } from '../../api/CurrencyExchange.Client';
 
 //this is needed to be able to type generic `set` reducer
 const defaultState = {
@@ -99,6 +101,26 @@ export const deals = createModel<RootModel>()({
       await Promise.all([
           carInvenotryClient.getAvaliableCarModels().then(x => newDeal.carModelsAvailable = x),
           carInsuranceClient.getAvaliableInsurancePlans().then(x => newDeal.insurancePlansAvailable = x)
+      ]);
+
+      dispatch.deals.pushNewDeal(newDeal);
+
+      dispatch.deals.set({ newDealIsLoading: false });
+    },
+
+    async loadNewDealForeignCurrency(_, rootState) {
+      dispatch.deals.set({ newDealIsLoading: true });
+
+      const newDeal = createBlankDealForeignCurrency();
+
+      newDeal.businessParams.dealId = rootState.deals.nextDealId;
+
+      dispatch.deals.set({nextDealId: rootState.deals.nextDealId + 1});
+  
+      await Promise.all([
+          carInvenotryClient.getAvaliableCarModels().then(x => newDeal.carModelsAvailable = x),
+          carInsuranceClient.getAvaliableInsurancePlans().then(x => newDeal.insurancePlansAvailable = x),
+          currencyExchangeClient.getCurrencies().then(x => newDeal.currencyiesAvailable = x)
       ]);
 
       dispatch.deals.pushNewDeal(newDeal);

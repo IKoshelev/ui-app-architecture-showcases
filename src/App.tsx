@@ -5,13 +5,16 @@ import { RootState, Dispatch, store } from './models/store'
 
 import './App.css';
 import classNames from 'classnames';
-import { getCachedSelectorDealDerrivations } from './models/deals/Deal';
-import { DealCmp } from './models/deals/Deal.component';
+import { DealTag, getCachedSelectorDealDerrivations } from './models/deals/Deal/Deal';
+import { DealCmp } from './models/deals/Deal/Deal.component';
 import { diffSeconds } from './util/diffSeconds';
+import { CarPurchaseWithForeignCurrencyCmp } from './models/deals/DealForeignCurrency/DealForeignCurrency.component';
+import { DealForeignCurrency } from './models/deals/DealForeignCurrency/DealForeignCurrency';
 
 const AppRoot = () => {
 
   const dealsState = useSelector((state: RootState) => state.deals);
+  const activeDealType = useSelector((state: RootState) => state.deals.deals.find(x => x.businessParams.dealId === state.deals.activeDealId)?.type);
   const dispatch = useDispatch<Dispatch>();
 
   return <div id='app-root'>
@@ -30,12 +33,12 @@ const AppRoot = () => {
           Add deal
         </button>
 
-        {/* <button
+        <button
           className="button-add-new-deal"
-          onClick={appVm.addForeignCurrencyDeal}
+          onClick={dispatch.deals.loadNewDealForeignCurrency}
         >
           Add foreign currency deal
-        </button> */}
+        </button>
 
         { dealsState.deals.filter(x => !x.isClosed).map(x => (<TabHeader 
               key={x.businessParams.dealId} 
@@ -45,20 +48,27 @@ const AppRoot = () => {
 
       <div className={`active-tab`}>
         {
-          renderDealTab(dealsState.activeDealId)
+          renderDealTab(dealsState.activeDealId, activeDealType)
         }
       </div>
     </div>
   </div>;
 
-  function renderDealTab(dealId: number | undefined) {
+  function renderDealTab(dealId: number | undefined, dealType: typeof DealTag | undefined) {
 
     if(typeof dealId === 'undefined') {
       return <></>;
     }
 
+    // todo investigate why typescript 
+    if((dealType as string) === DealForeignCurrency) {
+      return <CarPurchaseWithForeignCurrencyCmp dealId={dealId} />;
+    }
+
+    //default - most basic deal
     return <DealCmp dealId={dealId} />;
   }
+
 };
 
 const TabHeader = (props: {dealId: number}) => {
