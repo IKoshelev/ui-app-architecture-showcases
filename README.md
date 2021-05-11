@@ -63,9 +63,9 @@ When timer runs out - "Approval expired message" is shown inside tab:
 
 ![](/requirments-sketches/7.png)
 
-Approval may be granted without expiration, in which case - it is perpetual (perpetual approvals are granted if AssetProtection insurance is selected). 
+Approval may be granted without expiration, in which case - it is perpetual (perpetual approvals are granted if AssetProtection ensurance is selected). 
 
-8.	Approvals must be cached for a combination of car model, insurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. User can have approvals for several valid combinations within 1 deal. Given approval is used as long as current deal params match the ones for which it was given. Approvals are not shared between deals. 
+8.	Approvals must be cached for a combination of car model, ensurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. User can have approvals for several valid combinations within 1 deal. Given approval is used as long as current deal params match the ones for which it was given. Approvals are not shared between deals. 
 
 9.	If user has valid approval – they can finalize deal via `finalizeFinancing`. If not successful – received error message must be shown. Otherwise:
 
