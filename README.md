@@ -19,7 +19,7 @@ Individual implementations are contained in branches. To make your own - start i
 **Disclaimer**: this requirements are intentionally formulated in a realistic manner, rather than best possible manner. Use commonsense and look at API signatures. Unless someone specifically told you otherwise, this task is not about aesthetics or CSS. This task is about code quality and architecture. Final result does not have to look exactly like sketch, or be beautiful, but must have correct behavior.
 *That being said, you should probably reuse HTML and CSS from an existing implementation to make your life easier and maintain unified visuals.*
 
-Desired final result sketch: 
+Lets build an application to negotiate car and ensurance deals online. Desired final result sketch: 
 
 ![](/requirments-sketches/1.png)
 
