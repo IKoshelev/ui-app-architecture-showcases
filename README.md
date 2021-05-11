@@ -27,11 +27,11 @@ Lets build an application to negotiate car and ensurance deals online (something
 
 2.	App is to use tabs, 1 deal per tab. Many independent deals can be in-process at the same time. App must have buttons to create a new tab and close existing tab (see sketch).
 
-3.	When a new tab is open – list of possible car models must be retrieved from `getAvaliableCarModels` and of possible insurance plans from `getAvaliableInsurancePlans`. This lists are not shared between tabs – each tab has its own. Each list can be refreshed from the api via a button. User must select 1 car model and can select 0 or more insurance plans. Once car model is chosen – it is displayed in tab header.
+3.	When a new tab is open – list of possible car models must be retrieved from `getAvaliableCarModels` and of possible ensurance plans from `getAvaliableEnsurancePlans`. This lists are not shared between tabs – each tab has its own. Each list can be refreshed from the api via a button. User must select 1 car model and can select 0 or more ensurance plans. Once car model is chosen – it is displayed in tab header.
 
 4.	Final price of the deal formula: 
 
-**Final price = car base price + sum(insurance plan rate * car base price) for each insurance plan.**
+**Final price = car base price + sum(ensurance plan rate * car base price) for each ensurance plan.**
 
 5.	For downpayment, user can enter any string, but it is only valid when a positive whole number is entered. If anything else is entered – an error message is shown:
 
