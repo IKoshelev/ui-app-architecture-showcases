@@ -17,14 +17,12 @@ steps:
     npm run update-base-url
   displayName: 'Npm install and build'
 - task: AzureCLI@2
-  displayName: 'Remove existing deployment blobs'
   inputs:
     azureSubscription: 'Visual Studio Professional(5024bae6-7770-431d-808b-24a1d8c52f10)'
     scriptType: 'pscore'
     scriptLocation: 'inlineScript'
     inlineScript: 'az storage blob delete-batch --account-name uiappashowcases --source `$`web --pattern $(Build.SourceBranchName)/*'
 - task: AzureCLI@2
-  displayName: 'Uplaod new blobs'
   inputs:
     azureSubscription: 'Visual Studio Professional(5024bae6-7770-431d-808b-24a1d8c52f10)'
     scriptType: 'pscore'
