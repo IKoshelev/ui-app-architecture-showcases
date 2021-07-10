@@ -18,14 +18,14 @@ steps:
 - task: AzureCLI@2
   displayName: 'Remove existing deployment blobs'
   inputs:
-    azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
+    azureSubscription: 'Visual Studio Professional ui-app-showcases2'
     scriptType: 'pscore'
     scriptLocation: 'inlineScript'
     inlineScript: 'az storage blob delete-batch --account-name uiappashowcases --source `$`web --pattern $(Build.SourceBranchName)/*'
 - task: AzureCLI@2
   displayName: 'Uplaod new blobs'
   inputs:
-    azureSubscription: 'Visual Studio Professional Subscription(a51eee2e-8fea-406f-a6c3-a95dd8e0a862)'
+    azureSubscription: 'Visual Studio Professional ui-app-showcases2'
     scriptType: 'pscore'
     scriptLocation: 'inlineScript'
     inlineScript: 'az storage blob upload-batch --account-name uiappashowcases --source build/ --destination `$`web --destination-path $(Build.SourceBranchName)'
