@@ -1,10 +1,21 @@
 <script lang="ts">
+    import { clockStore, clockEffects } from './stores/clock.store';
+
 	export let name: string;
+
 </script>
 
 <main>
 	<h1>Hello {name}!</h1>
 	<p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
+    <p>
+        {$clockStore.currentDate}
+    </p>
+    <p>
+        {$clockStore.tickIntervalHandle ? 'is ticking' : 'is NOT ticking'}
+    </p>
+    <button on:click={() => clockEffects.start(clockStore)}>Start</button>
+    <button on:click={() => clockEffects.stop(clockStore)}>Stop</button>
 </main>
 
 <style>
