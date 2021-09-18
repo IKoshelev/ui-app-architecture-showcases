@@ -9,8 +9,6 @@ export const makeApplyDiff = <T>(update: (this: void, updater: Updater<T>) => vo
 
 type UpdaterVoid<TState extends object, TArgs extends any[]> = (state: TState, ...args: TArgs) => void;
 
-//type UpdatersVoidMap = 
-
 type BoundUpdaterVoid<TUpdaterVoid> = TUpdaterVoid extends UpdaterVoid<any, infer TArgs>
     ? (...args: TArgs) => void
     : never;
@@ -22,16 +20,19 @@ type BoundUpdaters<TUpdatersVoidMap> = {
 export function bindToStore<
     TStoreState,
     TUpdaters extends {
-    [key: string]: UpdaterVoid<any, any>,
-}>(
-    store: Writable<TStoreState>,
-    updatersMap: TUpdaters
-): BoundUpdaters<TUpdaters> {
+        [key: string]: UpdaterVoid<any, any>,
+    }>(
+        store: Writable<TStoreState>,
+        updatersMap: TUpdaters
+    ): BoundUpdaters<TUpdaters> {
 
-    return updatersMap.map(updater => (...args: any) => {
-        const state = get(store);
-        updater(state, ...args);
-        store.set(state);
-    }) as any as BoundUpdaters<TUpdaters>;
+    return Object.entries(updatersMap).reduce((prev, [key, updater]) => {
+        prev[key] = (...args: any) => {
+            const state = get(store);
+            updater(state, ...args);
+            store.set(state);
+        };
+        return prev;
+    }, {}) as any as BoundUpdaters<TUpdaters>;
 
 }

@@ -1,11 +1,11 @@
-//import { approvals } from './approval.store'
-//import { deals } from './deals/deals.store'
+import { approvalsStore } from './approval.store'
+import { dealsStore } from './deals/deals.store'
 import { clockStore } from './clock.store';
 
 export const allStores = { 
 	clockStore, 
-	//deals, 
-	//approvals 
+	dealsStore, 
+	approvalsStore 
 }
 
 export type AllStores = typeof allStores;

@@ -1,11 +1,12 @@
 import { writable, get } from "svelte/store";
+import { makeApplyDiff } from "../util/genericReducers";
 
 const defaultState = {
     currentDate: new Date(),
     tickIntervalHandle: undefined as (number | undefined)
 };
 
-type ClockState = typeof defaultState;
+export type ClockState = typeof defaultState;
 
 function createStore() {
     const { subscribe, set, update } = writable(defaultState);
@@ -13,7 +14,7 @@ function createStore() {
     return {
         subscribe,
 
-        applyDiff: (diff: Partial<ClockState>) => update(state => Object.assign(state, diff)),
+        applyDiff: makeApplyDiff(update)
 
     }
 }
