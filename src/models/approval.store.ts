@@ -1,4 +1,3 @@
-import type { AllStores } from './all.stores'
 import { financingClient, GetApprovalResult } from '../api/Financing.Client';
 import { Deal, prepareRequstApprovalCall } from './deals/Deal/Deal';
 import { get, writable } from 'svelte/store';
