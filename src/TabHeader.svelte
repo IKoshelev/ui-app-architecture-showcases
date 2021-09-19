@@ -1,9 +1,9 @@
 <!-- <svelte:options immutable={true}/> -->
 <script lang="ts">
-    import { dealsStore, dealsEffects } from "./stores/deals/deals.store";
-    import { approvalsStore } from "./stores/approval.store";
-    import { clockStore } from "./stores/clock.store";
-    import { computeDealDerrivations } from "./stores/deals/Deal/Deal";
+    import { dealsStore, dealsEffects } from "./models/deals/deals.store";
+    import { approvalsStore } from "./models/approval.store";
+    import { clockStore } from "./models/clock.store";
+    import { computeDealDerrivations } from "./models/deals/Deal/Deal";
 import { diffSeconds } from "./util/diffSeconds";
 
     export let dealId: number;

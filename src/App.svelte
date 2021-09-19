@@ -1,14 +1,14 @@
 <script context="module" lang="ts">
-    import { clockStore, clockEffects } from "./stores/clock.store";
+    import { clockStore, clockEffects } from "./models/clock.store";
     clockEffects.start(clockStore);
 </script>
 
 <!-- <svelte:options immutable={true}/> -->
 <script lang="ts">
-    import { DealForeignCurrencyTag } from "./stores/deals/DealForeignCurrency/DealForeignCurrency";
-    import { dealsStore, dealsEffects } from "./stores/deals/deals.store";
-    import DealCmp from "./stores/deals/Deal/Deal.Cmp.svelte";
-    import DealForeignCurrency from "./stores/deals/DealForeignCurrency/DealForeignCurrency.Cmp.svelte";
+    import { DealForeignCurrencyTag } from "./models/deals/DealForeignCurrency/DealForeignCurrency";
+    import { dealsStore, dealsEffects } from "./models/deals/deals.store";
+    import DealCmp from "./models/deals/Deal/Deal.Cmp.svelte";
+    import DealForeignCurrency from "./models/deals/DealForeignCurrency/DealForeignCurrency.Cmp.svelte";
     import TabHeader from "./TabHeader.svelte";
 
     $: activeDealId = $dealsStore.activeDealId;
