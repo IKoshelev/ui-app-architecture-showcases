@@ -1,5 +1,7 @@
 import { get, Updater, Writable } from "svelte/store";
 
+// import { produce } from "immer";
+// window.process = { env: { NODE_ENV: 'production' } } as any;
 
 export const makeApplyDiff = <T>(update: (this: void, updater: Updater<T>) => void) =>
     (diff: Partial<T>) => update((state: T) => {

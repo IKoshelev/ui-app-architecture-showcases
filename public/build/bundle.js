@@ -4,6 +4,12 @@ var app = (function () {
     'use strict';
 
     function noop() { }
+    function assign(tar, src) {
+        // @ts-ignore
+        for (const k in src)
+            tar[k] = src[k];
+        return tar;
+    }
     function add_location(element, file, line, column, char) {
         element.__svelte_meta = {
             loc: { file, line, column, char }
@@ -23,9 +29,6 @@ var app = (function () {
     }
     function safe_not_equal(a, b) {
         return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
-    }
-    function not_equal(a, b) {
-        return a != a ? b == b : a !== b;
     }
     function is_empty(obj) {
         return Object.keys(obj).length === 0;
@@ -71,6 +74,9 @@ var app = (function () {
     function space() {
         return text(' ');
     }
+    function empty() {
+        return text('');
+    }
     function listen(node, event, handler, options) {
         node.addEventListener(event, handler, options);
         return () => node.removeEventListener(event, handler, options);
@@ -81,8 +87,48 @@ var app = (function () {
         else if (node.getAttribute(attribute) !== value)
             node.setAttribute(attribute, value);
     }
+    function set_attributes(node, attributes) {
+        // @ts-ignore
+        const descriptors = Object.getOwnPropertyDescriptors(node.__proto__);
+        for (const key in attributes) {
+            if (attributes[key] == null) {
+                node.removeAttribute(key);
+            }
+            else if (key === 'style') {
+                node.style.cssText = attributes[key];
+            }
+            else if (key === '__value') {
+                node.value = node[key] = attributes[key];
+            }
+            else if (descriptors[key] && descriptors[key].set) {
+                node[key] = attributes[key];
+            }
+            else {
+                attr(node, key, attributes[key]);
+            }
+        }
+    }
     function children(element) {
         return Array.from(element.childNodes);
+    }
+    function select_option(select, value) {
+        for (let i = 0; i < select.options.length; i += 1) {
+            const option = select.options[i];
+            if (option.__value === value) {
+                option.selected = true;
+                return;
+            }
+        }
+        select.selectedIndex = -1; // no option should be selected
+    }
+    function select_options(select, value) {
+        for (let i = 0; i < select.options.length; i += 1) {
+            const option = select.options[i];
+            option.selected = ~value.indexOf(option.__value);
+        }
+    }
+    function toggle_class(element, name, toggle) {
+        element.classList[toggle ? 'add' : 'remove'](name);
     }
     function custom_event(type, detail, bubbles = false) {
         const e = document.createEvent('CustomEvent');
@@ -159,10 +205,40 @@ var app = (function () {
         }
     }
     const outroing = new Set();
+    let outros;
+    function group_outros() {
+        outros = {
+            r: 0,
+            c: [],
+            p: outros // parent group
+        };
+    }
+    function check_outros() {
+        if (!outros.r) {
+            run_all(outros.c);
+        }
+        outros = outros.p;
+    }
     function transition_in(block, local) {
         if (block && block.i) {
             outroing.delete(block);
             block.i(local);
+        }
+    }
+    function transition_out(block, local, detach, callback) {
+        if (block && block.o) {
+            if (outroing.has(block))
+                return;
+            outroing.add(block);
+            outros.c.push(() => {
+                outroing.delete(block);
+                if (callback) {
+                    if (detach)
+                        block.d(1);
+                    callback();
+                }
+            });
+            block.o(local);
         }
     }
 
@@ -171,6 +247,138 @@ var app = (function () {
         : typeof globalThis !== 'undefined'
             ? globalThis
             : global);
+
+    function destroy_block(block, lookup) {
+        block.d(1);
+        lookup.delete(block.key);
+    }
+    function outro_and_destroy_block(block, lookup) {
+        transition_out(block, 1, 1, () => {
+            lookup.delete(block.key);
+        });
+    }
+    function update_keyed_each(old_blocks, dirty, get_key, dynamic, ctx, list, lookup, node, destroy, create_each_block, next, get_context) {
+        let o = old_blocks.length;
+        let n = list.length;
+        let i = o;
+        const old_indexes = {};
+        while (i--)
+            old_indexes[old_blocks[i].key] = i;
+        const new_blocks = [];
+        const new_lookup = new Map();
+        const deltas = new Map();
+        i = n;
+        while (i--) {
+            const child_ctx = get_context(ctx, list, i);
+            const key = get_key(child_ctx);
+            let block = lookup.get(key);
+            if (!block) {
+                block = create_each_block(key, child_ctx);
+                block.c();
+            }
+            else if (dynamic) {
+                block.p(child_ctx, dirty);
+            }
+            new_lookup.set(key, new_blocks[i] = block);
+            if (key in old_indexes)
+                deltas.set(key, Math.abs(i - old_indexes[key]));
+        }
+        const will_move = new Set();
+        const did_move = new Set();
+        function insert(block) {
+            transition_in(block, 1);
+            block.m(node, next);
+            lookup.set(block.key, block);
+            next = block.first;
+            n--;
+        }
+        while (o && n) {
+            const new_block = new_blocks[n - 1];
+            const old_block = old_blocks[o - 1];
+            const new_key = new_block.key;
+            const old_key = old_block.key;
+            if (new_block === old_block) {
+                // do nothing
+                next = new_block.first;
+                o--;
+                n--;
+            }
+            else if (!new_lookup.has(old_key)) {
+                // remove old block
+                destroy(old_block, lookup);
+                o--;
+            }
+            else if (!lookup.has(new_key) || will_move.has(new_key)) {
+                insert(new_block);
+            }
+            else if (did_move.has(old_key)) {
+                o--;
+            }
+            else if (deltas.get(new_key) > deltas.get(old_key)) {
+                did_move.add(new_key);
+                insert(new_block);
+            }
+            else {
+                will_move.add(old_key);
+                o--;
+            }
+        }
+        while (o--) {
+            const old_block = old_blocks[o];
+            if (!new_lookup.has(old_block.key))
+                destroy(old_block, lookup);
+        }
+        while (n)
+            insert(new_blocks[n - 1]);
+        return new_blocks;
+    }
+    function validate_each_keys(ctx, list, get_context, get_key) {
+        const keys = new Set();
+        for (let i = 0; i < list.length; i++) {
+            const key = get_key(get_context(ctx, list, i));
+            if (keys.has(key)) {
+                throw new Error('Cannot have duplicate keys in a keyed each');
+            }
+            keys.add(key);
+        }
+    }
+
+    function get_spread_update(levels, updates) {
+        const update = {};
+        const to_null_out = {};
+        const accounted_for = { $$scope: 1 };
+        let i = levels.length;
+        while (i--) {
+            const o = levels[i];
+            const n = updates[i];
+            if (n) {
+                for (const key in o) {
+                    if (!(key in n))
+                        to_null_out[key] = 1;
+                }
+                for (const key in n) {
+                    if (!accounted_for[key]) {
+                        update[key] = n[key];
+                        accounted_for[key] = 1;
+                    }
+                }
+                levels[i] = n;
+            }
+            else {
+                for (const key in o) {
+                    accounted_for[key] = 1;
+                }
+            }
+        }
+        for (const key in to_null_out) {
+            if (!(key in update))
+                update[key] = undefined;
+        }
+        return update;
+    }
+    function create_component(block) {
+        block && block.c();
+    }
     function mount_component(component, target, anchor, customElement) {
         const { fragment, on_mount, on_destroy, after_update } = component.$$;
         fragment && fragment.m(target, anchor);
@@ -343,6 +551,15 @@ var app = (function () {
         dispatch_dev('SvelteDOMSetData', { node: text, data });
         text.data = data;
     }
+    function validate_each_argument(arg) {
+        if (typeof arg !== 'string' && !(arg && typeof arg === 'object' && 'length' in arg)) {
+            let msg = '{#each} only iterates over array-like objects.';
+            if (typeof Symbol === 'function' && arg && Symbol.iterator in arg) {
+                msg += ' You can use a spread to convert this iterable into an array.';
+            }
+            throw new Error(msg);
+        }
+    }
     function validate_slots(name, slot, keys) {
         for (const slot_key of Object.keys(slot)) {
             if (!~keys.indexOf(slot_key)) {
@@ -369,6 +586,112 @@ var app = (function () {
         $capture_state() { }
         $inject_state() { }
     }
+
+    const subscriber_queue = [];
+    /**
+     * Create a `Writable` store that allows both updating and reading by subscription.
+     * @param {*=}value initial value
+     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
+     */
+    function writable(value, start = noop) {
+        let stop;
+        const subscribers = new Set();
+        function set(new_value) {
+            if (safe_not_equal(value, new_value)) {
+                value = new_value;
+                if (stop) { // store is ready
+                    const run_queue = !subscriber_queue.length;
+                    for (const subscriber of subscribers) {
+                        subscriber[1]();
+                        subscriber_queue.push(subscriber, value);
+                    }
+                    if (run_queue) {
+                        for (let i = 0; i < subscriber_queue.length; i += 2) {
+                            subscriber_queue[i][0](subscriber_queue[i + 1]);
+                        }
+                        subscriber_queue.length = 0;
+                    }
+                }
+            }
+        }
+        function update(fn) {
+            set(fn(value));
+        }
+        function subscribe(run, invalidate = noop) {
+            const subscriber = [run, invalidate];
+            subscribers.add(subscriber);
+            if (subscribers.size === 1) {
+                stop = start(set) || noop;
+            }
+            run(value);
+            return () => {
+                subscribers.delete(subscriber);
+                if (subscribers.size === 0) {
+                    stop();
+                    stop = null;
+                }
+            };
+        }
+        return { set, update, subscribe };
+    }
+
+    // import { produce } from "immer";
+    // window.process = { env: { NODE_ENV: 'production' } } as any;
+    const makeApplyDiff = (update) => (diff) => update((state) => {
+        return Object.assign(state, diff);
+    });
+    function bindToStore(store, updatersMap) {
+        return Object.entries(updatersMap).reduce((prev, [key, updater]) => {
+            prev[key] = (...args) => {
+                const state = get_store_value(store);
+                updater(state, ...args);
+                store.set(state);
+            };
+            return prev;
+        }, {});
+    }
+
+    const defaultState$2 = {
+        currentDate: new Date(),
+        tickIntervalHandle: undefined
+    };
+    function createStore$2() {
+        const { subscribe, set, update } = writable(defaultState$2);
+        return {
+            subscribe,
+            applyDiff: makeApplyDiff(update)
+        };
+    }
+    const clockEffects = {
+        start(clockStore) {
+            const state = get_store_value(clockStore);
+            if (state.tickIntervalHandle !== undefined) {
+                try {
+                    clearInterval(state.tickIntervalHandle);
+                }
+                catch (ex) {
+                }
+            }
+            // in real project setInterval would be behind a mockable abstraction
+            const tickIntervalHandle = setInterval(() => {
+                clockStore.applyDiff({ currentDate: new Date() });
+            }, 1000);
+            clockStore.applyDiff({
+                tickIntervalHandle: tickIntervalHandle,
+                currentDate: new Date()
+            });
+        },
+        stop(clockStore) {
+            const state = get_store_value(clockStore);
+            if (state.tickIntervalHandle === undefined) {
+                return 'already stopped';
+            }
+            clearInterval(state.tickIntervalHandle);
+            clockStore.applyDiff({ tickIntervalHandle: undefined });
+            return 'clock stopped';
+        }
+    };
+    const clockStore = createStore$2();
 
     const delay = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -8301,31 +8624,6 @@ var app = (function () {
         };
     });
 
-    class CarInventoryClient {
-        async getAvaliableCarModels() {
-            console.log(`server call getAvaliableCarModels`);
-            await delay(500);
-            return [
-                {
-                    id: 1,
-                    description: 'Ford Mustang',
-                    basePriceUSD: 100000
-                },
-                {
-                    id: 2,
-                    description: 'Kia Sorento',
-                    basePriceUSD: 26000
-                },
-                {
-                    id: 3,
-                    description: 'Porsche Cayene',
-                    basePriceUSD: 90000
-                }
-            ];
-        }
-    }
-    const carInvenotryClient = new CarInventoryClient();
-
     /**
      * Lodash (Custom Build) <https://lodash.com/>
      * Build: `lodash modularize exports="npm" -o ./`
@@ -10311,6 +10609,13 @@ var app = (function () {
             throw new Error("Assertion failed");
         }
     }
+    //todo move to ts-typing-util
+    function assertNarrowPropType(inst, key, guard) {
+        const val = inst[key];
+        if (guard(val) === false) {
+            throw new Error("Assertion failed");
+        }
+    }
     function guard(guard, diff) {
         return {
             guard,
@@ -10342,6 +10647,12 @@ var app = (function () {
         validateIsDealForeignCurrency(deal);
         return deal;
     }
+    function computeDealForeignCurrencyDerrivations(dealsState, approvalsState, clockState, dealId) {
+        const baseDerrivationsSelector = computeDealDerrivations(dealsState, approvalsState, clockState, dealId);
+        assertNarrowPropType(baseDerrivationsSelector, 'deal', isDealForeignCurrency);
+        //additional derrivations for DealForeignCurrency will be here when needed
+        return baseDerrivationsSelector;
+    }
     getHeaderAdditionalDescription.override(DealForeignCurrencyTag, (deal) => {
         return `${deal.businessParams.downpaymentCurrency} `;
     });
@@ -10369,70 +10680,33 @@ var app = (function () {
         };
     });
 
-    const subscriber_queue = [];
-    /**
-     * Create a `Writable` store that allows both updating and reading by subscription.
-     * @param {*=}value initial value
-     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
-     */
-    function writable(value, start = noop) {
-        let stop;
-        const subscribers = new Set();
-        function set(new_value) {
-            if (safe_not_equal(value, new_value)) {
-                value = new_value;
-                if (stop) { // store is ready
-                    const run_queue = !subscriber_queue.length;
-                    for (const subscriber of subscribers) {
-                        subscriber[1]();
-                        subscriber_queue.push(subscriber, value);
-                    }
-                    if (run_queue) {
-                        for (let i = 0; i < subscriber_queue.length; i += 2) {
-                            subscriber_queue[i][0](subscriber_queue[i + 1]);
-                        }
-                        subscriber_queue.length = 0;
-                    }
+    class CarInventoryClient {
+        async getAvaliableCarModels() {
+            console.log(`server call getAvaliableCarModels`);
+            await delay(500);
+            return [
+                {
+                    id: 1,
+                    description: 'Ford Mustang',
+                    basePriceUSD: 100000
+                },
+                {
+                    id: 2,
+                    description: 'Kia Sorento',
+                    basePriceUSD: 26000
+                },
+                {
+                    id: 3,
+                    description: 'Porsche Cayene',
+                    basePriceUSD: 90000
                 }
-            }
+            ];
         }
-        function update(fn) {
-            set(fn(value));
-        }
-        function subscribe(run, invalidate = noop) {
-            const subscriber = [run, invalidate];
-            subscribers.add(subscriber);
-            if (subscribers.size === 1) {
-                stop = start(set) || noop;
-            }
-            run(value);
-            return () => {
-                subscribers.delete(subscriber);
-                if (subscribers.size === 0) {
-                    stop();
-                    stop = null;
-                }
-            };
-        }
-        return { set, update, subscribe };
     }
-
-    const makeApplyDiff = (update) => (diff) => update((state) => {
-        return Object.assign(state, diff);
-    });
-    function bindToStore(store, updatersMap) {
-        return Object.entries(updatersMap).reduce((prev, [key, updater]) => {
-            prev[key] = (...args) => {
-                const state = get_store_value(store);
-                updater(state, ...args);
-                store.set(state);
-            };
-            return prev;
-        }, {});
-    }
+    const carInvenotryClient = new CarInventoryClient();
 
     //this is needed to be able to type generic `set` reducer
-    const defaultState = {
+    const defaultState$1 = {
         nextDealId: 1,
         deals: [],
         activeDealId: undefined,
@@ -10486,8 +10760,8 @@ var app = (function () {
             Object.assign(deal.businessParams, diff);
         },
     };
-    function createStore() {
-        const store = writable(defaultState);
+    function createStore$1() {
+        const store = writable(defaultState$1);
         return Object.assign({ subscribe: store.subscribe, applyDiff: makeApplyDiff(store.update) }, bindToStore(store, dealsReducers));
     }
     const dealsEffects = {
@@ -10579,278 +10853,3459 @@ var app = (function () {
             }));
         }
     };
-    const dealsStore = createStore();
+    const dealsStore = createStore$1();
 
-    function n(n){for(var r=arguments.length,t=Array(r>1?r-1:0),e=1;e<r;e++)t[e-1]=arguments[e];if("production"!==process.env.NODE_ENV){var i=Y[n],o=i?"function"==typeof i?i.apply(null,t):i:"unknown error nr: "+n;throw Error("[Immer] "+o)}throw Error("[Immer] minified error nr: "+n+(t.length?" "+t.map((function(n){return "'"+n+"'"})).join(","):"")+". Find the full error at: https://bit.ly/3cXEKWf")}function r(n){return !!n&&!!n[Q]}function t(n){return !!n&&(function(n){if(!n||"object"!=typeof n)return !1;var r=Object.getPrototypeOf(n);if(null===r)return !0;var t=Object.hasOwnProperty.call(r,"constructor")&&r.constructor;return "function"==typeof t&&Function.toString.call(t)===Z}(n)||Array.isArray(n)||!!n[L]||!!n.constructor[L]||s(n)||v(n))}function i(n,r,t){void 0===t&&(t=!1),0===o(n)?(t?Object.keys:nn)(n).forEach((function(e){t&&"symbol"==typeof e||r(e,n[e],n);})):n.forEach((function(t,e){return r(e,t,n)}));}function o(n){var r=n[Q];return r?r.i>3?r.i-4:r.i:Array.isArray(n)?1:s(n)?2:v(n)?3:0}function u(n,r){return 2===o(n)?n.has(r):Object.prototype.hasOwnProperty.call(n,r)}function a(n,r){return 2===o(n)?n.get(r):n[r]}function f(n,r,t){var e=o(n);2===e?n.set(r,t):3===e?(n.delete(r),n.add(t)):n[r]=t;}function c(n,r){return n===r?0!==n||1/n==1/r:n!=n&&r!=r}function s(n){return X&&n instanceof Map}function v(n){return q&&n instanceof Set}function p(n){return n.o||n.t}function l(n){if(Array.isArray(n))return Array.prototype.slice.call(n);var r=rn(n);delete r[Q];for(var t=nn(r),e=0;e<t.length;e++){var i=t[e],o=r[i];!1===o.writable&&(o.writable=!0,o.configurable=!0),(o.get||o.set)&&(r[i]={configurable:!0,writable:!0,enumerable:o.enumerable,value:n[i]});}return Object.create(Object.getPrototypeOf(n),r)}function d(n,e){return void 0===e&&(e=!1),y(n)||r(n)||!t(n)?n:(o(n)>1&&(n.set=n.add=n.clear=n.delete=h),Object.freeze(n),e&&i(n,(function(n,r){return d(r,!0)}),!0),n)}function h(){n(2);}function y(n){return null==n||"object"!=typeof n||Object.isFrozen(n)}function b(r){var t=tn[r];return t||n(18,r),t}function _(){return "production"===process.env.NODE_ENV||U||n(0),U}function j(n,r){r&&(b("Patches"),n.u=[],n.s=[],n.v=r);}function g(n){O(n),n.p.forEach(S),n.p=null;}function O(n){n===U&&(U=n.l);}function w(n){return U={p:[],l:U,h:n,m:!0,_:0}}function S(n){var r=n[Q];0===r.i||1===r.i?r.j():r.g=!0;}function P(r,e){e._=e.p.length;var i=e.p[0],o=void 0!==r&&r!==i;return e.h.O||b("ES5").S(e,r,o),o?(i[Q].P&&(g(e),n(4)),t(r)&&(r=M(e,r),e.l||x(e,r)),e.u&&b("Patches").M(i[Q],r,e.u,e.s)):r=M(e,i,[]),g(e),e.u&&e.v(e.u,e.s),r!==H?r:void 0}function M(n,r,t){if(y(r))return r;var e=r[Q];if(!e)return i(r,(function(i,o){return A(n,e,r,i,o,t)}),!0),r;if(e.A!==n)return r;if(!e.P)return x(n,e.t,!0),e.t;if(!e.I){e.I=!0,e.A._--;var o=4===e.i||5===e.i?e.o=l(e.k):e.o;i(3===e.i?new Set(o):o,(function(r,i){return A(n,e,o,r,i,t)})),x(n,o,!1),t&&n.u&&b("Patches").R(e,t,n.u,n.s);}return e.o}function A(e,i,o,a,c,s){if("production"!==process.env.NODE_ENV&&c===o&&n(5),r(c)){var v=M(e,c,s&&i&&3!==i.i&&!u(i.D,a)?s.concat(a):void 0);if(f(o,a,v),!r(v))return;e.m=!1;}if(t(c)&&!y(c)){if(!e.h.F&&e._<1)return;M(e,c),i&&i.A.l||x(e,c);}}function x(n,r,t){void 0===t&&(t=!1),n.h.F&&n.m&&d(r,t);}function z(n,r){var t=n[Q];return (t?p(t):n)[r]}function I(n,r){if(r in n)for(var t=Object.getPrototypeOf(n);t;){var e=Object.getOwnPropertyDescriptor(t,r);if(e)return e;t=Object.getPrototypeOf(t);}}function k(n){n.P||(n.P=!0,n.l&&k(n.l));}function E(n){n.o||(n.o=l(n.t));}function R(n,r,t){var e=s(r)?b("MapSet").N(r,t):v(r)?b("MapSet").T(r,t):n.O?function(n,r){var t=Array.isArray(n),e={i:t?1:0,A:r?r.A:_(),P:!1,I:!1,D:{},l:r,t:n,k:null,o:null,j:null,C:!1},i=e,o=en;t&&(i=[e],o=on);var u=Proxy.revocable(i,o),a=u.revoke,f=u.proxy;return e.k=f,e.j=a,f}(r,t):b("ES5").J(r,t);return (t?t.A:_()).p.push(e),e}function D(e){return r(e)||n(22,e),function n(r){if(!t(r))return r;var e,u=r[Q],c=o(r);if(u){if(!u.P&&(u.i<4||!b("ES5").K(u)))return u.t;u.I=!0,e=F(r,c),u.I=!1;}else e=F(r,c);return i(e,(function(r,t){u&&a(u.t,r)===t||f(e,r,n(t));})),3===c?new Set(e):e}(e)}function F(n,r){switch(r){case 2:return new Map(n);case 3:return Array.from(n)}return l(n)}var G,U,W="undefined"!=typeof Symbol&&"symbol"==typeof Symbol("x"),X="undefined"!=typeof Map,q="undefined"!=typeof Set,B="undefined"!=typeof Proxy&&void 0!==Proxy.revocable&&"undefined"!=typeof Reflect,H=W?Symbol.for("immer-nothing"):((G={})["immer-nothing"]=!0,G),L=W?Symbol.for("immer-draftable"):"__$immer_draftable",Q=W?Symbol.for("immer-state"):"__$immer_state",Y={0:"Illegal state",1:"Immer drafts cannot have computed properties",2:"This object has been frozen and should not be mutated",3:function(n){return "Cannot use a proxy that has been revoked. Did you pass an object from inside an immer function to an async process? "+n},4:"An immer producer returned a new value *and* modified its draft. Either return a new value *or* modify the draft.",5:"Immer forbids circular references",6:"The first or second argument to `produce` must be a function",7:"The third argument to `produce` must be a function or undefined",8:"First argument to `createDraft` must be a plain object, an array, or an immerable object",9:"First argument to `finishDraft` must be a draft returned by `createDraft`",10:"The given draft is already finalized",11:"Object.defineProperty() cannot be used on an Immer draft",12:"Object.setPrototypeOf() cannot be used on an Immer draft",13:"Immer only supports deleting array indices",14:"Immer only supports setting array indices and the 'length' property",15:function(n){return "Cannot apply patch, path doesn't resolve: "+n},16:'Sets cannot have "replace" patches.',17:function(n){return "Unsupported patch operation: "+n},18:function(n){return "The plugin for '"+n+"' has not been loaded into Immer. To enable the plugin, import and call `enable"+n+"()` when initializing your application."},20:"Cannot use proxies if Proxy, Proxy.revocable or Reflect are not available",21:function(n){return "produce can only be called on things that are draftable: plain objects, arrays, Map, Set or classes that are marked with '[immerable]: true'. Got '"+n+"'"},22:function(n){return "'current' expects a draft, got: "+n},23:function(n){return "'original' expects a draft, got: "+n},24:"Patching reserved attributes like __proto__, prototype and constructor is not allowed"},Z=""+Object.prototype.constructor,nn="undefined"!=typeof Reflect&&Reflect.ownKeys?Reflect.ownKeys:void 0!==Object.getOwnPropertySymbols?function(n){return Object.getOwnPropertyNames(n).concat(Object.getOwnPropertySymbols(n))}:Object.getOwnPropertyNames,rn=Object.getOwnPropertyDescriptors||function(n){var r={};return nn(n).forEach((function(t){r[t]=Object.getOwnPropertyDescriptor(n,t);})),r},tn={},en={get:function(n,r){if(r===Q)return n;var e=p(n);if(!u(e,r))return function(n,r,t){var e,i=I(r,t);return i?"value"in i?i.value:null===(e=i.get)||void 0===e?void 0:e.call(n.k):void 0}(n,e,r);var i=e[r];return n.I||!t(i)?i:i===z(n.t,r)?(E(n),n.o[r]=R(n.A.h,i,n)):i},has:function(n,r){return r in p(n)},ownKeys:function(n){return Reflect.ownKeys(p(n))},set:function(n,r,t){var e=I(p(n),r);if(null==e?void 0:e.set)return e.set.call(n.k,t),!0;if(!n.P){var i=z(p(n),r),o=null==i?void 0:i[Q];if(o&&o.t===t)return n.o[r]=t,n.D[r]=!1,!0;if(c(t,i)&&(void 0!==t||u(n.t,r)))return !0;E(n),k(n);}return n.o[r]===t&&"number"!=typeof t||(n.o[r]=t,n.D[r]=!0,!0)},deleteProperty:function(n,r){return void 0!==z(n.t,r)||r in n.t?(n.D[r]=!1,E(n),k(n)):delete n.D[r],n.o&&delete n.o[r],!0},getOwnPropertyDescriptor:function(n,r){var t=p(n),e=Reflect.getOwnPropertyDescriptor(t,r);return e?{writable:!0,configurable:1!==n.i||"length"!==r,enumerable:e.enumerable,value:t[r]}:e},defineProperty:function(){n(11);},getPrototypeOf:function(n){return Object.getPrototypeOf(n.t)},setPrototypeOf:function(){n(12);}},on={};i(en,(function(n,r){on[n]=function(){return arguments[0]=arguments[0][0],r.apply(this,arguments)};})),on.deleteProperty=function(r,t){return "production"!==process.env.NODE_ENV&&isNaN(parseInt(t))&&n(13),en.deleteProperty.call(this,r[0],t)},on.set=function(r,t,e){return "production"!==process.env.NODE_ENV&&"length"!==t&&isNaN(parseInt(t))&&n(14),en.set.call(this,r[0],t,e,r[0])};var un=function(){function e(r){var e=this;this.O=B,this.F=!0,this.produce=function(r,i,o){if("function"==typeof r&&"function"!=typeof i){var u=i;i=r;var a=e;return function(n){var r=this;void 0===n&&(n=u);for(var t=arguments.length,e=Array(t>1?t-1:0),o=1;o<t;o++)e[o-1]=arguments[o];return a.produce(n,(function(n){var t;return (t=i).call.apply(t,[r,n].concat(e))}))}}var f;if("function"!=typeof i&&n(6),void 0!==o&&"function"!=typeof o&&n(7),t(r)){var c=w(e),s=R(e,r,void 0),v=!0;try{f=i(s),v=!1;}finally{v?g(c):O(c);}return "undefined"!=typeof Promise&&f instanceof Promise?f.then((function(n){return j(c,o),P(n,c)}),(function(n){throw g(c),n})):(j(c,o),P(f,c))}if(!r||"object"!=typeof r){if((f=i(r))===H)return;return void 0===f&&(f=r),e.F&&d(f,!0),f}n(21,r);},this.produceWithPatches=function(n,r){return "function"==typeof n?function(r){for(var t=arguments.length,i=Array(t>1?t-1:0),o=1;o<t;o++)i[o-1]=arguments[o];return e.produceWithPatches(r,(function(r){return n.apply(void 0,[r].concat(i))}))}:[e.produce(n,r,(function(n,r){t=n,i=r;})),t,i];var t,i;},"boolean"==typeof(null==r?void 0:r.useProxies)&&this.setUseProxies(r.useProxies),"boolean"==typeof(null==r?void 0:r.autoFreeze)&&this.setAutoFreeze(r.autoFreeze);}var i=e.prototype;return i.createDraft=function(e){t(e)||n(8),r(e)&&(e=D(e));var i=w(this),o=R(this,e,void 0);return o[Q].C=!0,O(i),o},i.finishDraft=function(r,t){var e=r&&r[Q];"production"!==process.env.NODE_ENV&&(e&&e.C||n(9),e.I&&n(10));var i=e.A;return j(i,t),P(void 0,i)},i.setAutoFreeze=function(n){this.F=n;},i.setUseProxies=function(r){r&&!B&&n(20),this.O=r;},i.applyPatches=function(n,t){var e;for(e=t.length-1;e>=0;e--){var i=t[e];if(0===i.path.length&&"replace"===i.op){n=i.value;break}}var o=b("Patches").$;return r(n)?o(n,t):this.produce(n,(function(n){return o(n,t.slice(e+1))}))},e}(),an=new un,fn=an.produce;an.produceWithPatches.bind(an);an.setAutoFreeze.bind(an);an.setUseProxies.bind(an);an.applyPatches.bind(an);an.createDraft.bind(an);an.finishDraft.bind(an);
-
-    const defaultState1 = {
-        a: 1,
-        b: 2
+    const defaultState = {
+        approvals: {},
+        isLoading: {}
     };
-
-    function createStore1() {
-        const { subscribe, set, update } = writable(defaultState1);
-
-        return {
-            subscribe,
-            incr1: () => update(x => {x.a++; return x}),
-            incr2: () => update(x => {x.b++; return x}),
+    const approvalsReducers = {
+        storeApprovalReqStatus(state, dealId, reqStatus) {
+            if (!state.approvals[dealId]) {
+                state.approvals[dealId] = [];
+            }
+            state.approvals[dealId].push(reqStatus);
+        },
+        setIsLoading(state, dealId, isLoading) {
+            state.isLoading[dealId] = isLoading;
         }
-    }
-
-    const store1 = createStore1();
-
-    const defaultState2 = {
-        a: {val: 1},
-        b: {val: 2}
     };
+    function createStore() {
+        const store = writable(defaultState);
+        return Object.assign({ subscribe: store.subscribe }, bindToStore(store, approvalsReducers));
+    }
+    const approvalsEffects = {
+        async requestApproval(approvalsStore, deal) {
+            approvalsStore.setIsLoading(deal.businessParams.dealId, true);
+            const call = prepareRequstApprovalCall(deal);
+            const resp = await call.makeCall();
+            approvalsStore.storeApprovalReqStatus(deal.businessParams.dealId, {
+                request: call.request,
+                result: resp,
+                timestamp: new Date()
+            });
+            approvalsStore.setIsLoading(deal.businessParams.dealId, false);
+        },
+    };
+    const approvalsStore = createStore();
 
-    function createStore2() {
-        const { subscribe, set, update } = writable(defaultState2);
+    /* src\generic-components\SelectDropdown.svelte generated by Svelte v3.42.6 */
 
-        return {
-            subscribe,
-            incr1: () => update(x => {x.a.val++; return x}),
-            incr2: () => update(x => {x.b.val++; return x}),
-        }
+    const { Error: Error_1 } = globals;
+    const file$a = "src\\generic-components\\SelectDropdown.svelte";
+
+    function get_each_context$3(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[11] = list[i];
+    	return child_ctx;
     }
 
-    const store2 = createStore2();
-
-    function createStoreImmut(){
-        const { subscribe, set, update } = writable(defaultState2);
-
-        return {
-            subscribe,
-            incr1: () => update(x => fn(x, draft => {draft.a.val++;})),
-            incr2: () => update(x => fn(x, draft => {draft.b.val++;})),
-        }
-    }
-
-    const storeImmut = createStoreImmut();
-
-    /* src\App.svelte generated by Svelte v3.42.6 */
-
-    const { console: console_1 } = globals;
-    const file = "src\\App.svelte";
-
-    function create_fragment(ctx) {
-    	let div10;
-    	let div0;
-    	let t0_value = /*$store1*/ ctx[3].a + "";
+    // (25:4) {#if hasEmptyOption}
+    function create_if_block$5(ctx) {
+    	let option;
     	let t0;
     	let t1;
-    	let button0;
-    	let t3;
-    	let div1;
-    	let t4_value = /*$store1*/ ctx[3].b + "";
-    	let t4;
-    	let t5;
-    	let button1;
-    	let t7;
-    	let div2;
-    	let t8_value = /*$store2*/ ctx[2].a.val + "";
-    	let t8;
-    	let t9;
-    	let button2;
-    	let t11;
-    	let div3;
-    	let t12_value = /*$store2*/ ctx[2].b.val + "";
-    	let t12;
-    	let t13;
-    	let button3;
-    	let t15;
-    	let div4;
-    	let t16_value = /*$storeImmut*/ ctx[1].a.val + "";
-    	let t16;
-    	let t17;
-    	let button4;
-    	let t19;
-    	let div5;
-    	let t20_value = /*$storeImmut*/ ctx[1].b.val + "";
-    	let t20;
-    	let t21;
-    	let button5;
-    	let t23;
-    	let div6;
-    	let t25;
-    	let div9;
-    	let div7;
-    	let button6;
-    	let t26;
-    	let button6_disabled_value;
-    	let t27;
-    	let button7;
-    	let t28;
-    	let button7_disabled_value;
-    	let t29;
-    	let div8;
-    	let mounted;
-    	let dispose;
 
     	const block = {
     		c: function create() {
-    			div10 = element("div");
-    			div0 = element("div");
+    			option = element("option");
+    			t0 = text(/*emptyPlaceholder*/ ctx[6]);
+    			t1 = space();
+    			option.__value = "";
+    			option.value = option.__value;
+    			add_location(option, file$a, 25, 8, 793);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, option, anchor);
+    			append_dev(option, t0);
+    			append_dev(option, t1);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*emptyPlaceholder*/ 64) set_data_dev(t0, /*emptyPlaceholder*/ ctx[6]);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(option);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$5.name,
+    		type: "if",
+    		source: "(25:4) {#if hasEmptyOption}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (31:4) {#each availableItems as item (getKeyValue(item))}
+    function create_each_block$3(key_1, ctx) {
+    	let option;
+    	let t0_value = /*getDescription*/ ctx[2](/*item*/ ctx[11]) + "";
+    	let t0;
+    	let t1;
+    	let option_value_value;
+
+    	const block = {
+    		key: key_1,
+    		first: null,
+    		c: function create() {
+    			option = element("option");
     			t0 = text(t0_value);
     			t1 = space();
-    			button0 = element("button");
-    			button0.textContent = "+";
-    			t3 = space();
-    			div1 = element("div");
-    			t4 = text(t4_value);
-    			t5 = space();
-    			button1 = element("button");
-    			button1.textContent = "+";
-    			t7 = space();
-    			div2 = element("div");
-    			t8 = text(t8_value);
-    			t9 = space();
-    			button2 = element("button");
-    			button2.textContent = "+";
-    			t11 = space();
-    			div3 = element("div");
-    			t12 = text(t12_value);
-    			t13 = space();
-    			button3 = element("button");
-    			button3.textContent = "+";
-    			t15 = space();
-    			div4 = element("div");
-    			t16 = text(t16_value);
-    			t17 = space();
-    			button4 = element("button");
-    			button4.textContent = "+";
-    			t19 = space();
-    			div5 = element("div");
-    			t20 = text(t20_value);
-    			t21 = space();
-    			button5 = element("button");
-    			button5.textContent = "+";
-    			t23 = space();
-    			div6 = element("div");
-    			div6.textContent = "Crazy Ivan Motors (Svelte)";
-    			t25 = space();
-    			div9 = element("div");
-    			div7 = element("div");
-    			button6 = element("button");
-    			t26 = text("Add deal");
-    			t27 = space();
-    			button7 = element("button");
-    			t28 = text("Add foreign currency deal");
-    			t29 = space();
-    			div8 = element("div");
-    			add_location(button0, file, 27, 8, 1107);
-    			add_location(div0, file, 25, 4, 1071);
-    			add_location(button1, file, 31, 8, 1211);
-    			add_location(div1, file, 29, 4, 1175);
-    			add_location(button2, file, 35, 8, 1319);
-    			add_location(div2, file, 33, 4, 1279);
-    			add_location(button3, file, 39, 8, 1427);
-    			add_location(div3, file, 37, 4, 1387);
-    			add_location(button4, file, 43, 8, 1539);
-    			add_location(div4, file, 41, 4, 1495);
-    			add_location(button5, file, 47, 8, 1655);
-    			add_location(div5, file, 45, 4, 1611);
-    			attr_dev(div6, "class", "main-logo svelte-u16sho");
-    			add_location(div6, file, 51, 4, 1731);
-    			attr_dev(button6, "class", "button-add-new-deal");
-    			button6.disabled = button6_disabled_value = /*$dealsStore*/ ctx[0].newDealIsLoading;
-    			add_location(button6, file, 57, 8, 1865);
-    			attr_dev(button7, "class", "button-add-new-deal");
-    			button7.disabled = button7_disabled_value = /*$dealsStore*/ ctx[0].newDealIsLoading;
-    			add_location(button7, file, 65, 8, 2089);
-    			attr_dev(div7, "class", "tabs svelte-u16sho");
-    			add_location(div7, file, 56, 6, 1837);
-    			attr_dev(div8, "class", "" + (null_to_empty(`active-tab`) + " svelte-u16sho"));
-    			add_location(div8, file, 79, 6, 2556);
-    			attr_dev(div9, "class", "screens svelte-u16sho");
-    			add_location(div9, file, 55, 4, 1808);
-    			attr_dev(div10, "id", "app-root");
-    			attr_dev(div10, "class", "svelte-u16sho");
-    			add_location(div10, file, 24, 0, 1046);
+    			option.__value = option_value_value = /*getKeyValue*/ ctx[1](/*item*/ ctx[11]);
+    			option.value = option.__value;
+    			add_location(option, file$a, 31, 8, 942);
+    			this.first = option;
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, option, anchor);
+    			append_dev(option, t0);
+    			append_dev(option, t1);
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			if (dirty & /*getDescription, availableItems*/ 20 && t0_value !== (t0_value = /*getDescription*/ ctx[2](/*item*/ ctx[11]) + "")) set_data_dev(t0, t0_value);
+
+    			if (dirty & /*getKeyValue, availableItems*/ 18 && option_value_value !== (option_value_value = /*getKeyValue*/ ctx[1](/*item*/ ctx[11]))) {
+    				prop_dev(option, "__value", option_value_value);
+    				option.value = option.__value;
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(option);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block$3.name,
+    		type: "each",
+    		source: "(31:4) {#each availableItems as item (getKeyValue(item))}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$a(ctx) {
+    	let select;
+    	let if_block_anchor;
+    	let each_blocks = [];
+    	let each_1_lookup = new Map();
+    	let select_value_value;
+    	let mounted;
+    	let dispose;
+    	let if_block = /*hasEmptyOption*/ ctx[5] && create_if_block$5(ctx);
+    	let each_value = /*availableItems*/ ctx[4];
+    	validate_each_argument(each_value);
+    	const get_key = ctx => /*getKeyValue*/ ctx[1](/*item*/ ctx[11]);
+    	validate_each_keys(ctx, each_value, get_each_context$3, get_key);
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		let child_ctx = get_each_context$3(ctx, each_value, i);
+    		let key = get_key(child_ctx);
+    		each_1_lookup.set(key, each_blocks[i] = create_each_block$3(key, child_ctx));
+    	}
+
+    	let select_levels = [
+    		/*selectAttributes*/ ctx[0],
+    		{ disabled: /*disabled*/ ctx[3] },
+    		{
+    			value: select_value_value = /*modelState*/ ctx[7]
+    			? /*getKeyValue*/ ctx[1](/*modelState*/ ctx[7])
+    			: ""
+    		}
+    	];
+
+    	let select_data = {};
+
+    	for (let i = 0; i < select_levels.length; i += 1) {
+    		select_data = assign(select_data, select_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			select = element("select");
+    			if (if_block) if_block.c();
+    			if_block_anchor = empty();
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			set_attributes(select, select_data);
+    			add_location(select, file$a, 18, 0, 580);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error_1("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, select, anchor);
+    			if (if_block) if_block.m(select, null);
+    			append_dev(select, if_block_anchor);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].m(select, null);
+    			}
+
+    			(select_data.multiple ? select_options : select_option)(select, select_data.value);
+    			if (select.autofocus) select.focus();
+
+    			if (!mounted) {
+    				dispose = listen_dev(select, "change", /*change_handler*/ ctx[10], false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (/*hasEmptyOption*/ ctx[5]) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+    				} else {
+    					if_block = create_if_block$5(ctx);
+    					if_block.c();
+    					if_block.m(select, if_block_anchor);
+    				}
+    			} else if (if_block) {
+    				if_block.d(1);
+    				if_block = null;
+    			}
+
+    			if (dirty & /*getKeyValue, availableItems, getDescription*/ 22) {
+    				each_value = /*availableItems*/ ctx[4];
+    				validate_each_argument(each_value);
+    				validate_each_keys(ctx, each_value, get_each_context$3, get_key);
+    				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, select, destroy_block, create_each_block$3, null, get_each_context$3);
+    			}
+
+    			set_attributes(select, select_data = get_spread_update(select_levels, [
+    				dirty & /*selectAttributes*/ 1 && /*selectAttributes*/ ctx[0],
+    				dirty & /*disabled*/ 8 && { disabled: /*disabled*/ ctx[3] },
+    				dirty & /*modelState, getKeyValue*/ 130 && select_value_value !== (select_value_value = /*modelState*/ ctx[7]
+    				? /*getKeyValue*/ ctx[1](/*modelState*/ ctx[7])
+    				: "") && { value: select_value_value }
+    			]));
+
+    			if (dirty & /*selectAttributes, disabled, modelState, getKeyValue*/ 139 && 'value' in select_data) (select_data.multiple ? select_options : select_option)(select, select_data.value);
+    			
+    		},
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(select);
+    			if (if_block) if_block.d();
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].d();
+    			}
+
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$a.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$a($$self, $$props, $$invalidate) {
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('SelectDropdown', slots, []);
+    	let { selectAttributes = {} } = $$props;
+    	let { getKeyValue = x => x.toString() } = $$props;
+    	let { getDescription = x => x.toString() } = $$props;
+    	let { disabled = false } = $$props;
+    	let { availableItems } = $$props;
+    	let { hasEmptyOption } = $$props;
+    	let { emptyPlaceholder = 'empty' } = $$props;
+    	let { modelState } = $$props;
+    	let { onSelect } = $$props;
+
+    	function handleSelect(value) {
+    		const selectedItem = availableItems.find(i => value === getKeyValue(i));
+
+    		if (hasEmptyOption !== true && selectedItem === undefined) {
+    			throw new Error();
+    		}
+
+    		onSelect(selectedItem);
+    	}
+
+    	const writable_props = [
+    		'selectAttributes',
+    		'getKeyValue',
+    		'getDescription',
+    		'disabled',
+    		'availableItems',
+    		'hasEmptyOption',
+    		'emptyPlaceholder',
+    		'modelState',
+    		'onSelect'
+    	];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<SelectDropdown> was created with unknown prop '${key}'`);
+    	});
+
+    	const change_handler = e => handleSelect(e.currentTarget.value);
+
+    	$$self.$$set = $$props => {
+    		if ('selectAttributes' in $$props) $$invalidate(0, selectAttributes = $$props.selectAttributes);
+    		if ('getKeyValue' in $$props) $$invalidate(1, getKeyValue = $$props.getKeyValue);
+    		if ('getDescription' in $$props) $$invalidate(2, getDescription = $$props.getDescription);
+    		if ('disabled' in $$props) $$invalidate(3, disabled = $$props.disabled);
+    		if ('availableItems' in $$props) $$invalidate(4, availableItems = $$props.availableItems);
+    		if ('hasEmptyOption' in $$props) $$invalidate(5, hasEmptyOption = $$props.hasEmptyOption);
+    		if ('emptyPlaceholder' in $$props) $$invalidate(6, emptyPlaceholder = $$props.emptyPlaceholder);
+    		if ('modelState' in $$props) $$invalidate(7, modelState = $$props.modelState);
+    		if ('onSelect' in $$props) $$invalidate(9, onSelect = $$props.onSelect);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		selectAttributes,
+    		getKeyValue,
+    		getDescription,
+    		disabled,
+    		availableItems,
+    		hasEmptyOption,
+    		emptyPlaceholder,
+    		modelState,
+    		onSelect,
+    		handleSelect
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('selectAttributes' in $$props) $$invalidate(0, selectAttributes = $$props.selectAttributes);
+    		if ('getKeyValue' in $$props) $$invalidate(1, getKeyValue = $$props.getKeyValue);
+    		if ('getDescription' in $$props) $$invalidate(2, getDescription = $$props.getDescription);
+    		if ('disabled' in $$props) $$invalidate(3, disabled = $$props.disabled);
+    		if ('availableItems' in $$props) $$invalidate(4, availableItems = $$props.availableItems);
+    		if ('hasEmptyOption' in $$props) $$invalidate(5, hasEmptyOption = $$props.hasEmptyOption);
+    		if ('emptyPlaceholder' in $$props) $$invalidate(6, emptyPlaceholder = $$props.emptyPlaceholder);
+    		if ('modelState' in $$props) $$invalidate(7, modelState = $$props.modelState);
+    		if ('onSelect' in $$props) $$invalidate(9, onSelect = $$props.onSelect);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	return [
+    		selectAttributes,
+    		getKeyValue,
+    		getDescription,
+    		disabled,
+    		availableItems,
+    		hasEmptyOption,
+    		emptyPlaceholder,
+    		modelState,
+    		handleSelect,
+    		onSelect,
+    		change_handler
+    	];
+    }
+
+    class SelectDropdown extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$a, create_fragment$a, safe_not_equal, {
+    			selectAttributes: 0,
+    			getKeyValue: 1,
+    			getDescription: 2,
+    			disabled: 3,
+    			availableItems: 4,
+    			hasEmptyOption: 5,
+    			emptyPlaceholder: 6,
+    			modelState: 7,
+    			onSelect: 9
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "SelectDropdown",
+    			options,
+    			id: create_fragment$a.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*availableItems*/ ctx[4] === undefined && !('availableItems' in props)) {
+    			console.warn("<SelectDropdown> was created without expected prop 'availableItems'");
+    		}
+
+    		if (/*hasEmptyOption*/ ctx[5] === undefined && !('hasEmptyOption' in props)) {
+    			console.warn("<SelectDropdown> was created without expected prop 'hasEmptyOption'");
+    		}
+
+    		if (/*modelState*/ ctx[7] === undefined && !('modelState' in props)) {
+    			console.warn("<SelectDropdown> was created without expected prop 'modelState'");
+    		}
+
+    		if (/*onSelect*/ ctx[9] === undefined && !('onSelect' in props)) {
+    			console.warn("<SelectDropdown> was created without expected prop 'onSelect'");
+    		}
+    	}
+
+    	get selectAttributes() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set selectAttributes(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getKeyValue() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set getKeyValue(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getDescription() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set getDescription(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get disabled() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set disabled(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get availableItems() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set availableItems(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get hasEmptyOption() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set hasEmptyOption(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get emptyPlaceholder() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set emptyPlaceholder(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get modelState() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set modelState(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get onSelect() {
+    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set onSelect(value) {
+    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\stores\deals\Deal\CarModelSelector.svelte generated by Svelte v3.42.6 */
+    const file$9 = "src\\stores\\deals\\Deal\\CarModelSelector.svelte";
+
+    // (14:0) {:else}
+    function create_else_block$2(ctx) {
+    	let selectdropdown;
+    	let current;
+
+    	selectdropdown = new SelectDropdown({
+    			props: {
+    				selectAttributes: { class: "car-model-selector-select" },
+    				emptyPlaceholder: "Please select model",
+    				hasEmptyOption: true,
+    				availableItems: /*dealState*/ ctx[1].deal.carModelsAvailable,
+    				modelState: /*dealState*/ ctx[1].deal.businessParams.carModelSelected,
+    				getKeyValue: func$1,
+    				getDescription: func_1$1,
+    				disabled: /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized,
+    				onSelect: /*func_2*/ ctx[5]
+    			},
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(selectdropdown.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(selectdropdown, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const selectdropdown_changes = {};
+    			if (dirty & /*dealState*/ 2) selectdropdown_changes.availableItems = /*dealState*/ ctx[1].deal.carModelsAvailable;
+    			if (dirty & /*dealState*/ 2) selectdropdown_changes.modelState = /*dealState*/ ctx[1].deal.businessParams.carModelSelected;
+    			if (dirty & /*dealState*/ 2) selectdropdown_changes.disabled = /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized;
+    			if (dirty & /*dealId*/ 1) selectdropdown_changes.onSelect = /*func_2*/ ctx[5];
+    			selectdropdown.$set(selectdropdown_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(selectdropdown.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(selectdropdown.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(selectdropdown, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block$2.name,
+    		type: "else",
+    		source: "(14:0) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (12:0) {#if dealState.deal.isLoadingItemized.carModelsAvailable}
+    function create_if_block$4(ctx) {
+    	let div;
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			div.textContent = "Loading";
+    			attr_dev(div, "class", "car-model-selector-select");
+    			add_location(div, file$9, 12, 4, 606);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    		},
+    		p: noop,
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$4.name,
+    		type: "if",
+    		source: "(12:0) {#if dealState.deal.isLoadingItemized.carModelsAvailable}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$9(ctx) {
+    	let current_block_type_index;
+    	let if_block;
+    	let t0;
+    	let button;
+    	let t1;
+    	let button_disabled_value;
+    	let current;
+    	let mounted;
+    	let dispose;
+    	const if_block_creators = [create_if_block$4, create_else_block$2];
+    	const if_blocks = [];
+
+    	function select_block_type(ctx, dirty) {
+    		if (/*dealState*/ ctx[1].deal.isLoadingItemized.carModelsAvailable) return 0;
+    		return 1;
+    	}
+
+    	current_block_type_index = select_block_type(ctx);
+    	if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+
+    	const block = {
+    		c: function create() {
+    			if_block.c();
+    			t0 = space();
+    			button = element("button");
+    			t1 = text("Refresh available models");
+    			attr_dev(button, "class", "car-model-selector-refresh-btn");
+    			button.disabled = button_disabled_value = /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized;
+    			add_location(button, file$9, 31, 0, 1333);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, div10, anchor);
-    			append_dev(div10, div0);
-    			append_dev(div0, t0);
-    			append_dev(div0, t1);
-    			append_dev(div0, button0);
-    			append_dev(div10, t3);
-    			append_dev(div10, div1);
-    			append_dev(div1, t4);
-    			append_dev(div1, t5);
-    			append_dev(div1, button1);
-    			append_dev(div10, t7);
-    			append_dev(div10, div2);
-    			append_dev(div2, t8);
-    			append_dev(div2, t9);
-    			append_dev(div2, button2);
-    			append_dev(div10, t11);
-    			append_dev(div10, div3);
-    			append_dev(div3, t12);
-    			append_dev(div3, t13);
-    			append_dev(div3, button3);
-    			append_dev(div10, t15);
-    			append_dev(div10, div4);
-    			append_dev(div4, t16);
-    			append_dev(div4, t17);
-    			append_dev(div4, button4);
-    			append_dev(div10, t19);
-    			append_dev(div10, div5);
-    			append_dev(div5, t20);
-    			append_dev(div5, t21);
-    			append_dev(div5, button5);
-    			append_dev(div10, t23);
-    			append_dev(div10, div6);
-    			append_dev(div10, t25);
-    			append_dev(div10, div9);
-    			append_dev(div9, div7);
-    			append_dev(div7, button6);
-    			append_dev(button6, t26);
-    			append_dev(div7, t27);
-    			append_dev(div7, button7);
-    			append_dev(button7, t28);
-    			append_dev(div9, t29);
-    			append_dev(div9, div8);
+    			if_blocks[current_block_type_index].m(target, anchor);
+    			insert_dev(target, t0, anchor);
+    			insert_dev(target, button, anchor);
+    			append_dev(button, t1);
+    			current = true;
+
+    			if (!mounted) {
+    				dispose = listen_dev(button, "click", /*click_handler*/ ctx[6], false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			let previous_block_index = current_block_type_index;
+    			current_block_type_index = select_block_type(ctx);
+
+    			if (current_block_type_index === previous_block_index) {
+    				if_blocks[current_block_type_index].p(ctx, dirty);
+    			} else {
+    				group_outros();
+
+    				transition_out(if_blocks[previous_block_index], 1, 1, () => {
+    					if_blocks[previous_block_index] = null;
+    				});
+
+    				check_outros();
+    				if_block = if_blocks[current_block_type_index];
+
+    				if (!if_block) {
+    					if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+    					if_block.c();
+    				} else {
+    					if_block.p(ctx, dirty);
+    				}
+
+    				transition_in(if_block, 1);
+    				if_block.m(t0.parentNode, t0);
+    			}
+
+    			if (!current || dirty & /*dealState*/ 2 && button_disabled_value !== (button_disabled_value = /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized)) {
+    				prop_dev(button, "disabled", button_disabled_value);
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(if_block);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(if_block);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if_blocks[current_block_type_index].d(detaching);
+    			if (detaching) detach_dev(t0);
+    			if (detaching) detach_dev(button);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$9.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    const func$1 = item => item.id.toString();
+    const func_1$1 = item => item.description;
+
+    function instance$9($$self, $$props, $$invalidate) {
+    	let dealState;
+    	let currentDate;
+    	let $clockStore;
+    	let $approvalsStore;
+    	let $dealsStore;
+    	validate_store(clockStore, 'clockStore');
+    	component_subscribe($$self, clockStore, $$value => $$invalidate(2, $clockStore = $$value));
+    	validate_store(approvalsStore, 'approvalsStore');
+    	component_subscribe($$self, approvalsStore, $$value => $$invalidate(3, $approvalsStore = $$value));
+    	validate_store(dealsStore, 'dealsStore');
+    	component_subscribe($$self, dealsStore, $$value => $$invalidate(4, $dealsStore = $$value));
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('CarModelSelector', slots, []);
+    	let { dealId } = $$props;
+    	const writable_props = ['dealId'];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<CarModelSelector> was created with unknown prop '${key}'`);
+    	});
+
+    	const func_2 = item => dealsStore.setInBusinessParams(dealId, { carModelSelected: item });
+    	const click_handler = () => dealsEffects.reloadAvailableCarModels(dealsStore, dealState.deal.businessParams.dealId);
+
+    	$$self.$$set = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		dealsStore,
+    		dealsEffects,
+    		approvalsStore,
+    		clockStore,
+    		computeDealDerrivations,
+    		SelectDropdown,
+    		dealId,
+    		currentDate,
+    		dealState,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    		if ('currentDate' in $$props) currentDate = $$props.currentDate;
+    		if ('dealState' in $$props) $$invalidate(1, dealState = $$props.dealState);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*$dealsStore, $approvalsStore, $clockStore, dealId*/ 29) {
+    			$$invalidate(1, dealState = computeDealDerrivations($dealsStore, $approvalsStore, $clockStore, dealId));
+    		}
+
+    		if ($$self.$$.dirty & /*$clockStore*/ 4) {
+    			currentDate = $clockStore.currentDate;
+    		}
+    	};
+
+    	return [
+    		dealId,
+    		dealState,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore,
+    		func_2,
+    		click_handler
+    	];
+    }
+
+    class CarModelSelector extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$9, create_fragment$9, safe_not_equal, { dealId: 0 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "CarModelSelector",
+    			options,
+    			id: create_fragment$9.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*dealId*/ ctx[0] === undefined && !('dealId' in props)) {
+    			console.warn("<CarModelSelector> was created without expected prop 'dealId'");
+    		}
+    	}
+
+    	get dealId() {
+    		throw new Error("<CarModelSelector>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set dealId(value) {
+    		throw new Error("<CarModelSelector>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\generic-components\SelectMultiple.svelte generated by Svelte v3.42.6 */
+
+    const file$8 = "src\\generic-components\\SelectMultiple.svelte";
+
+    function get_each_context$2(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[10] = list[i];
+    	return child_ctx;
+    }
+
+    // (27:4) {#each availableItems as item (getKeyValue(item))}
+    function create_each_block$2(key_1, ctx) {
+    	let option;
+    	let t0_value = /*getDescription*/ ctx[2](/*item*/ ctx[10]) + "";
+    	let t0;
+    	let t1;
+    	let option_value_value;
+
+    	const block = {
+    		key: key_1,
+    		first: null,
+    		c: function create() {
+    			option = element("option");
+    			t0 = text(t0_value);
+    			t1 = space();
+    			option.__value = option_value_value = /*getKeyValue*/ ctx[1](/*item*/ ctx[10]);
+    			option.value = option.__value;
+    			add_location(option, file$8, 27, 8, 863);
+    			this.first = option;
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, option, anchor);
+    			append_dev(option, t0);
+    			append_dev(option, t1);
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			if (dirty & /*getDescription, availableItems*/ 20 && t0_value !== (t0_value = /*getDescription*/ ctx[2](/*item*/ ctx[10]) + "")) set_data_dev(t0, t0_value);
+
+    			if (dirty & /*getKeyValue, availableItems*/ 18 && option_value_value !== (option_value_value = /*getKeyValue*/ ctx[1](/*item*/ ctx[10]))) {
+    				prop_dev(option, "__value", option_value_value);
+    				option.value = option.__value;
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(option);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block$2.name,
+    		type: "each",
+    		source: "(27:4) {#each availableItems as item (getKeyValue(item))}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$8(ctx) {
+    	let select;
+    	let each_blocks = [];
+    	let each_1_lookup = new Map();
+    	let select_multiple_value_1;
+    	let select_value_value;
+    	let mounted;
+    	let dispose;
+    	let each_value = /*availableItems*/ ctx[4];
+    	validate_each_argument(each_value);
+    	const get_key = ctx => /*getKeyValue*/ ctx[1](/*item*/ ctx[10]);
+    	validate_each_keys(ctx, each_value, get_each_context$2, get_key);
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		let child_ctx = get_each_context$2(ctx, each_value, i);
+    		let key = get_key(child_ctx);
+    		each_1_lookup.set(key, each_blocks[i] = create_each_block$2(key, child_ctx));
+    	}
+
+    	let select_levels = [
+    		/*selectAttributes*/ ctx[0],
+    		{ multiple: select_multiple_value_1 = true },
+    		{ disabled: /*disabled*/ ctx[3] },
+    		{
+    			value: select_value_value = /*modelState*/ ctx[5].map(/*func*/ ctx[8])
+    		}
+    	];
+
+    	let select_data = {};
+
+    	for (let i = 0; i < select_levels.length; i += 1) {
+    		select_data = assign(select_data, select_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			select = element("select");
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			set_attributes(select, select_data);
+    			add_location(select, file$8, 19, 0, 610);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, select, anchor);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].m(select, null);
+    			}
+
+    			(select_data.multiple ? select_options : select_option)(select, select_data.value);
+    			if (select.autofocus) select.focus();
+
+    			if (!mounted) {
+    				dispose = listen_dev(select, "change", /*change_handler*/ ctx[9], false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (dirty & /*getKeyValue, availableItems, getDescription*/ 22) {
+    				each_value = /*availableItems*/ ctx[4];
+    				validate_each_argument(each_value);
+    				validate_each_keys(ctx, each_value, get_each_context$2, get_key);
+    				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, select, destroy_block, create_each_block$2, null, get_each_context$2);
+    			}
+
+    			set_attributes(select, select_data = get_spread_update(select_levels, [
+    				dirty & /*selectAttributes*/ 1 && /*selectAttributes*/ ctx[0],
+    				{ multiple: select_multiple_value_1 },
+    				dirty & /*disabled*/ 8 && { disabled: /*disabled*/ ctx[3] },
+    				dirty & /*modelState, getKeyValue*/ 34 && select_value_value !== (select_value_value = /*modelState*/ ctx[5].map(/*func*/ ctx[8])) && { value: select_value_value }
+    			]));
+
+    			if (dirty & /*selectAttributes, disabled, modelState, getKeyValue*/ 43 && 'value' in select_data) (select_data.multiple ? select_options : select_option)(select, select_data.value);
+    			
+    		},
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(select);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].d();
+    			}
+
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$8.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$8($$self, $$props, $$invalidate) {
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('SelectMultiple', slots, []);
+    	let { selectAttributes = {} } = $$props;
+    	let { getKeyValue = x => x.toString() } = $$props;
+    	let { getDescription = x => x.toString() } = $$props;
+    	let { disabled = false } = $$props;
+    	let { availableItems } = $$props;
+    	let { modelState } = $$props;
+    	let { onSelect } = $$props;
+
+    	function handleSelect(options) {
+    		const values = [];
+
+    		for (var i = 0, l = options.length; i < l; i++) {
+    			if (options[i].selected) {
+    				values.push(options[i].value);
+    			}
+    		}
+
+    		const selectedItems = availableItems.filter(i => values.some(v => v === getKeyValue(i)));
+    		onSelect(selectedItems);
+    	}
+
+    	const writable_props = [
+    		'selectAttributes',
+    		'getKeyValue',
+    		'getDescription',
+    		'disabled',
+    		'availableItems',
+    		'modelState',
+    		'onSelect'
+    	];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<SelectMultiple> was created with unknown prop '${key}'`);
+    	});
+
+    	const func = x => getKeyValue(x);
+    	const change_handler = e => handleSelect(e.currentTarget.options);
+
+    	$$self.$$set = $$props => {
+    		if ('selectAttributes' in $$props) $$invalidate(0, selectAttributes = $$props.selectAttributes);
+    		if ('getKeyValue' in $$props) $$invalidate(1, getKeyValue = $$props.getKeyValue);
+    		if ('getDescription' in $$props) $$invalidate(2, getDescription = $$props.getDescription);
+    		if ('disabled' in $$props) $$invalidate(3, disabled = $$props.disabled);
+    		if ('availableItems' in $$props) $$invalidate(4, availableItems = $$props.availableItems);
+    		if ('modelState' in $$props) $$invalidate(5, modelState = $$props.modelState);
+    		if ('onSelect' in $$props) $$invalidate(7, onSelect = $$props.onSelect);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		selectAttributes,
+    		getKeyValue,
+    		getDescription,
+    		disabled,
+    		availableItems,
+    		modelState,
+    		onSelect,
+    		handleSelect
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('selectAttributes' in $$props) $$invalidate(0, selectAttributes = $$props.selectAttributes);
+    		if ('getKeyValue' in $$props) $$invalidate(1, getKeyValue = $$props.getKeyValue);
+    		if ('getDescription' in $$props) $$invalidate(2, getDescription = $$props.getDescription);
+    		if ('disabled' in $$props) $$invalidate(3, disabled = $$props.disabled);
+    		if ('availableItems' in $$props) $$invalidate(4, availableItems = $$props.availableItems);
+    		if ('modelState' in $$props) $$invalidate(5, modelState = $$props.modelState);
+    		if ('onSelect' in $$props) $$invalidate(7, onSelect = $$props.onSelect);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	return [
+    		selectAttributes,
+    		getKeyValue,
+    		getDescription,
+    		disabled,
+    		availableItems,
+    		modelState,
+    		handleSelect,
+    		onSelect,
+    		func,
+    		change_handler
+    	];
+    }
+
+    class SelectMultiple extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$8, create_fragment$8, safe_not_equal, {
+    			selectAttributes: 0,
+    			getKeyValue: 1,
+    			getDescription: 2,
+    			disabled: 3,
+    			availableItems: 4,
+    			modelState: 5,
+    			onSelect: 7
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "SelectMultiple",
+    			options,
+    			id: create_fragment$8.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*availableItems*/ ctx[4] === undefined && !('availableItems' in props)) {
+    			console.warn("<SelectMultiple> was created without expected prop 'availableItems'");
+    		}
+
+    		if (/*modelState*/ ctx[5] === undefined && !('modelState' in props)) {
+    			console.warn("<SelectMultiple> was created without expected prop 'modelState'");
+    		}
+
+    		if (/*onSelect*/ ctx[7] === undefined && !('onSelect' in props)) {
+    			console.warn("<SelectMultiple> was created without expected prop 'onSelect'");
+    		}
+    	}
+
+    	get selectAttributes() {
+    		throw new Error("<SelectMultiple>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set selectAttributes(value) {
+    		throw new Error("<SelectMultiple>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getKeyValue() {
+    		throw new Error("<SelectMultiple>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set getKeyValue(value) {
+    		throw new Error("<SelectMultiple>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getDescription() {
+    		throw new Error("<SelectMultiple>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set getDescription(value) {
+    		throw new Error("<SelectMultiple>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get disabled() {
+    		throw new Error("<SelectMultiple>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set disabled(value) {
+    		throw new Error("<SelectMultiple>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get availableItems() {
+    		throw new Error("<SelectMultiple>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set availableItems(value) {
+    		throw new Error("<SelectMultiple>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get modelState() {
+    		throw new Error("<SelectMultiple>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set modelState(value) {
+    		throw new Error("<SelectMultiple>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get onSelect() {
+    		throw new Error("<SelectMultiple>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set onSelect(value) {
+    		throw new Error("<SelectMultiple>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\stores\deals\Deal\InsurancePlanSelector.svelte generated by Svelte v3.42.6 */
+    const file$7 = "src\\stores\\deals\\Deal\\InsurancePlanSelector.svelte";
+
+    // (14:0) {:else}
+    function create_else_block$1(ctx) {
+    	let selectmultiple;
+    	let current;
+
+    	selectmultiple = new SelectMultiple({
+    			props: {
+    				selectAttributes: { class: "insurance-plan-selector-select" },
+    				availableItems: /*dealState*/ ctx[1].deal.insurancePlansAvailable,
+    				modelState: /*dealState*/ ctx[1].deal.businessParams.insurancePlansSelected,
+    				disabled: /*dealState*/ ctx[1].isLoadingAny,
+    				getKeyValue: func,
+    				getDescription: func_1,
+    				onSelect: /*func_2*/ ctx[5]
+    			},
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(selectmultiple.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(selectmultiple, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const selectmultiple_changes = {};
+    			if (dirty & /*dealState*/ 2) selectmultiple_changes.availableItems = /*dealState*/ ctx[1].deal.insurancePlansAvailable;
+    			if (dirty & /*dealState*/ 2) selectmultiple_changes.modelState = /*dealState*/ ctx[1].deal.businessParams.insurancePlansSelected;
+    			if (dirty & /*dealState*/ 2) selectmultiple_changes.disabled = /*dealState*/ ctx[1].isLoadingAny;
+    			if (dirty & /*dealId*/ 1) selectmultiple_changes.onSelect = /*func_2*/ ctx[5];
+    			selectmultiple.$set(selectmultiple_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(selectmultiple.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(selectmultiple.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(selectmultiple, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block$1.name,
+    		type: "else",
+    		source: "(14:0) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (12:0) {#if dealState.deal.isLoadingItemized.insurancePlansAvailable}
+    function create_if_block$3(ctx) {
+    	let div;
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			div.textContent = "Loading";
+    			attr_dev(div, "class", "insurance-plan-selector-select");
+    			add_location(div, file$7, 12, 4, 611);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    		},
+    		p: noop,
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$3.name,
+    		type: "if",
+    		source: "(12:0) {#if dealState.deal.isLoadingItemized.insurancePlansAvailable}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$7(ctx) {
+    	let current_block_type_index;
+    	let if_block;
+    	let t0;
+    	let button;
+    	let t1;
+    	let button_disabled_value;
+    	let current;
+    	let mounted;
+    	let dispose;
+    	const if_block_creators = [create_if_block$3, create_else_block$1];
+    	const if_blocks = [];
+
+    	function select_block_type(ctx, dirty) {
+    		if (/*dealState*/ ctx[1].deal.isLoadingItemized.insurancePlansAvailable) return 0;
+    		return 1;
+    	}
+
+    	current_block_type_index = select_block_type(ctx);
+    	if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+
+    	const block = {
+    		c: function create() {
+    			if_block.c();
+    			t0 = space();
+    			button = element("button");
+    			t1 = text("Refresh available plans");
+    			attr_dev(button, "class", "insurance-plan-selector-refresh-btn");
+    			button.disabled = button_disabled_value = /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized;
+    			add_location(button, file$7, 28, 0, 1228);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			if_blocks[current_block_type_index].m(target, anchor);
+    			insert_dev(target, t0, anchor);
+    			insert_dev(target, button, anchor);
+    			append_dev(button, t1);
+    			current = true;
+
+    			if (!mounted) {
+    				dispose = listen_dev(button, "click", /*click_handler*/ ctx[6], false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			let previous_block_index = current_block_type_index;
+    			current_block_type_index = select_block_type(ctx);
+
+    			if (current_block_type_index === previous_block_index) {
+    				if_blocks[current_block_type_index].p(ctx, dirty);
+    			} else {
+    				group_outros();
+
+    				transition_out(if_blocks[previous_block_index], 1, 1, () => {
+    					if_blocks[previous_block_index] = null;
+    				});
+
+    				check_outros();
+    				if_block = if_blocks[current_block_type_index];
+
+    				if (!if_block) {
+    					if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+    					if_block.c();
+    				} else {
+    					if_block.p(ctx, dirty);
+    				}
+
+    				transition_in(if_block, 1);
+    				if_block.m(t0.parentNode, t0);
+    			}
+
+    			if (!current || dirty & /*dealState*/ 2 && button_disabled_value !== (button_disabled_value = /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized)) {
+    				prop_dev(button, "disabled", button_disabled_value);
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(if_block);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(if_block);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if_blocks[current_block_type_index].d(detaching);
+    			if (detaching) detach_dev(t0);
+    			if (detaching) detach_dev(button);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$7.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    const func = item => item.type.toString();
+    const func_1 = item => item.description;
+
+    function instance$7($$self, $$props, $$invalidate) {
+    	let dealState;
+    	let currentDate;
+    	let $clockStore;
+    	let $approvalsStore;
+    	let $dealsStore;
+    	validate_store(clockStore, 'clockStore');
+    	component_subscribe($$self, clockStore, $$value => $$invalidate(2, $clockStore = $$value));
+    	validate_store(approvalsStore, 'approvalsStore');
+    	component_subscribe($$self, approvalsStore, $$value => $$invalidate(3, $approvalsStore = $$value));
+    	validate_store(dealsStore, 'dealsStore');
+    	component_subscribe($$self, dealsStore, $$value => $$invalidate(4, $dealsStore = $$value));
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('InsurancePlanSelector', slots, []);
+    	let { dealId } = $$props;
+    	const writable_props = ['dealId'];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<InsurancePlanSelector> was created with unknown prop '${key}'`);
+    	});
+
+    	const func_2 = items => dealsStore.setInBusinessParams(dealId, { insurancePlansSelected: items });
+    	const click_handler = () => dealsEffects.reloadAvailableInsurancePlans(dealsStore, dealId);
+
+    	$$self.$$set = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		dealsStore,
+    		dealsEffects,
+    		approvalsStore,
+    		clockStore,
+    		computeDealDerrivations,
+    		SelectMultiple,
+    		dealId,
+    		currentDate,
+    		dealState,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    		if ('currentDate' in $$props) currentDate = $$props.currentDate;
+    		if ('dealState' in $$props) $$invalidate(1, dealState = $$props.dealState);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*$dealsStore, $approvalsStore, $clockStore, dealId*/ 29) {
+    			$$invalidate(1, dealState = computeDealDerrivations($dealsStore, $approvalsStore, $clockStore, dealId));
+    		}
+
+    		if ($$self.$$.dirty & /*$clockStore*/ 4) {
+    			currentDate = $clockStore.currentDate;
+    		}
+    	};
+
+    	return [
+    		dealId,
+    		dealState,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore,
+    		func_2,
+    		click_handler
+    	];
+    }
+
+    class InsurancePlanSelector extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$7, create_fragment$7, safe_not_equal, { dealId: 0 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "InsurancePlanSelector",
+    			options,
+    			id: create_fragment$7.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*dealId*/ ctx[0] === undefined && !('dealId' in props)) {
+    			console.warn("<InsurancePlanSelector> was created without expected prop 'dealId'");
+    		}
+    	}
+
+    	get dealId() {
+    		throw new Error("<InsurancePlanSelector>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set dealId(value) {
+    		throw new Error("<InsurancePlanSelector>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\generic-components\NumericInput.svelte generated by Svelte v3.42.6 */
+    const file$6 = "src\\generic-components\\NumericInput.svelte";
+
+    // (23:0) {#if inputState.message}
+    function create_if_block$2(ctx) {
+    	let div;
+    	let t_value = /*inputState*/ ctx[5].message + "";
+    	let t;
+    	let div_levels = [/*messageAttributes*/ ctx[1] ?? {}];
+    	let div_data = {};
+
+    	for (let i = 0; i < div_levels.length; i += 1) {
+    		div_data = assign(div_data, div_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			t = text(t_value);
+    			set_attributes(div, div_data);
+    			add_location(div, file$6, 23, 4, 623);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			append_dev(div, t);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*inputState*/ 32 && t_value !== (t_value = /*inputState*/ ctx[5].message + "")) set_data_dev(t, t_value);
+    			set_attributes(div, div_data = get_spread_update(div_levels, [dirty & /*messageAttributes*/ 2 && (/*messageAttributes*/ ctx[1] ?? {})]));
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$2.name,
+    		type: "if",
+    		source: "(23:0) {#if inputState.message}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$6(ctx) {
+    	let input;
+    	let input_class_value;
+    	let input_value_value;
+    	let t;
+    	let if_block_anchor;
+    	let mounted;
+    	let dispose;
+
+    	let input_levels = [
+    		/*inputAttributes*/ ctx[0] ?? {},
+    		{
+    			class: input_class_value = /*inputAttributes*/ ctx[0]?.class ?? ""
+    		},
+    		{
+    			value: input_value_value = /*inputState*/ ctx[5].currentUnsavedValue ?? /*modelState*/ ctx[4]?.toString() ?? ""
+    		},
+    		{ placeholder: /*placeholder*/ ctx[2] },
+    		{ disabled: /*disabled*/ ctx[3] }
+    	];
+
+    	let input_data = {};
+
+    	for (let i = 0; i < input_levels.length; i += 1) {
+    		input_data = assign(input_data, input_levels[i]);
+    	}
+
+    	let if_block = /*inputState*/ ctx[5].message && create_if_block$2(ctx);
+
+    	const block = {
+    		c: function create() {
+    			input = element("input");
+    			t = space();
+    			if (if_block) if_block.c();
+    			if_block_anchor = empty();
+    			set_attributes(input, input_data);
+    			toggle_class(input, "invalid", !/*inputState*/ ctx[5].isValid);
+    			add_location(input, file$6, 11, 0, 266);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, input, anchor);
+    			input.value = input_data.value;
+    			if (input.autofocus) input.focus();
+    			insert_dev(target, t, anchor);
+    			if (if_block) if_block.m(target, anchor);
+    			insert_dev(target, if_block_anchor, anchor);
 
     			if (!mounted) {
     				dispose = [
-    					listen_dev(button0, "click", /*click_handler*/ ctx[8], false, false, false),
-    					listen_dev(button1, "click", /*click_handler_1*/ ctx[9], false, false, false),
-    					listen_dev(button2, "click", /*click_handler_2*/ ctx[10], false, false, false),
-    					listen_dev(button3, "click", /*click_handler_3*/ ctx[11], false, false, false),
-    					listen_dev(button4, "click", /*click_handler_4*/ ctx[12], false, false, false),
-    					listen_dev(button5, "click", /*click_handler_5*/ ctx[13], false, false, false),
-    					listen_dev(button6, "click", /*click_handler_6*/ ctx[14], false, false, false),
-    					listen_dev(button7, "click", /*click_handler_7*/ ctx[15], false, false, false)
+    					listen_dev(input, "change", /*change_handler*/ ctx[8], false, false, false),
+    					listen_dev(input, "blur", /*blur_handler*/ ctx[9], false, false, false)
     				];
 
     				mounted = true;
     			}
     		},
     		p: function update(ctx, [dirty]) {
-    			if (dirty & /*$store1*/ 8 && t0_value !== (t0_value = /*$store1*/ ctx[3].a + "")) set_data_dev(t0, t0_value);
-    			if (dirty & /*$store1*/ 8 && t4_value !== (t4_value = /*$store1*/ ctx[3].b + "")) set_data_dev(t4, t4_value);
-    			if (dirty & /*$store2*/ 4 && t8_value !== (t8_value = /*$store2*/ ctx[2].a.val + "")) set_data_dev(t8, t8_value);
-    			if (dirty & /*$store2*/ 4 && t12_value !== (t12_value = /*$store2*/ ctx[2].b.val + "")) set_data_dev(t12, t12_value);
-    			if (dirty & /*$storeImmut*/ 2 && t16_value !== (t16_value = /*$storeImmut*/ ctx[1].a.val + "")) set_data_dev(t16, t16_value);
-    			if (dirty & /*$storeImmut*/ 2 && t20_value !== (t20_value = /*$storeImmut*/ ctx[1].b.val + "")) set_data_dev(t20, t20_value);
+    			set_attributes(input, input_data = get_spread_update(input_levels, [
+    				dirty & /*inputAttributes*/ 1 && (/*inputAttributes*/ ctx[0] ?? {}),
+    				dirty & /*inputAttributes*/ 1 && input_class_value !== (input_class_value = /*inputAttributes*/ ctx[0]?.class ?? "") && { class: input_class_value },
+    				dirty & /*inputState, modelState*/ 48 && input_value_value !== (input_value_value = /*inputState*/ ctx[5].currentUnsavedValue ?? /*modelState*/ ctx[4]?.toString() ?? "") && input.value !== input_value_value && { value: input_value_value },
+    				dirty & /*placeholder*/ 4 && { placeholder: /*placeholder*/ ctx[2] },
+    				dirty & /*disabled*/ 8 && { disabled: /*disabled*/ ctx[3] }
+    			]));
 
-    			if (dirty & /*$dealsStore*/ 1 && button6_disabled_value !== (button6_disabled_value = /*$dealsStore*/ ctx[0].newDealIsLoading)) {
-    				prop_dev(button6, "disabled", button6_disabled_value);
+    			if ('value' in input_data) {
+    				input.value = input_data.value;
     			}
 
-    			if (dirty & /*$dealsStore*/ 1 && button7_disabled_value !== (button7_disabled_value = /*$dealsStore*/ ctx[0].newDealIsLoading)) {
-    				prop_dev(button7, "disabled", button7_disabled_value);
+    			toggle_class(input, "invalid", !/*inputState*/ ctx[5].isValid);
+
+    			if (/*inputState*/ ctx[5].message) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+    				} else {
+    					if_block = create_if_block$2(ctx);
+    					if_block.c();
+    					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+    				}
+    			} else if (if_block) {
+    				if_block.d(1);
+    				if_block = null;
     			}
     		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div10);
+    			if (detaching) detach_dev(input);
+    			if (detaching) detach_dev(t);
+    			if (if_block) if_block.d(detaching);
+    			if (detaching) detach_dev(if_block_anchor);
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$6.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$6($$self, $$props, $$invalidate) {
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('NumericInput', slots, []);
+    	let { inputAttributes } = $$props;
+    	let { messageAttributes } = $$props;
+    	let { placeholder = undefined } = $$props;
+    	let { disabled } = $$props;
+    	let { modelState } = $$props;
+    	let { inputState } = $$props;
+    	let { onChange } = $$props;
+    	let { onBlur } = $$props;
+
+    	const writable_props = [
+    		'inputAttributes',
+    		'messageAttributes',
+    		'placeholder',
+    		'disabled',
+    		'modelState',
+    		'inputState',
+    		'onChange',
+    		'onBlur'
+    	];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<NumericInput> was created with unknown prop '${key}'`);
+    	});
+
+    	const change_handler = e => onChange(e.currentTarget.value);
+    	const blur_handler = e => onBlur();
+
+    	$$self.$$set = $$props => {
+    		if ('inputAttributes' in $$props) $$invalidate(0, inputAttributes = $$props.inputAttributes);
+    		if ('messageAttributes' in $$props) $$invalidate(1, messageAttributes = $$props.messageAttributes);
+    		if ('placeholder' in $$props) $$invalidate(2, placeholder = $$props.placeholder);
+    		if ('disabled' in $$props) $$invalidate(3, disabled = $$props.disabled);
+    		if ('modelState' in $$props) $$invalidate(4, modelState = $$props.modelState);
+    		if ('inputState' in $$props) $$invalidate(5, inputState = $$props.inputState);
+    		if ('onChange' in $$props) $$invalidate(6, onChange = $$props.onChange);
+    		if ('onBlur' in $$props) $$invalidate(7, onBlur = $$props.onBlur);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		inputAttributes,
+    		messageAttributes,
+    		placeholder,
+    		disabled,
+    		modelState,
+    		inputState,
+    		onChange,
+    		onBlur
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('inputAttributes' in $$props) $$invalidate(0, inputAttributes = $$props.inputAttributes);
+    		if ('messageAttributes' in $$props) $$invalidate(1, messageAttributes = $$props.messageAttributes);
+    		if ('placeholder' in $$props) $$invalidate(2, placeholder = $$props.placeholder);
+    		if ('disabled' in $$props) $$invalidate(3, disabled = $$props.disabled);
+    		if ('modelState' in $$props) $$invalidate(4, modelState = $$props.modelState);
+    		if ('inputState' in $$props) $$invalidate(5, inputState = $$props.inputState);
+    		if ('onChange' in $$props) $$invalidate(6, onChange = $$props.onChange);
+    		if ('onBlur' in $$props) $$invalidate(7, onBlur = $$props.onBlur);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	return [
+    		inputAttributes,
+    		messageAttributes,
+    		placeholder,
+    		disabled,
+    		modelState,
+    		inputState,
+    		onChange,
+    		onBlur,
+    		change_handler,
+    		blur_handler
+    	];
+    }
+
+    class NumericInput extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$6, create_fragment$6, safe_not_equal, {
+    			inputAttributes: 0,
+    			messageAttributes: 1,
+    			placeholder: 2,
+    			disabled: 3,
+    			modelState: 4,
+    			inputState: 5,
+    			onChange: 6,
+    			onBlur: 7
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "NumericInput",
+    			options,
+    			id: create_fragment$6.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*inputAttributes*/ ctx[0] === undefined && !('inputAttributes' in props)) {
+    			console.warn("<NumericInput> was created without expected prop 'inputAttributes'");
+    		}
+
+    		if (/*messageAttributes*/ ctx[1] === undefined && !('messageAttributes' in props)) {
+    			console.warn("<NumericInput> was created without expected prop 'messageAttributes'");
+    		}
+
+    		if (/*disabled*/ ctx[3] === undefined && !('disabled' in props)) {
+    			console.warn("<NumericInput> was created without expected prop 'disabled'");
+    		}
+
+    		if (/*modelState*/ ctx[4] === undefined && !('modelState' in props)) {
+    			console.warn("<NumericInput> was created without expected prop 'modelState'");
+    		}
+
+    		if (/*inputState*/ ctx[5] === undefined && !('inputState' in props)) {
+    			console.warn("<NumericInput> was created without expected prop 'inputState'");
+    		}
+
+    		if (/*onChange*/ ctx[6] === undefined && !('onChange' in props)) {
+    			console.warn("<NumericInput> was created without expected prop 'onChange'");
+    		}
+
+    		if (/*onBlur*/ ctx[7] === undefined && !('onBlur' in props)) {
+    			console.warn("<NumericInput> was created without expected prop 'onBlur'");
+    		}
+    	}
+
+    	get inputAttributes() {
+    		throw new Error("<NumericInput>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set inputAttributes(value) {
+    		throw new Error("<NumericInput>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get messageAttributes() {
+    		throw new Error("<NumericInput>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set messageAttributes(value) {
+    		throw new Error("<NumericInput>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get placeholder() {
+    		throw new Error("<NumericInput>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set placeholder(value) {
+    		throw new Error("<NumericInput>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get disabled() {
+    		throw new Error("<NumericInput>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set disabled(value) {
+    		throw new Error("<NumericInput>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get modelState() {
+    		throw new Error("<NumericInput>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set modelState(value) {
+    		throw new Error("<NumericInput>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get inputState() {
+    		throw new Error("<NumericInput>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set inputState(value) {
+    		throw new Error("<NumericInput>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get onChange() {
+    		throw new Error("<NumericInput>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set onChange(value) {
+    		throw new Error("<NumericInput>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get onBlur() {
+    		throw new Error("<NumericInput>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set onBlur(value) {
+    		throw new Error("<NumericInput>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    function diffSeconds(expiration, currentDate) {
+        var duration = moment.duration(moment(expiration).diff(currentDate));
+        var seconds = Math.round(duration.asSeconds());
+        return seconds;
+    }
+
+    /* src\stores\deals\Deal\DealDescription.svelte generated by Svelte v3.42.6 */
+    const file$5 = "src\\stores\\deals\\Deal\\DealDescription.svelte";
+
+    function create_fragment$5(ctx) {
+    	let div;
+    	let t;
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			t = text(/*dealStateDescription*/ ctx[0]);
+    			attr_dev(div, "class", "car-purchase-deal-state");
+    			add_location(div, file$5, 25, 0, 1010);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			append_dev(div, t);
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (dirty & /*dealStateDescription*/ 1) set_data_dev(t, /*dealStateDescription*/ ctx[0]);
+    		},
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$5.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$5($$self, $$props, $$invalidate) {
+    	let dealState;
+    	let dealStateDescription;
+    	let $clockStore;
+    	let $approvalsStore;
+    	let $dealsStore;
+    	validate_store(clockStore, 'clockStore');
+    	component_subscribe($$self, clockStore, $$value => $$invalidate(3, $clockStore = $$value));
+    	validate_store(approvalsStore, 'approvalsStore');
+    	component_subscribe($$self, approvalsStore, $$value => $$invalidate(4, $approvalsStore = $$value));
+    	validate_store(dealsStore, 'dealsStore');
+    	component_subscribe($$self, dealsStore, $$value => $$invalidate(5, $dealsStore = $$value));
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('DealDescription', slots, []);
+    	let { dealId } = $$props;
+
+    	function getDealStateDescription(state, currentDate) {
+    		if (state === "deal-finalized") {
+    			return "Congratulations! Deal is finalized.";
+    		}
+
+    		if (state === "no-approval") {
+    			return "";
+    		}
+
+    		if (state === "approval-perpetual") {
+    			return "Approval granted.";
+    		}
+
+    		if (state === "approval-expired") {
+    			return "Approval expired.";
+    		}
+
+    		return `Approval granted. Expires in ${diffSeconds(state.approvalExpiresAt, currentDate)} seconds.`;
+    	}
+
+    	const writable_props = ['dealId'];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<DealDescription> was created with unknown prop '${key}'`);
+    	});
+
+    	$$self.$$set = $$props => {
+    		if ('dealId' in $$props) $$invalidate(1, dealId = $$props.dealId);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		diffSeconds,
+    		approvalsStore,
+    		clockStore,
+    		dealsStore,
+    		computeDealDerrivations,
+    		dealId,
+    		getDealStateDescription,
+    		dealState,
+    		dealStateDescription,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('dealId' in $$props) $$invalidate(1, dealId = $$props.dealId);
+    		if ('dealState' in $$props) $$invalidate(2, dealState = $$props.dealState);
+    		if ('dealStateDescription' in $$props) $$invalidate(0, dealStateDescription = $$props.dealStateDescription);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*$dealsStore, $approvalsStore, $clockStore, dealId*/ 58) {
+    			$$invalidate(2, dealState = computeDealDerrivations($dealsStore, $approvalsStore, $clockStore, dealId));
+    		}
+
+    		if ($$self.$$.dirty & /*dealState, $clockStore*/ 12) {
+    			$$invalidate(0, dealStateDescription = getDealStateDescription(dealState.dealProgressState, $clockStore.currentDate));
+    		}
+    	};
+
+    	return [
+    		dealStateDescription,
+    		dealId,
+    		dealState,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore
+    	];
+    }
+
+    class DealDescription extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$5, create_fragment$5, safe_not_equal, { dealId: 1 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "DealDescription",
+    			options,
+    			id: create_fragment$5.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*dealId*/ ctx[1] === undefined && !('dealId' in props)) {
+    			console.warn("<DealDescription> was created without expected prop 'dealId'");
+    		}
+    	}
+
+    	get dealId() {
+    		throw new Error("<DealDescription>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set dealId(value) {
+    		throw new Error("<DealDescription>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\stores\deals\Deal\Deal.BareCmp.svelte generated by Svelte v3.42.6 */
+    const file$4 = "src\\stores\\deals\\Deal\\Deal.BareCmp.svelte";
+
+    function get_each_context$1(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[14] = list[i];
+    	return child_ctx;
+    }
+
+    // (55:0) {#if dealState.dealProgressState !== "no-approval"}
+    function create_if_block_1$1(ctx) {
+    	let div;
+    	let t;
+    	let dealdescription;
+    	let current;
+
+    	dealdescription = new DealDescription({
+    			props: { dealId: /*dealId*/ ctx[0] },
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			t = space();
+    			create_component(dealdescription.$$.fragment);
+    			add_location(div, file$4, 55, 4, 2429);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			insert_dev(target, t, anchor);
+    			mount_component(dealdescription, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const dealdescription_changes = {};
+    			if (dirty & /*dealId*/ 1) dealdescription_changes.dealId = /*dealId*/ ctx[0];
+    			dealdescription.$set(dealdescription_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(dealdescription.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(dealdescription.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			if (detaching) detach_dev(t);
+    			destroy_component(dealdescription, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_1$1.name,
+    		type: "if",
+    		source: "(55:0) {#if dealState.dealProgressState !== \\\"no-approval\\\"}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (89:0) {#if messages.length > 0}
+    function create_if_block$1(ctx) {
+    	let div;
+    	let each_blocks = [];
+    	let each_1_lookup = new Map();
+    	let each_value = /*messages*/ ctx[2];
+    	validate_each_argument(each_value);
+    	const get_key = ctx => /*message*/ ctx[14];
+    	validate_each_keys(ctx, each_value, get_each_context$1, get_key);
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		let child_ctx = get_each_context$1(ctx, each_value, i);
+    		let key = get_key(child_ctx);
+    		each_1_lookup.set(key, each_blocks[i] = create_each_block$1(key, child_ctx));
+    	}
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			attr_dev(div, "class", "car-purchase-messages");
+    			add_location(div, file$4, 89, 4, 3303);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].m(div, null);
+    			}
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*messages*/ 4) {
+    				each_value = /*messages*/ ctx[2];
+    				validate_each_argument(each_value);
+    				validate_each_keys(ctx, each_value, get_each_context$1, get_key);
+    				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, div, destroy_block, create_each_block$1, null, get_each_context$1);
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].d();
+    			}
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$1.name,
+    		type: "if",
+    		source: "(89:0) {#if messages.length > 0}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (91:8) {#each messages as message (message)}
+    function create_each_block$1(key_1, ctx) {
+    	let div;
+    	let t_value = /*message*/ ctx[14] + "";
+    	let t;
+
+    	const block = {
+    		key: key_1,
+    		first: null,
+    		c: function create() {
+    			div = element("div");
+    			t = text(t_value);
+    			add_location(div, file$4, 91, 12, 3399);
+    			this.first = div;
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			append_dev(div, t);
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			if (dirty & /*messages*/ 4 && t_value !== (t_value = /*message*/ ctx[14] + "")) set_data_dev(t, t_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block$1.name,
+    		type: "each",
+    		source: "(91:8) {#each messages as message (message)}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$4(ctx) {
+    	let div0;
+    	let t1;
+    	let carmodelselector;
+    	let t2;
+    	let div1;
+    	let t4;
+    	let insuranceplanselector;
+    	let t5;
+    	let div2;
+    	let t7;
+    	let numericinput;
+    	let t8;
+    	let button0;
+    	let t9;
+    	let button0_disabled_value;
+    	let t10;
+    	let div3;
+    	let t12;
+    	let div4;
+    	let t13_value = /*dealState*/ ctx[1].finalPrice + "";
+    	let t13;
+    	let t14;
+    	let t15;
+    	let button1;
+    	let t16;
+    	let button1_disabled_value;
+    	let t17;
+    	let button2;
+    	let t19;
+    	let button3;
+    	let t20;
+    	let button3_disabled_value;
+    	let t21;
+    	let if_block1_anchor;
+    	let current;
+    	let mounted;
+    	let dispose;
+
+    	carmodelselector = new CarModelSelector({
+    			props: { dealId: /*dealId*/ ctx[0] },
+    			$$inline: true
+    		});
+
+    	insuranceplanselector = new InsurancePlanSelector({
+    			props: { dealId: /*dealId*/ ctx[0] },
+    			$$inline: true
+    		});
+
+    	numericinput = new NumericInput({
+    			props: {
+    				inputAttributes: { class: "car-purchase-downpayment" },
+    				messageAttributes: {
+    					class: "car-purchase-downpayment-messages"
+    				},
+    				modelState: /*dealState*/ ctx[1].deal.businessParams.downpayment,
+    				inputState: /*dealState*/ ctx[1].deal.downplaymentInputState,
+    				disabled: /*dealState*/ ctx[1].deal.isLoadingItemized.downpayment || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized,
+    				onChange: /*func*/ ctx[7],
+    				onBlur: /*func_1*/ ctx[8]
+    			},
+    			$$inline: true
+    		});
+
+    	let if_block0 = /*dealState*/ ctx[1].dealProgressState !== "no-approval" && create_if_block_1$1(ctx);
+    	let if_block1 = /*messages*/ ctx[2].length > 0 && create_if_block$1(ctx);
+
+    	const block = {
+    		c: function create() {
+    			div0 = element("div");
+    			div0.textContent = "Please select model";
+    			t1 = space();
+    			create_component(carmodelselector.$$.fragment);
+    			t2 = space();
+    			div1 = element("div");
+    			div1.textContent = "Please select insurance options";
+    			t4 = space();
+    			create_component(insuranceplanselector.$$.fragment);
+    			t5 = space();
+    			div2 = element("div");
+    			div2.textContent = "Please select downpayment";
+    			t7 = space();
+    			create_component(numericinput.$$.fragment);
+    			t8 = space();
+    			button0 = element("button");
+    			t9 = text("Set minimum possible");
+    			t10 = space();
+    			div3 = element("div");
+    			div3.textContent = "Final price";
+    			t12 = space();
+    			div4 = element("div");
+    			t13 = text(t13_value);
+    			t14 = space();
+    			if (if_block0) if_block0.c();
+    			t15 = space();
+    			button1 = element("button");
+    			t16 = text("Request approval");
+    			t17 = space();
+    			button2 = element("button");
+    			button2.textContent = "Close this deal";
+    			t19 = space();
+    			button3 = element("button");
+    			t20 = text("Finalize deal");
+    			t21 = space();
+    			if (if_block1) if_block1.c();
+    			if_block1_anchor = empty();
+    			attr_dev(div0, "class", "car-purchase-model-selector-label");
+    			add_location(div0, file$4, 24, 0, 1095);
+    			attr_dev(div1, "class", "car-purchase-insurance-selector-label");
+    			add_location(div1, file$4, 26, 0, 1200);
+    			attr_dev(div2, "class", "car-purchase-downpayment-label");
+    			add_location(div2, file$4, 30, 0, 1334);
+    			attr_dev(button0, "class", "button-set-minimum-possible-downpayment");
+    			button0.disabled = button0_disabled_value = /*dealState*/ ctx[1].isLoadingAny || !/*dealState*/ ctx[1].canRequestMinimumDownpayment;
+    			add_location(button0, file$4, 42, 0, 1964);
+    			attr_dev(div3, "class", "car-purchase-final-price-label");
+    			add_location(div3, file$4, 50, 0, 2242);
+    			attr_dev(div4, "class", "car-final-price");
+    			add_location(div4, file$4, 51, 0, 2305);
+    			attr_dev(button1, "class", "button-request-approval");
+    			button1.disabled = button1_disabled_value = /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].isCurrentApprovalLoading || !/*dealState*/ ctx[1].canRequestApproval;
+    			add_location(button1, file$4, 58, 0, 2485);
+    			attr_dev(button2, "class", "button-close-active-deal");
+    			add_location(button2, file$4, 68, 0, 2791);
+    			attr_dev(button3, "class", "button-finalzie-deal");
+    			button3.disabled = button3_disabled_value = /*dealState*/ ctx[1].deal.isLoadingItemized.isDealFinalized || !/*dealState*/ ctx[1].canBeFinalized;
+    			add_location(button3, file$4, 74, 0, 2925);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div0, anchor);
+    			insert_dev(target, t1, anchor);
+    			mount_component(carmodelselector, target, anchor);
+    			insert_dev(target, t2, anchor);
+    			insert_dev(target, div1, anchor);
+    			insert_dev(target, t4, anchor);
+    			mount_component(insuranceplanselector, target, anchor);
+    			insert_dev(target, t5, anchor);
+    			insert_dev(target, div2, anchor);
+    			insert_dev(target, t7, anchor);
+    			mount_component(numericinput, target, anchor);
+    			insert_dev(target, t8, anchor);
+    			insert_dev(target, button0, anchor);
+    			append_dev(button0, t9);
+    			insert_dev(target, t10, anchor);
+    			insert_dev(target, div3, anchor);
+    			insert_dev(target, t12, anchor);
+    			insert_dev(target, div4, anchor);
+    			append_dev(div4, t13);
+    			insert_dev(target, t14, anchor);
+    			if (if_block0) if_block0.m(target, anchor);
+    			insert_dev(target, t15, anchor);
+    			insert_dev(target, button1, anchor);
+    			append_dev(button1, t16);
+    			insert_dev(target, t17, anchor);
+    			insert_dev(target, button2, anchor);
+    			insert_dev(target, t19, anchor);
+    			insert_dev(target, button3, anchor);
+    			append_dev(button3, t20);
+    			insert_dev(target, t21, anchor);
+    			if (if_block1) if_block1.m(target, anchor);
+    			insert_dev(target, if_block1_anchor, anchor);
+    			current = true;
+
+    			if (!mounted) {
+    				dispose = [
+    					listen_dev(button0, "click", /*click_handler*/ ctx[9], false, false, false),
+    					listen_dev(button1, "click", /*click_handler_1*/ ctx[10], false, false, false),
+    					listen_dev(button2, "click", /*click_handler_2*/ ctx[11], false, false, false),
+    					listen_dev(button3, "click", /*click_handler_3*/ ctx[12], false, false, false)
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			const carmodelselector_changes = {};
+    			if (dirty & /*dealId*/ 1) carmodelselector_changes.dealId = /*dealId*/ ctx[0];
+    			carmodelselector.$set(carmodelselector_changes);
+    			const insuranceplanselector_changes = {};
+    			if (dirty & /*dealId*/ 1) insuranceplanselector_changes.dealId = /*dealId*/ ctx[0];
+    			insuranceplanselector.$set(insuranceplanselector_changes);
+    			const numericinput_changes = {};
+    			if (dirty & /*dealState*/ 2) numericinput_changes.modelState = /*dealState*/ ctx[1].deal.businessParams.downpayment;
+    			if (dirty & /*dealState*/ 2) numericinput_changes.inputState = /*dealState*/ ctx[1].deal.downplaymentInputState;
+    			if (dirty & /*dealState*/ 2) numericinput_changes.disabled = /*dealState*/ ctx[1].deal.isLoadingItemized.downpayment || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized;
+    			if (dirty & /*dealId*/ 1) numericinput_changes.onChange = /*func*/ ctx[7];
+    			if (dirty & /*dealId*/ 1) numericinput_changes.onBlur = /*func_1*/ ctx[8];
+    			numericinput.$set(numericinput_changes);
+
+    			if (!current || dirty & /*dealState*/ 2 && button0_disabled_value !== (button0_disabled_value = /*dealState*/ ctx[1].isLoadingAny || !/*dealState*/ ctx[1].canRequestMinimumDownpayment)) {
+    				prop_dev(button0, "disabled", button0_disabled_value);
+    			}
+
+    			if ((!current || dirty & /*dealState*/ 2) && t13_value !== (t13_value = /*dealState*/ ctx[1].finalPrice + "")) set_data_dev(t13, t13_value);
+
+    			if (/*dealState*/ ctx[1].dealProgressState !== "no-approval") {
+    				if (if_block0) {
+    					if_block0.p(ctx, dirty);
+
+    					if (dirty & /*dealState*/ 2) {
+    						transition_in(if_block0, 1);
+    					}
+    				} else {
+    					if_block0 = create_if_block_1$1(ctx);
+    					if_block0.c();
+    					transition_in(if_block0, 1);
+    					if_block0.m(t15.parentNode, t15);
+    				}
+    			} else if (if_block0) {
+    				group_outros();
+
+    				transition_out(if_block0, 1, 1, () => {
+    					if_block0 = null;
+    				});
+
+    				check_outros();
+    			}
+
+    			if (!current || dirty & /*dealState*/ 2 && button1_disabled_value !== (button1_disabled_value = /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].isCurrentApprovalLoading || !/*dealState*/ ctx[1].canRequestApproval)) {
+    				prop_dev(button1, "disabled", button1_disabled_value);
+    			}
+
+    			if (!current || dirty & /*dealState*/ 2 && button3_disabled_value !== (button3_disabled_value = /*dealState*/ ctx[1].deal.isLoadingItemized.isDealFinalized || !/*dealState*/ ctx[1].canBeFinalized)) {
+    				prop_dev(button3, "disabled", button3_disabled_value);
+    			}
+
+    			if (/*messages*/ ctx[2].length > 0) {
+    				if (if_block1) {
+    					if_block1.p(ctx, dirty);
+    				} else {
+    					if_block1 = create_if_block$1(ctx);
+    					if_block1.c();
+    					if_block1.m(if_block1_anchor.parentNode, if_block1_anchor);
+    				}
+    			} else if (if_block1) {
+    				if_block1.d(1);
+    				if_block1 = null;
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(carmodelselector.$$.fragment, local);
+    			transition_in(insuranceplanselector.$$.fragment, local);
+    			transition_in(numericinput.$$.fragment, local);
+    			transition_in(if_block0);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(carmodelselector.$$.fragment, local);
+    			transition_out(insuranceplanselector.$$.fragment, local);
+    			transition_out(numericinput.$$.fragment, local);
+    			transition_out(if_block0);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div0);
+    			if (detaching) detach_dev(t1);
+    			destroy_component(carmodelselector, detaching);
+    			if (detaching) detach_dev(t2);
+    			if (detaching) detach_dev(div1);
+    			if (detaching) detach_dev(t4);
+    			destroy_component(insuranceplanselector, detaching);
+    			if (detaching) detach_dev(t5);
+    			if (detaching) detach_dev(div2);
+    			if (detaching) detach_dev(t7);
+    			destroy_component(numericinput, detaching);
+    			if (detaching) detach_dev(t8);
+    			if (detaching) detach_dev(button0);
+    			if (detaching) detach_dev(t10);
+    			if (detaching) detach_dev(div3);
+    			if (detaching) detach_dev(t12);
+    			if (detaching) detach_dev(div4);
+    			if (detaching) detach_dev(t14);
+    			if (if_block0) if_block0.d(detaching);
+    			if (detaching) detach_dev(t15);
+    			if (detaching) detach_dev(button1);
+    			if (detaching) detach_dev(t17);
+    			if (detaching) detach_dev(button2);
+    			if (detaching) detach_dev(t19);
+    			if (detaching) detach_dev(button3);
+    			if (detaching) detach_dev(t21);
+    			if (if_block1) if_block1.d(detaching);
+    			if (detaching) detach_dev(if_block1_anchor);
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$4.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$4($$self, $$props, $$invalidate) {
+    	let dealState;
+    	let currentDate;
+    	let messages;
+    	let $clockStore;
+    	let $approvalsStore;
+    	let $dealsStore;
+    	validate_store(clockStore, 'clockStore');
+    	component_subscribe($$self, clockStore, $$value => $$invalidate(4, $clockStore = $$value));
+    	validate_store(approvalsStore, 'approvalsStore');
+    	component_subscribe($$self, approvalsStore, $$value => $$invalidate(5, $approvalsStore = $$value));
+    	validate_store(dealsStore, 'dealsStore');
+    	component_subscribe($$self, dealsStore, $$value => $$invalidate(6, $dealsStore = $$value));
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('Deal_BareCmp', slots, []);
+    	var _a;
+    	let { dealId } = $$props;
+    	const writable_props = ['dealId'];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<Deal_BareCmp> was created with unknown prop '${key}'`);
+    	});
+
+    	const func = inputVal => dealsStore.updateDownpaymentInputValue(dealId, inputVal);
+    	const func_1 = () => dealsStore.tryCommitDownpaymentInputValue(dealId);
+    	const click_handler = () => dealsEffects.setMinimumPossibleDownpayment(dealsStore, dealId);
+    	const click_handler_1 = () => approvalsEffects.requestApproval(approvalsStore, dealState.deal);
+    	const click_handler_2 = () => dealsStore.removeDeal(dealId);
+    	const click_handler_3 = () => dealsEffects.finalizeDeal(dealsStore, approvalsStore, clockStore, dealId);
+
+    	$$self.$$set = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		_a,
+    		dealsEffects,
+    		dealsStore,
+    		approvalsEffects,
+    		approvalsStore,
+    		clockStore,
+    		computeDealDerrivations,
+    		CarModelSelector,
+    		InsurancePlanSelector,
+    		NumericInput,
+    		DealDescription,
+    		dealId,
+    		dealState,
+    		messages,
+    		currentDate,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('_a' in $$props) $$invalidate(3, _a = $$props._a);
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    		if ('dealState' in $$props) $$invalidate(1, dealState = $$props.dealState);
+    		if ('messages' in $$props) $$invalidate(2, messages = $$props.messages);
+    		if ('currentDate' in $$props) currentDate = $$props.currentDate;
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*$dealsStore, $approvalsStore, $clockStore, dealId*/ 113) {
+    			$$invalidate(1, dealState = computeDealDerrivations($dealsStore, $approvalsStore, $clockStore, dealId));
+    		}
+
+    		if ($$self.$$.dirty & /*$clockStore*/ 16) {
+    			currentDate = $clockStore.currentDate;
+    		}
+
+    		if ($$self.$$.dirty & /*dealState, _a*/ 10) {
+    			$$invalidate(2, messages = [
+    				...dealState.deal.messages,
+    				...dealState.generalValidation.downpaymentExceedsPrice
+    				? [`Downpayment can't exceed total price.`]
+    				: [],
+    				...($$invalidate(3, _a = dealState.approval) === null || _a === void 0
+    				? void 0
+    				: _a.isApproved) === false
+    				? [dealState.approval.message]
+    				: []
+    			]);
+    		}
+    	};
+
+    	return [
+    		dealId,
+    		dealState,
+    		messages,
+    		_a,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore,
+    		func,
+    		func_1,
+    		click_handler,
+    		click_handler_1,
+    		click_handler_2,
+    		click_handler_3
+    	];
+    }
+
+    class Deal_BareCmp extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$4, create_fragment$4, safe_not_equal, { dealId: 0 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Deal_BareCmp",
+    			options,
+    			id: create_fragment$4.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*dealId*/ ctx[0] === undefined && !('dealId' in props)) {
+    			console.warn("<Deal_BareCmp> was created without expected prop 'dealId'");
+    		}
+    	}
+
+    	get dealId() {
+    		throw new Error("<Deal_BareCmp>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set dealId(value) {
+    		throw new Error("<Deal_BareCmp>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\stores\deals\Deal\Deal.Cmp.svelte generated by Svelte v3.42.6 */
+    const file$3 = "src\\stores\\deals\\Deal\\Deal.Cmp.svelte";
+
+    function create_fragment$3(ctx) {
+    	let div;
+    	let dealcmpbare;
+    	let current;
+
+    	dealcmpbare = new Deal_BareCmp({
+    			props: { dealId: /*dealId*/ ctx[0] },
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			create_component(dealcmpbare.$$.fragment);
+    			attr_dev(div, "class", "car-purchase-deal svelte-1pfbqd");
+    			add_location(div, file$3, 4, 0, 101);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			mount_component(dealcmpbare, div, null);
+    			current = true;
+    		},
+    		p: function update(ctx, [dirty]) {
+    			const dealcmpbare_changes = {};
+    			if (dirty & /*dealId*/ 1) dealcmpbare_changes.dealId = /*dealId*/ ctx[0];
+    			dealcmpbare.$set(dealcmpbare_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(dealcmpbare.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(dealcmpbare.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			destroy_component(dealcmpbare);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$3.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$3($$self, $$props, $$invalidate) {
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('Deal_Cmp', slots, []);
+    	let { dealId } = $$props;
+    	const writable_props = ['dealId'];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<Deal_Cmp> was created with unknown prop '${key}'`);
+    	});
+
+    	$$self.$$set = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    	};
+
+    	$$self.$capture_state = () => ({ DealCmpBare: Deal_BareCmp, dealId });
+
+    	$$self.$inject_state = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	return [dealId];
+    }
+
+    class Deal_Cmp extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$3, create_fragment$3, safe_not_equal, { dealId: 0 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Deal_Cmp",
+    			options,
+    			id: create_fragment$3.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*dealId*/ ctx[0] === undefined && !('dealId' in props)) {
+    			console.warn("<Deal_Cmp> was created without expected prop 'dealId'");
+    		}
+    	}
+
+    	get dealId() {
+    		throw new Error("<Deal_Cmp>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set dealId(value) {
+    		throw new Error("<Deal_Cmp>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\stores\deals\DealForeignCurrency\DealForeignCurrency.Cmp.svelte generated by Svelte v3.42.6 */
+    const file$2 = "src\\stores\\deals\\DealForeignCurrency\\DealForeignCurrency.Cmp.svelte";
+
+    function create_fragment$2(ctx) {
+    	let div1;
+    	let dealbarecmp;
+    	let t0;
+    	let div0;
+    	let t2;
+    	let selectdropdown;
+    	let current;
+
+    	dealbarecmp = new Deal_BareCmp({
+    			props: { dealId: /*dealId*/ ctx[0] },
+    			$$inline: true
+    		});
+
+    	selectdropdown = new SelectDropdown({
+    			props: {
+    				selectAttributes: {
+    					class: "car-purchase-downpayment-currency"
+    				},
+    				hasEmptyOption: false,
+    				availableItems: /*dealState*/ ctx[1].deal.currenciesAvailable,
+    				modelState: /*dealState*/ ctx[1].deal.businessParams.downpaymentCurrency,
+    				disabled: /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized,
+    				onSelect: /*func*/ ctx[5]
+    			},
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			div1 = element("div");
+    			create_component(dealbarecmp.$$.fragment);
+    			t0 = space();
+    			div0 = element("div");
+    			div0.textContent = "Please select currency";
+    			t2 = space();
+    			create_component(selectdropdown.$$.fragment);
+    			attr_dev(div0, "class", "car-purchase-downpayment-currency-label");
+    			add_location(div0, file$2, 14, 4, 697);
+    			attr_dev(div1, "class", "car-purchase-deal car-purchase-deal-with-foreign-currency");
+    			add_location(div1, file$2, 11, 0, 588);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div1, anchor);
+    			mount_component(dealbarecmp, div1, null);
+    			append_dev(div1, t0);
+    			append_dev(div1, div0);
+    			append_dev(div1, t2);
+    			mount_component(selectdropdown, div1, null);
+    			current = true;
+    		},
+    		p: function update(ctx, [dirty]) {
+    			const dealbarecmp_changes = {};
+    			if (dirty & /*dealId*/ 1) dealbarecmp_changes.dealId = /*dealId*/ ctx[0];
+    			dealbarecmp.$set(dealbarecmp_changes);
+    			const selectdropdown_changes = {};
+    			if (dirty & /*dealState*/ 2) selectdropdown_changes.availableItems = /*dealState*/ ctx[1].deal.currenciesAvailable;
+    			if (dirty & /*dealState*/ 2) selectdropdown_changes.modelState = /*dealState*/ ctx[1].deal.businessParams.downpaymentCurrency;
+    			if (dirty & /*dealState*/ 2) selectdropdown_changes.disabled = /*dealState*/ ctx[1].isLoadingAny || /*dealState*/ ctx[1].deal.businessParams.isDealFinalized;
+    			if (dirty & /*dealId*/ 1) selectdropdown_changes.onSelect = /*func*/ ctx[5];
+    			selectdropdown.$set(selectdropdown_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(dealbarecmp.$$.fragment, local);
+    			transition_in(selectdropdown.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(dealbarecmp.$$.fragment, local);
+    			transition_out(selectdropdown.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div1);
+    			destroy_component(dealbarecmp);
+    			destroy_component(selectdropdown);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$2.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$2($$self, $$props, $$invalidate) {
+    	let dealState;
+    	let $clockStore;
+    	let $approvalsStore;
+    	let $dealsStore;
+    	validate_store(clockStore, 'clockStore');
+    	component_subscribe($$self, clockStore, $$value => $$invalidate(2, $clockStore = $$value));
+    	validate_store(approvalsStore, 'approvalsStore');
+    	component_subscribe($$self, approvalsStore, $$value => $$invalidate(3, $approvalsStore = $$value));
+    	validate_store(dealsStore, 'dealsStore');
+    	component_subscribe($$self, dealsStore, $$value => $$invalidate(4, $dealsStore = $$value));
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('DealForeignCurrency_Cmp', slots, []);
+    	let { dealId } = $$props;
+    	const writable_props = ['dealId'];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<DealForeignCurrency_Cmp> was created with unknown prop '${key}'`);
+    	});
+
+    	const func = currency => dealsEffects.setCurrncyAndReloadExchangeRate(dealsStore, [dealId, currency]);
+
+    	$$self.$$set = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		dealsEffects,
+    		dealsStore,
+    		approvalsStore,
+    		clockStore,
+    		computeDealForeignCurrencyDerrivations,
+    		DealBareCmp: Deal_BareCmp,
+    		SelectDropdown,
+    		dealId,
+    		dealState,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    		if ('dealState' in $$props) $$invalidate(1, dealState = $$props.dealState);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*$dealsStore, $approvalsStore, $clockStore, dealId*/ 29) {
+    			$$invalidate(1, dealState = computeDealForeignCurrencyDerrivations($dealsStore, $approvalsStore, $clockStore, dealId));
+    		}
+    	};
+
+    	return [dealId, dealState, $clockStore, $approvalsStore, $dealsStore, func];
+    }
+
+    class DealForeignCurrency_Cmp extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { dealId: 0 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "DealForeignCurrency_Cmp",
+    			options,
+    			id: create_fragment$2.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*dealId*/ ctx[0] === undefined && !('dealId' in props)) {
+    			console.warn("<DealForeignCurrency_Cmp> was created without expected prop 'dealId'");
+    		}
+    	}
+
+    	get dealId() {
+    		throw new Error("<DealForeignCurrency_Cmp>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set dealId(value) {
+    		throw new Error("<DealForeignCurrency_Cmp>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\TabHeader.svelte generated by Svelte v3.42.6 */
+    const file$1 = "src\\TabHeader.svelte";
+
+    function create_fragment$1(ctx) {
+    	let div1;
+    	let div0;
+    	let t0;
+    	let t1;
+    	let button;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			div1 = element("div");
+    			div0 = element("div");
+    			t0 = text(/*headerText*/ ctx[2]);
+    			t1 = space();
+    			button = element("button");
+    			button.textContent = "X";
+    			attr_dev(div0, "class", "header-text svelte-zi87rz");
+    			add_location(div0, file$1, 33, 4, 1348);
+    			attr_dev(button, "class", "close-button svelte-zi87rz");
+    			add_location(button, file$1, 40, 4, 1496);
+    			attr_dev(div1, "class", "deal-tab-header svelte-zi87rz");
+    			toggle_class(div1, "active", /*dealId*/ ctx[0] === /*$dealsStore*/ ctx[1].activeDealId);
+    			add_location(div1, file$1, 29, 0, 1249);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div1, anchor);
+    			append_dev(div1, div0);
+    			append_dev(div0, t0);
+    			append_dev(div1, t1);
+    			append_dev(div1, button);
+
+    			if (!mounted) {
+    				dispose = [
+    					listen_dev(div0, "click", /*click_handler*/ ctx[7], false, false, false),
+    					listen_dev(button, "click", /*click_handler_1*/ ctx[8], false, false, false)
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (dirty & /*headerText*/ 4) set_data_dev(t0, /*headerText*/ ctx[2]);
+
+    			if (dirty & /*dealId, $dealsStore*/ 3) {
+    				toggle_class(div1, "active", /*dealId*/ ctx[0] === /*$dealsStore*/ ctx[1].activeDealId);
+    			}
+    		},
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div1);
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$1.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$1($$self, $$props, $$invalidate) {
+    	let dealState;
+    	let currentDate;
+    	let headerText;
+    	let $clockStore;
+    	let $approvalsStore;
+    	let $dealsStore;
+    	validate_store(clockStore, 'clockStore');
+    	component_subscribe($$self, clockStore, $$value => $$invalidate(5, $clockStore = $$value));
+    	validate_store(approvalsStore, 'approvalsStore');
+    	component_subscribe($$self, approvalsStore, $$value => $$invalidate(6, $approvalsStore = $$value));
+    	validate_store(dealsStore, 'dealsStore');
+    	component_subscribe($$self, dealsStore, $$value => $$invalidate(1, $dealsStore = $$value));
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('TabHeader', slots, []);
+    	let { dealId } = $$props;
+
+    	function computeHeaderText(dealState, currentDate) {
+    		if (!dealState.deal.businessParams.carModelSelected) {
+    			return `blank deal`;
+    		}
+
+    		let text = "";
+
+    		if (dealState.dealProgressState === "deal-finalized") {
+    			text = "done";
+    		} else if (dealState.dealProgressState === "approval-perpetual") {
+    			text = "approved";
+    		} else if (typeof dealState.dealProgressState !== "string") {
+    			text = `${diffSeconds(dealState.dealProgressState.approvalExpiresAt, currentDate)} sec`;
+    		}
+
+    		return `${dealState.deal.businessParams.carModelSelected.description} ${dealState.headerAdditionalDescription}${text}`;
+    	}
+
+    	
+    	const writable_props = ['dealId'];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<TabHeader> was created with unknown prop '${key}'`);
+    	});
+
+    	const click_handler = () => dealsStore.applyDiff({ activeDealId: dealId });
+    	const click_handler_1 = () => dealsStore.removeDeal(dealId);
+
+    	$$self.$$set = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    	};
+
+    	$$self.$capture_state = () => ({
+    		dealsStore,
+    		approvalsStore,
+    		clockStore,
+    		computeDealDerrivations,
+    		diffSeconds,
+    		dealId,
+    		computeHeaderText,
+    		currentDate,
+    		dealState,
+    		headerText,
+    		$clockStore,
+    		$approvalsStore,
+    		$dealsStore
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('dealId' in $$props) $$invalidate(0, dealId = $$props.dealId);
+    		if ('currentDate' in $$props) $$invalidate(3, currentDate = $$props.currentDate);
+    		if ('dealState' in $$props) $$invalidate(4, dealState = $$props.dealState);
+    		if ('headerText' in $$props) $$invalidate(2, headerText = $$props.headerText);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*$dealsStore, $approvalsStore, $clockStore, dealId*/ 99) {
+    			$$invalidate(4, dealState = computeDealDerrivations($dealsStore, $approvalsStore, $clockStore, dealId));
+    		}
+
+    		if ($$self.$$.dirty & /*$clockStore*/ 32) {
+    			$$invalidate(3, currentDate = $clockStore.currentDate);
+    		}
+
+    		if ($$self.$$.dirty & /*dealState, currentDate*/ 24) {
+    			$$invalidate(2, headerText = computeHeaderText(dealState, currentDate));
+    		}
+    	};
+
+    	return [
+    		dealId,
+    		$dealsStore,
+    		headerText,
+    		currentDate,
+    		dealState,
+    		$clockStore,
+    		$approvalsStore,
+    		click_handler,
+    		click_handler_1
+    	];
+    }
+
+    class TabHeader extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$1, create_fragment$1, safe_not_equal, { dealId: 0 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "TabHeader",
+    			options,
+    			id: create_fragment$1.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*dealId*/ ctx[0] === undefined && !('dealId' in props)) {
+    			console.warn("<TabHeader> was created without expected prop 'dealId'");
+    		}
+    	}
+
+    	get dealId() {
+    		throw new Error("<TabHeader>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set dealId(value) {
+    		throw new Error("<TabHeader>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\App.svelte generated by Svelte v3.42.6 */
+    const file = "src\\App.svelte";
+
+    function get_each_context(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[5] = list[i];
+    	return child_ctx;
+    }
+
+    // (37:12) {#each $dealsStore.deals as deal (deal.businessParams.dealId)}
+    function create_each_block(key_1, ctx) {
+    	let first;
+    	let tabheader;
+    	let current;
+
+    	tabheader = new TabHeader({
+    			props: {
+    				dealId: /*deal*/ ctx[5].businessParams.dealId
+    			},
+    			$$inline: true
+    		});
+
+    	const block = {
+    		key: key_1,
+    		first: null,
+    		c: function create() {
+    			first = empty();
+    			create_component(tabheader.$$.fragment);
+    			this.first = first;
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, first, anchor);
+    			mount_component(tabheader, target, anchor);
+    			current = true;
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			const tabheader_changes = {};
+    			if (dirty & /*$dealsStore*/ 2) tabheader_changes.dealId = /*deal*/ ctx[5].businessParams.dealId;
+    			tabheader.$set(tabheader_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(tabheader.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(tabheader.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(first);
+    			destroy_component(tabheader, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block.name,
+    		type: "each",
+    		source: "(37:12) {#each $dealsStore.deals as deal (deal.businessParams.dealId)}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (47:12) {:else}
+    function create_else_block(ctx) {
+    	let dealcmp;
+    	let current;
+
+    	dealcmp = new Deal_Cmp({
+    			props: { dealId: /*activeDealId*/ ctx[0] },
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(dealcmp.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(dealcmp, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const dealcmp_changes = {};
+    			if (dirty & /*activeDealId*/ 1) dealcmp_changes.dealId = /*activeDealId*/ ctx[0];
+    			dealcmp.$set(dealcmp_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(dealcmp.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(dealcmp.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(dealcmp, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block.name,
+    		type: "else",
+    		source: "(47:12) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (45:65) 
+    function create_if_block_1(ctx) {
+    	let dealforeigncurrency;
+    	let current;
+
+    	dealforeigncurrency = new DealForeignCurrency_Cmp({
+    			props: { dealId: /*activeDealId*/ ctx[0] },
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(dealforeigncurrency.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(dealforeigncurrency, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const dealforeigncurrency_changes = {};
+    			if (dirty & /*activeDealId*/ 1) dealforeigncurrency_changes.dealId = /*activeDealId*/ ctx[0];
+    			dealforeigncurrency.$set(dealforeigncurrency_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(dealforeigncurrency.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(dealforeigncurrency.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(dealforeigncurrency, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_1.name,
+    		type: "if",
+    		source: "(45:65) ",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (43:12) {#if typeof activeDealId === "undefined"}
+    function create_if_block(ctx) {
+    	const block = {
+    		c: noop,
+    		m: noop,
+    		p: noop,
+    		i: noop,
+    		o: noop,
+    		d: noop
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block.name,
+    		type: "if",
+    		source: "(43:12) {#if typeof activeDealId === \\\"undefined\\\"}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment(ctx) {
+    	let div4;
+    	let div0;
+    	let t1;
+    	let div3;
+    	let div1;
+    	let button0;
+    	let t2;
+    	let button0_disabled_value;
+    	let t3;
+    	let button1;
+    	let t4;
+    	let button1_disabled_value;
+    	let t5;
+    	let each_blocks = [];
+    	let each_1_lookup = new Map();
+    	let t6;
+    	let div2;
+    	let current_block_type_index;
+    	let if_block;
+    	let current;
+    	let mounted;
+    	let dispose;
+    	let each_value = /*$dealsStore*/ ctx[1].deals;
+    	validate_each_argument(each_value);
+    	const get_key = ctx => /*deal*/ ctx[5].businessParams.dealId;
+    	validate_each_keys(ctx, each_value, get_each_context, get_key);
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		let child_ctx = get_each_context(ctx, each_value, i);
+    		let key = get_key(child_ctx);
+    		each_1_lookup.set(key, each_blocks[i] = create_each_block(key, child_ctx));
+    	}
+
+    	const if_block_creators = [create_if_block, create_if_block_1, create_else_block];
+    	const if_blocks = [];
+
+    	function select_block_type(ctx, dirty) {
+    		if (typeof /*activeDealId*/ ctx[0] === "undefined") return 0;
+    		if (/*activeDeal*/ ctx[2].type === DealForeignCurrencyTag) return 1;
+    		return 2;
+    	}
+
+    	current_block_type_index = select_block_type(ctx);
+    	if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+
+    	const block = {
+    		c: function create() {
+    			div4 = element("div");
+    			div0 = element("div");
+    			div0.textContent = "Crazy Ivan Motors (Svelte)";
+    			t1 = space();
+    			div3 = element("div");
+    			div1 = element("div");
+    			button0 = element("button");
+    			t2 = text("Add deal");
+    			t3 = space();
+    			button1 = element("button");
+    			t4 = text("Add foreign currency deal");
+    			t5 = space();
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			t6 = space();
+    			div2 = element("div");
+    			if_block.c();
+    			attr_dev(div0, "class", "main-logo svelte-1nwcwin");
+    			add_location(div0, file, 15, 4, 760);
+    			attr_dev(button0, "class", "button-add-new-deal");
+    			button0.disabled = button0_disabled_value = /*$dealsStore*/ ctx[1].newDealIsLoading;
+    			add_location(button0, file, 19, 12, 886);
+    			attr_dev(button1, "class", "button-add-new-deal");
+    			button1.disabled = button1_disabled_value = /*$dealsStore*/ ctx[1].newDealIsLoading;
+    			add_location(button1, file, 27, 12, 1146);
+    			attr_dev(div1, "class", "tabs svelte-1nwcwin");
+    			add_location(div1, file, 18, 8, 854);
+    			attr_dev(div2, "class", "" + (null_to_empty(`active-tab`) + " svelte-1nwcwin"));
+    			add_location(div2, file, 41, 8, 1637);
+    			attr_dev(div3, "class", "screens svelte-1nwcwin");
+    			add_location(div3, file, 17, 4, 823);
+    			attr_dev(div4, "id", "app-root");
+    			attr_dev(div4, "class", "svelte-1nwcwin");
+    			add_location(div4, file, 14, 0, 735);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div4, anchor);
+    			append_dev(div4, div0);
+    			append_dev(div4, t1);
+    			append_dev(div4, div3);
+    			append_dev(div3, div1);
+    			append_dev(div1, button0);
+    			append_dev(button0, t2);
+    			append_dev(div1, t3);
+    			append_dev(div1, button1);
+    			append_dev(button1, t4);
+    			append_dev(div1, t5);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].m(div1, null);
+    			}
+
+    			append_dev(div3, t6);
+    			append_dev(div3, div2);
+    			if_blocks[current_block_type_index].m(div2, null);
+    			current = true;
+
+    			if (!mounted) {
+    				dispose = [
+    					listen_dev(button0, "click", /*click_handler*/ ctx[3], false, false, false),
+    					listen_dev(button1, "click", /*click_handler_1*/ ctx[4], false, false, false)
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (!current || dirty & /*$dealsStore*/ 2 && button0_disabled_value !== (button0_disabled_value = /*$dealsStore*/ ctx[1].newDealIsLoading)) {
+    				prop_dev(button0, "disabled", button0_disabled_value);
+    			}
+
+    			if (!current || dirty & /*$dealsStore*/ 2 && button1_disabled_value !== (button1_disabled_value = /*$dealsStore*/ ctx[1].newDealIsLoading)) {
+    				prop_dev(button1, "disabled", button1_disabled_value);
+    			}
+
+    			if (dirty & /*$dealsStore*/ 2) {
+    				each_value = /*$dealsStore*/ ctx[1].deals;
+    				validate_each_argument(each_value);
+    				group_outros();
+    				validate_each_keys(ctx, each_value, get_each_context, get_key);
+    				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, div1, outro_and_destroy_block, create_each_block, null, get_each_context);
+    				check_outros();
+    			}
+
+    			let previous_block_index = current_block_type_index;
+    			current_block_type_index = select_block_type(ctx);
+
+    			if (current_block_type_index === previous_block_index) {
+    				if_blocks[current_block_type_index].p(ctx, dirty);
+    			} else {
+    				group_outros();
+
+    				transition_out(if_blocks[previous_block_index], 1, 1, () => {
+    					if_blocks[previous_block_index] = null;
+    				});
+
+    				check_outros();
+    				if_block = if_blocks[current_block_type_index];
+
+    				if (!if_block) {
+    					if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+    					if_block.c();
+    				} else {
+    					if_block.p(ctx, dirty);
+    				}
+
+    				transition_in(if_block, 1);
+    				if_block.m(div2, null);
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+
+    			for (let i = 0; i < each_value.length; i += 1) {
+    				transition_in(each_blocks[i]);
+    			}
+
+    			transition_in(if_block);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				transition_out(each_blocks[i]);
+    			}
+
+    			transition_out(if_block);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div4);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].d();
+    			}
+
+    			if_blocks[current_block_type_index].d();
     			mounted = false;
     			run_all(dispose);
     		}
@@ -10867,66 +14322,42 @@ var app = (function () {
     	return block;
     }
 
-    window.process = { env: { NODE_ENV: 'production' } };
+    clockEffects.start(clockStore);
 
     function instance($$self, $$props, $$invalidate) {
-    	let store1a;
-    	let store2a;
-    	let storeImmutA;
     	let activeDealId;
     	let activeDeal;
     	let $dealsStore;
-    	let $storeImmut;
-    	let $store2;
-    	let $store1;
     	validate_store(dealsStore, 'dealsStore');
-    	component_subscribe($$self, dealsStore, $$value => $$invalidate(0, $dealsStore = $$value));
-    	validate_store(storeImmut, 'storeImmut');
-    	component_subscribe($$self, storeImmut, $$value => $$invalidate(1, $storeImmut = $$value));
-    	validate_store(store2, 'store2');
-    	component_subscribe($$self, store2, $$value => $$invalidate(2, $store2 = $$value));
-    	validate_store(store1, 'store1');
-    	component_subscribe($$self, store1, $$value => $$invalidate(3, $store1 = $$value));
+    	component_subscribe($$self, dealsStore, $$value => $$invalidate(1, $dealsStore = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('App', slots, []);
     	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
-    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console_1.warn(`<App> was created with unknown prop '${key}'`);
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<App> was created with unknown prop '${key}'`);
     	});
 
-    	const click_handler = () => store1.incr1();
-    	const click_handler_1 = () => store1.incr2();
-    	const click_handler_2 = () => store2.incr1();
-    	const click_handler_3 = () => store2.incr2();
-    	const click_handler_4 = () => storeImmut.incr1();
-    	const click_handler_5 = () => storeImmut.incr2();
-    	const click_handler_6 = () => dealsEffects.loadNewDeal(dealsStore);
-    	const click_handler_7 = () => dealsEffects.loadNewDealForeignCurrency(dealsStore);
+    	const click_handler = () => dealsEffects.loadNewDeal(dealsStore);
+    	const click_handler_1 = () => dealsEffects.loadNewDealForeignCurrency(dealsStore);
 
     	$$self.$capture_state = () => ({
+    		clockStore,
+    		clockEffects,
+    		DealForeignCurrencyTag,
     		dealsStore,
     		dealsEffects,
-    		store1,
-    		store2,
-    		storeImmut,
+    		DealCmp: Deal_Cmp,
+    		DealForeignCurrency: DealForeignCurrency_Cmp,
+    		TabHeader,
     		activeDealId,
     		activeDeal,
-    		storeImmutA,
-    		store2a,
-    		store1a,
-    		$dealsStore,
-    		$storeImmut,
-    		$store2,
-    		$store1
+    		$dealsStore
     	});
 
     	$$self.$inject_state = $$props => {
-    		if ('activeDealId' in $$props) $$invalidate(4, activeDealId = $$props.activeDealId);
-    		if ('activeDeal' in $$props) activeDeal = $$props.activeDeal;
-    		if ('storeImmutA' in $$props) $$invalidate(5, storeImmutA = $$props.storeImmutA);
-    		if ('store2a' in $$props) $$invalidate(6, store2a = $$props.store2a);
-    		if ('store1a' in $$props) $$invalidate(7, store1a = $$props.store1a);
+    		if ('activeDealId' in $$props) $$invalidate(0, activeDealId = $$props.activeDealId);
+    		if ('activeDeal' in $$props) $$invalidate(2, activeDeal = $$props.activeDeal);
     	};
 
     	if ($$props && "$$inject" in $$props) {
@@ -10934,99 +14365,22 @@ var app = (function () {
     	}
 
     	$$self.$$.update = () => {
-    		if ($$self.$$.dirty & /*$store1*/ 8) {
-    			console.log(`Store1:`, $store1);
+    		if ($$self.$$.dirty & /*$dealsStore*/ 2) {
+    			$$invalidate(0, activeDealId = $dealsStore.activeDealId);
     		}
 
-    		if ($$self.$$.dirty & /*$store1*/ 8) {
-    			console.log(`Store1.a:`, $store1.a);
-    		}
-
-    		if ($$self.$$.dirty & /*$store1*/ 8) {
-    			console.log(`Store1.b:`, $store1.b);
-    		}
-
-    		if ($$self.$$.dirty & /*$store1*/ 8) {
-    			$$invalidate(7, store1a = $store1.a);
-    		}
-
-    		if ($$self.$$.dirty & /*store1a*/ 128) {
-    			console.log(`store1a`, store1a);
-    		}
-
-    		if ($$self.$$.dirty & /*$store2*/ 4) {
-    			console.log(`Store2:`, $store2);
-    		}
-
-    		if ($$self.$$.dirty & /*$store2*/ 4) {
-    			console.log(`Store2.a.val:`, $store2.a.val);
-    		}
-
-    		if ($$self.$$.dirty & /*$store2*/ 4) {
-    			console.log(`Store2.b.val:`, $store2.b.val);
-    		}
-
-    		if ($$self.$$.dirty & /*$store2*/ 4) {
-    			$$invalidate(6, store2a = $store2.a);
-    		}
-
-    		if ($$self.$$.dirty & /*store2a*/ 64) {
-    			console.log(`store2a`, store2a);
-    		}
-
-    		if ($$self.$$.dirty & /*$storeImmut*/ 2) {
-    			console.log(`Store2:`, $storeImmut);
-    		}
-
-    		if ($$self.$$.dirty & /*$storeImmut*/ 2) {
-    			console.log(`Store2.a.val:`, $storeImmut.a.val);
-    		}
-
-    		if ($$self.$$.dirty & /*$storeImmut*/ 2) {
-    			console.log(`Store2.b.val:`, $storeImmut.b.val);
-    		}
-
-    		if ($$self.$$.dirty & /*$storeImmut*/ 2) {
-    			$$invalidate(5, storeImmutA = $storeImmut.a);
-    		}
-
-    		if ($$self.$$.dirty & /*storeImmutA*/ 32) {
-    			console.log(`store2a`, storeImmutA);
-    		}
-
-    		if ($$self.$$.dirty & /*$dealsStore*/ 1) {
-    			$$invalidate(4, activeDealId = $dealsStore.activeDealId);
-    		}
-
-    		if ($$self.$$.dirty & /*$dealsStore, activeDealId*/ 17) {
-    			activeDeal = $dealsStore.deals.find(x => x.businessParams.dealId === activeDealId);
+    		if ($$self.$$.dirty & /*$dealsStore, activeDealId*/ 3) {
+    			$$invalidate(2, activeDeal = $dealsStore.deals.find(x => x.businessParams.dealId === activeDealId));
     		}
     	};
 
-    	return [
-    		$dealsStore,
-    		$storeImmut,
-    		$store2,
-    		$store1,
-    		activeDealId,
-    		storeImmutA,
-    		store2a,
-    		store1a,
-    		click_handler,
-    		click_handler_1,
-    		click_handler_2,
-    		click_handler_3,
-    		click_handler_4,
-    		click_handler_5,
-    		click_handler_6,
-    		click_handler_7
-    	];
+    	return [activeDealId, $dealsStore, activeDeal, click_handler, click_handler_1];
     }
 
     class App extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance, create_fragment, not_equal, {});
+    		init(this, options, instance, create_fragment, safe_not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,

@@ -3,7 +3,7 @@
 
     export let inputAttributes: svelte.JSX.HTMLProps<HTMLElement> | undefined;
     export let messageAttributes: svelte.JSX.HTMLProps<HTMLElement> | undefined;
-    export let placeholder: string | undefined;
+    export let placeholder: string | undefined = undefined;
     export let disabled: boolean | undefined;
     export let modelState: number | undefined;
     export let inputState: NumericInputState;

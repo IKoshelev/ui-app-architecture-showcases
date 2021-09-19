@@ -48,7 +48,7 @@ export function getDealForeignCurrencyById(dealsState: DealsState, dealId: numbe
     return deal;
 }
 
-export function getCachedSelectorDealForeignCurrencyDerrivations(
+export function computeDealForeignCurrencyDerrivations(
     dealsState: DealsState,
     approvalsState: ApprovalsState,
     clockState: ClockState,

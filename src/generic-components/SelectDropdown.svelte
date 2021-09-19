@@ -43,7 +43,7 @@
             {getDescription(item)}
         </option>
     {/each}
-</select>;
+</select>
 
 <style>
 </style>
