@@ -1,64 +1,104 @@
+<script lang="ts" context="module">
+    window.process = { env: { NODE_ENV: 'production' } } as any;
+</script>
+<svelte:options immutable={true}/>
 <script lang="ts">
-    import { clockStore, clockEffects } from "./stores/clock.store";
-    import { approvalsStore, approvalsEffects } from "./stores/approval.store";
-    import { createBlankDeal } from "./stores/deals/Deal/Deal";
-    import Dropdown from "./generic-components/SelectDropdown.svelte";
+    import {
+        dealsStore,
+        dealsEffects
+    } from './stores/deals/deals.store'
 
-    import SelectMultiple from "./generic-components/SelectMultiple.svelte";
+    import {
+        store1,
+        store2,
+        storeImmut
+    } from './stores/experiments.store'
 
-    export let name: string;
+    $: console.log(`Store1:`, $store1);
+    $: console.log(`Store1.a:`, $store1.a);
+    $: console.log(`Store1.b:`, $store1.b);
+    $: store1a = $store1.a;
+    $: console.log(`store1a`, store1a);
 
-    let modelState = 2;
-    $: modelState2 = [];
+    $: console.log(`Store2:`, $store2);
+    $: console.log(`Store2.a.val:`, $store2.a.val);
+    $: console.log(`Store2.b.val:`, $store2.b.val);
+    $: store2a = $store2.a;
+    $: console.log(`store2a`, store2a);
+
+    $: console.log(`Store2:`, $storeImmut);
+    $: console.log(`Store2.a.val:`, $storeImmut.a.val);
+    $: console.log(`Store2.b.val:`, $storeImmut.b.val);
+    $: storeImmutA = $storeImmut.a;
+    $: console.log(`store2a`, storeImmutA);
+
+    $: activeDealId = $dealsStore.activeDealId;
+    $: activeDeal = $dealsStore.deals.find(x => x.businessParams.dealId === activeDealId);
+
 </script>
 
-<main>
-    <h1>Hello {name}!</h1>
-    <p>
-        Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn
-        how to build Svelte apps.
-    </p>
-    <p>
-        {$clockStore.currentDate}
-    </p>
-    <p>
-        {$clockStore.tickIntervalHandle ? "is ticking" : "is NOT ticking"}
-    </p>
-    <button on:click={() => clockEffects.start(clockStore)}>Start</button>
-    <button on:click={() => clockEffects.stop(clockStore)}>Stop</button>
+<div id='app-root'>
     <div>
-        {JSON.stringify($approvalsStore)}
+        {$store1.a}
+        <button on:click={() => store1.incr1()}>+</button>
     </div>
-    <button
-        on:click={() => {
-            const deal = createBlankDeal();
-            deal.businessParams.carModelSelected = {
-                id: 1,
-                description: "",
-                basePriceUSD: 100,
-            };
-            approvalsEffects.requestApproval(approvalsStore, deal);
-        }}>Toggle</button
-    >
-    <Dropdown
-        availableItems={[1, 2, 3]}
-        hasEmptyOption={true}
-        {modelState}
-        emptyPlaceholder="none"
-        onSelect={(i) => {
-            modelState = i;
-        }}
-    />
     <div>
-        {modelState}
+        {$store1.b}
+        <button on:click={() => store1.incr2()}>+</button>
     </div>
-    <SelectMultiple
-        availableItems={[1, 2, 3, 4]}
-        modelState={modelState2}
-        onSelect={(m) => (modelState2 = m)}
-    />
-    <button on:click={(e) => (modelState2 = [])}> reset </button>
-</main>
+    <div>
+        {$store2.a.val}
+        <button on:click={() => store2.incr1()}>+</button>
+    </div>
+    <div>
+        {$store2.b.val}
+        <button on:click={() => store2.incr2()}>+</button>
+    </div>
+    <div>
+        {$storeImmut.a.val}
+        <button on:click={() => storeImmut.incr1()}>+</button>
+    </div>
+    <div>
+        {$storeImmut.b.val}
+        <button on:click={() => storeImmut.incr2()}>+</button>
+    </div>
+
+
+    <div class='main-logo'>
+      Crazy Ivan Motors (Svelte)
+    </div>
+
+    <div class='screens'>
+      <div class='tabs'>
+        <button
+          class='button-add-new-deal'
+          disabled={$dealsStore.newDealIsLoading}
+          on:click={() => dealsEffects.loadNewDeal(dealsStore)}
+        >
+          Add deal
+        </button>
+
+        <button
+          class="button-add-new-deal"
+          disabled={$dealsStore.newDealIsLoading}
+          on:click={() => dealsEffects.loadNewDealForeignCurrency(dealsStore)}
+        >
+          Add foreign currency deal
+        </button>
+
+        <!-- { dealsState.deals.filter(x => !x.isClosed).map(x => (<TabHeader 
+              key={x.businessParams.dealId} 
+              dealId={x.businessParams.dealId}
+            />))} -->
+      </div>
+
+      <div class={`active-tab`}>
+        <!-- {
+          renderDealTab(dealsState.activeDealId, activeDealType)
+        } -->
+      </div>
+    </div>
+  </div>
 
 <style>
     body {

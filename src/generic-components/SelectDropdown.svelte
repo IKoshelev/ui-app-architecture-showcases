@@ -1,63 +1,44 @@
-<script lang="ts" context="module">
-    export type SelectDropdownProps<T> = {
-        selectAttributes?: svelte.JSX.HTMLProps<HTMLElement>;
-        getKeyValue?: (item: T) => string;
-        getDescription?: (item: T) => string;
-        disabled?: boolean;
-        availableItems: T[];
-    } & (
-        | {
-              hasEmptyOption: false;
-              modelState: T;
-              onSelect: (item: T) => void;
-          }
-        | {
-              hasEmptyOption: true;
-              emptyPlaceholder: string;
-              modelState: T | undefined;
-              onSelect: (item: T | undefined) => void;
-          }
-    );
-</script>
-
 <script lang="ts">
+    
     type T = $$Generic;
-    export let p: SelectDropdownProps<T>;
+    export let selectAttributes: svelte.JSX.HTMLProps<HTMLElement> = {};
+    export let getKeyValue: (item: T) => string = (x: any) => x.toString();
+    export let getDescription: (item: T) => string = (x: any) => x.toString();
+    export let disabled: boolean = false;
+    export let availableItems: T[];
 
-    $: getKeyValue = p.getKeyValue ?? ((x: any) => x.toString());
-    $: getDescription = p.getDescription ?? ((x: any) => x.toString());
+    export let hasEmptyOption: boolean;
+    export let emptyPlaceholder: string = 'empty';
+    export let modelState: T | undefined;
+    export let onSelect: (item: T | undefined) => void;
 
     function handleSelect(value: string) {
 
-        const selectedItem = p.availableItems.find(
+        const selectedItem = availableItems.find(
             (i) => value === getKeyValue(i)
         );
 
-        // sattisfy compiler
-        if (p.hasEmptyOption === true) {
-            p.onSelect(selectedItem);
-        } else {
-            if (selectedItem === undefined) {
-                throw new Error();
-            }
-            p.onSelect(selectedItem);
-        }
+        if (hasEmptyOption !== true && selectedItem === undefined) {
+            throw new Error();
+        } 
+
+        onSelect(selectedItem);
     }
 </script>
 
 <select
-    {...p.selectAttributes ?? {}}
-    disabled={p.disabled}
-    value={p.modelState ? getKeyValue(p.modelState) : ""}
+    {...selectAttributes}
+    disabled={disabled}
+    value={modelState ? getKeyValue(modelState) : ""}
     on:change={(e) => handleSelect(e.currentTarget.value)}
 >
-    {#if p.hasEmptyOption}
+    {#if hasEmptyOption}
         <option value={""}>
-            {p.emptyPlaceholder}
+            {emptyPlaceholder}
         </option>
     {/if}
 
-    {#each p.availableItems as item (getKeyValue(item))}
+    {#each availableItems as item (getKeyValue(item))}
         <option value={getKeyValue(item)}>
             {getDescription(item)}
         </option>

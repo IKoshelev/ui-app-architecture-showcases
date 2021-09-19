@@ -21,7 +21,7 @@ import {
 } from './DealForeignCurrency/DealForeignCurrency';
 import { Currency, currencyExchangeClient } from '../../api/CurrencyExchange.Client';
 import { assert, DiffWithGuard, guard } from '../../util/assert';
-import { merge } from 'lodash';
+import merge from 'lodash.merge';
 import { writable, get } from "svelte/store";
 import { bindToStore, makeApplyDiff } from '../../util/genericReducers';
 

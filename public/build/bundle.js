@@ -4,12 +4,6 @@ var app = (function () {
     'use strict';
 
     function noop() { }
-    function assign(tar, src) {
-        // @ts-ignore
-        for (const k in src)
-            tar[k] = src[k];
-        return tar;
-    }
     function add_location(element, file, line, column, char) {
         element.__svelte_meta = {
             loc: { file, line, column, char }
@@ -29,6 +23,9 @@ var app = (function () {
     }
     function safe_not_equal(a, b) {
         return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
+    }
+    function not_equal(a, b) {
+        return a != a ? b == b : a !== b;
     }
     function is_empty(obj) {
         return Object.keys(obj).length === 0;
@@ -53,6 +50,9 @@ var app = (function () {
     function component_subscribe(component, store, callback) {
         component.$$.on_destroy.push(subscribe(store, callback));
     }
+    function null_to_empty(value) {
+        return value == null ? '' : value;
+    }
     function append(target, node) {
         target.appendChild(node);
     }
@@ -71,9 +71,6 @@ var app = (function () {
     function space() {
         return text(' ');
     }
-    function empty() {
-        return text('');
-    }
     function listen(node, event, handler, options) {
         node.addEventListener(event, handler, options);
         return () => node.removeEventListener(event, handler, options);
@@ -84,45 +81,8 @@ var app = (function () {
         else if (node.getAttribute(attribute) !== value)
             node.setAttribute(attribute, value);
     }
-    function set_attributes(node, attributes) {
-        // @ts-ignore
-        const descriptors = Object.getOwnPropertyDescriptors(node.__proto__);
-        for (const key in attributes) {
-            if (attributes[key] == null) {
-                node.removeAttribute(key);
-            }
-            else if (key === 'style') {
-                node.style.cssText = attributes[key];
-            }
-            else if (key === '__value') {
-                node.value = node[key] = attributes[key];
-            }
-            else if (descriptors[key] && descriptors[key].set) {
-                node[key] = attributes[key];
-            }
-            else {
-                attr(node, key, attributes[key]);
-            }
-        }
-    }
     function children(element) {
         return Array.from(element.childNodes);
-    }
-    function select_option(select, value) {
-        for (let i = 0; i < select.options.length; i += 1) {
-            const option = select.options[i];
-            if (option.__value === value) {
-                option.selected = true;
-                return;
-            }
-        }
-        select.selectedIndex = -1; // no option should be selected
-    }
-    function select_options(select, value) {
-        for (let i = 0; i < select.options.length; i += 1) {
-            const option = select.options[i];
-            option.selected = ~value.indexOf(option.__value);
-        }
     }
     function custom_event(type, detail, bubbles = false) {
         const e = document.createEvent('CustomEvent');
@@ -199,27 +159,10 @@ var app = (function () {
         }
     }
     const outroing = new Set();
-    let outros;
     function transition_in(block, local) {
         if (block && block.i) {
             outroing.delete(block);
             block.i(local);
-        }
-    }
-    function transition_out(block, local, detach, callback) {
-        if (block && block.o) {
-            if (outroing.has(block))
-                return;
-            outroing.add(block);
-            outros.c.push(() => {
-                outroing.delete(block);
-                if (callback) {
-                    if (detach)
-                        block.d(1);
-                    callback();
-                }
-            });
-            block.o(local);
         }
     }
 
@@ -228,133 +171,6 @@ var app = (function () {
         : typeof globalThis !== 'undefined'
             ? globalThis
             : global);
-
-    function destroy_block(block, lookup) {
-        block.d(1);
-        lookup.delete(block.key);
-    }
-    function update_keyed_each(old_blocks, dirty, get_key, dynamic, ctx, list, lookup, node, destroy, create_each_block, next, get_context) {
-        let o = old_blocks.length;
-        let n = list.length;
-        let i = o;
-        const old_indexes = {};
-        while (i--)
-            old_indexes[old_blocks[i].key] = i;
-        const new_blocks = [];
-        const new_lookup = new Map();
-        const deltas = new Map();
-        i = n;
-        while (i--) {
-            const child_ctx = get_context(ctx, list, i);
-            const key = get_key(child_ctx);
-            let block = lookup.get(key);
-            if (!block) {
-                block = create_each_block(key, child_ctx);
-                block.c();
-            }
-            else if (dynamic) {
-                block.p(child_ctx, dirty);
-            }
-            new_lookup.set(key, new_blocks[i] = block);
-            if (key in old_indexes)
-                deltas.set(key, Math.abs(i - old_indexes[key]));
-        }
-        const will_move = new Set();
-        const did_move = new Set();
-        function insert(block) {
-            transition_in(block, 1);
-            block.m(node, next);
-            lookup.set(block.key, block);
-            next = block.first;
-            n--;
-        }
-        while (o && n) {
-            const new_block = new_blocks[n - 1];
-            const old_block = old_blocks[o - 1];
-            const new_key = new_block.key;
-            const old_key = old_block.key;
-            if (new_block === old_block) {
-                // do nothing
-                next = new_block.first;
-                o--;
-                n--;
-            }
-            else if (!new_lookup.has(old_key)) {
-                // remove old block
-                destroy(old_block, lookup);
-                o--;
-            }
-            else if (!lookup.has(new_key) || will_move.has(new_key)) {
-                insert(new_block);
-            }
-            else if (did_move.has(old_key)) {
-                o--;
-            }
-            else if (deltas.get(new_key) > deltas.get(old_key)) {
-                did_move.add(new_key);
-                insert(new_block);
-            }
-            else {
-                will_move.add(old_key);
-                o--;
-            }
-        }
-        while (o--) {
-            const old_block = old_blocks[o];
-            if (!new_lookup.has(old_block.key))
-                destroy(old_block, lookup);
-        }
-        while (n)
-            insert(new_blocks[n - 1]);
-        return new_blocks;
-    }
-    function validate_each_keys(ctx, list, get_context, get_key) {
-        const keys = new Set();
-        for (let i = 0; i < list.length; i++) {
-            const key = get_key(get_context(ctx, list, i));
-            if (keys.has(key)) {
-                throw new Error('Cannot have duplicate keys in a keyed each');
-            }
-            keys.add(key);
-        }
-    }
-
-    function get_spread_update(levels, updates) {
-        const update = {};
-        const to_null_out = {};
-        const accounted_for = { $$scope: 1 };
-        let i = levels.length;
-        while (i--) {
-            const o = levels[i];
-            const n = updates[i];
-            if (n) {
-                for (const key in o) {
-                    if (!(key in n))
-                        to_null_out[key] = 1;
-                }
-                for (const key in n) {
-                    if (!accounted_for[key]) {
-                        update[key] = n[key];
-                        accounted_for[key] = 1;
-                    }
-                }
-                levels[i] = n;
-            }
-            else {
-                for (const key in o) {
-                    accounted_for[key] = 1;
-                }
-            }
-        }
-        for (const key in to_null_out) {
-            if (!(key in update))
-                update[key] = undefined;
-        }
-        return update;
-    }
-    function create_component(block) {
-        block && block.c();
-    }
     function mount_component(component, target, anchor, customElement) {
         const { fragment, on_mount, on_destroy, after_update } = component.$$;
         fragment && fragment.m(target, anchor);
@@ -527,15 +343,6 @@ var app = (function () {
         dispatch_dev('SvelteDOMSetData', { node: text, data });
         text.data = data;
     }
-    function validate_each_argument(arg) {
-        if (typeof arg !== 'string' && !(arg && typeof arg === 'object' && 'length' in arg)) {
-            let msg = '{#each} only iterates over array-like objects.';
-            if (typeof Symbol === 'function' && arg && Symbol.iterator in arg) {
-                msg += ' You can use a spread to convert this iterable into an array.';
-            }
-            throw new Error(msg);
-        }
-    }
     function validate_slots(name, slot, keys) {
         for (const slot_key of Object.keys(slot)) {
             if (!~keys.indexOf(slot_key)) {
@@ -563,110 +370,6 @@ var app = (function () {
         $inject_state() { }
     }
 
-    const subscriber_queue = [];
-    /**
-     * Create a `Writable` store that allows both updating and reading by subscription.
-     * @param {*=}value initial value
-     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
-     */
-    function writable(value, start = noop) {
-        let stop;
-        const subscribers = new Set();
-        function set(new_value) {
-            if (safe_not_equal(value, new_value)) {
-                value = new_value;
-                if (stop) { // store is ready
-                    const run_queue = !subscriber_queue.length;
-                    for (const subscriber of subscribers) {
-                        subscriber[1]();
-                        subscriber_queue.push(subscriber, value);
-                    }
-                    if (run_queue) {
-                        for (let i = 0; i < subscriber_queue.length; i += 2) {
-                            subscriber_queue[i][0](subscriber_queue[i + 1]);
-                        }
-                        subscriber_queue.length = 0;
-                    }
-                }
-            }
-        }
-        function update(fn) {
-            set(fn(value));
-        }
-        function subscribe(run, invalidate = noop) {
-            const subscriber = [run, invalidate];
-            subscribers.add(subscriber);
-            if (subscribers.size === 1) {
-                stop = start(set) || noop;
-            }
-            run(value);
-            return () => {
-                subscribers.delete(subscriber);
-                if (subscribers.size === 0) {
-                    stop();
-                    stop = null;
-                }
-            };
-        }
-        return { set, update, subscribe };
-    }
-
-    const makeApplyDiff = (update) => (diff) => update((state) => {
-        return Object.assign(state, diff);
-    });
-    function bindToStore(store, updatersMap) {
-        return Object.entries(updatersMap).reduce((prev, [key, updater]) => {
-            prev[key] = (...args) => {
-                const state = get_store_value(store);
-                updater(state, ...args);
-                store.set(state);
-            };
-            return prev;
-        }, {});
-    }
-
-    const defaultState$1 = {
-        currentDate: new Date(),
-        tickIntervalHandle: undefined
-    };
-    function createStore$1() {
-        const { subscribe, set, update } = writable(defaultState$1);
-        return {
-            subscribe,
-            applyDiff: makeApplyDiff(update)
-        };
-    }
-    const clockEffects = {
-        start(clockStore) {
-            const state = get_store_value(clockStore);
-            if (state.tickIntervalHandle !== undefined) {
-                try {
-                    clearInterval(state.tickIntervalHandle);
-                }
-                catch (ex) {
-                }
-            }
-            // in real project setInterval would be behind a mockable abstraction
-            const tickIntervalHandle = setInterval(() => {
-                clockStore.applyDiff({ currentDate: new Date() });
-            }, 1000);
-            clockStore.applyDiff({
-                tickIntervalHandle: tickIntervalHandle,
-                currentDate: new Date()
-            });
-        },
-        stop(clockStore) {
-            const state = get_store_value(clockStore);
-            if (state.tickIntervalHandle === undefined) {
-                return 'already stopped';
-            }
-            clearInterval(state.tickIntervalHandle);
-            clockStore.applyDiff({ tickIntervalHandle: undefined });
-            return 'clock stopped';
-        }
-    };
-    const clockStore = createStore$1();
-
     const delay = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
     var InsurancePlanType;
@@ -675,6 +378,26 @@ var app = (function () {
         InsurancePlanType[InsurancePlanType["thridParty"] = 1] = "thridParty";
         InsurancePlanType[InsurancePlanType["assetProtection"] = 2] = "assetProtection";
     })(InsurancePlanType || (InsurancePlanType = {}));
+    class CarInsuranceClient {
+        async getAvaliableInsurancePlans() {
+            console.log(`server call getAvaliableInsurancePlans`);
+            await delay(1500);
+            return [{
+                    type: InsurancePlanType.base,
+                    description: 'base plan',
+                    rate: 0.05
+                }, {
+                    type: InsurancePlanType.thridParty,
+                    description: '3rd-party liability',
+                    rate: 0.05
+                }, {
+                    type: InsurancePlanType.assetProtection,
+                    description: 'asset protection',
+                    rate: 0.3
+                }];
+        }
+    }
+    const carInsuranceClient = new CarInsuranceClient();
 
     var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -6442,6 +6165,14 @@ var app = (function () {
     }
     const financingClient = new FinancingClient();
 
+    function expandMagnitudeShortcuts(val) {
+        return val
+            .replace('k', '000')
+            .replace('K', '000')
+            .replace('m', '000000')
+            .replace('M', '000000');
+    }
+
     function getBlankNumericInputState(requirments) {
         return {
             currentUnsavedValue: undefined,
@@ -6452,6 +6183,66 @@ var app = (function () {
                 positive: false
             }
         };
+    }
+    function setCurrentUnsavedValue(state, currentUnsavedValue, clearValidity = false) {
+        const newState = Object.assign(Object.assign({}, state), { currentUnsavedValue });
+        if (clearValidity) {
+            newState.message = undefined;
+            newState.isValid = true;
+        }
+        return newState;
+    }
+    function tryCommitValue(inputState, modelState, additionalValidityCheck) {
+        if (!inputState.currentUnsavedValue) {
+            return {
+                newInputState: Object.assign(Object.assign({}, inputState), { currentUnsavedValue: undefined, isValid: true, message: undefined }),
+                newModelState: modelState
+            };
+        }
+        let val = inputState.currentUnsavedValue;
+        val = expandMagnitudeShortcuts(val.trim());
+        const num = Number(val);
+        if (Number.isNaN(num)
+            || !Number.isFinite(num)) {
+            return {
+                newInputState: Object.assign(Object.assign({}, inputState), { isValid: false, message: 'Please enter a valid number' }),
+                newModelState: modelState
+            };
+        }
+        if (inputState.reuirments.integer
+            && !Number.isInteger(num)) {
+            return {
+                newInputState: Object.assign(Object.assign({}, inputState), { isValid: false, message: 'Please enter a valid integer' }),
+                newModelState: modelState
+            };
+        }
+        if (inputState.reuirments.positive
+            && num < 0) {
+            return {
+                newInputState: Object.assign(Object.assign({}, inputState), { isValid: false, message: 'Value must be positive' }),
+                newModelState: modelState
+            };
+        }
+        const additionalValitidyCheck = additionalValidityCheck === null || additionalValidityCheck === void 0 ? void 0 : additionalValidityCheck(num);
+        if (additionalValitidyCheck) {
+            return {
+                newInputState: Object.assign(Object.assign({}, inputState), { isValid: false, message: additionalValitidyCheck }),
+                newModelState: modelState
+            };
+        }
+        return {
+            newInputState: Object.assign(Object.assign({}, inputState), { currentUnsavedValue: undefined, isValid: true, message: undefined }),
+            newModelState: num
+        };
+    }
+
+    function isLoadingAny(dict) {
+        for (const [_, v] of Object.entries(dict)) {
+            if (v === true) {
+                return true;
+            }
+        }
+        return false;
     }
 
     class TreeDictionary {
@@ -6540,7 +6331,7 @@ var app = (function () {
      * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
      */
 
-    createCommonjsModule(function (module, exports) {
+    var lodash_isequal = createCommonjsModule(function (module, exports) {
     /** Used as the size to enable large array optimizations. */
     var LARGE_ARRAY_SIZE = 200;
 
@@ -8399,7 +8190,48 @@ var app = (function () {
         carModelsAvailable: [],
         messages: [],
     });
-    multimethod('type', DealTag, (deal) => {
+    function computeDealDerrivations(dealsState, approvalsState, clockState, dealId) {
+        const deal = getDealById(dealsState, dealId);
+        const approval = getCurrentApproval(dealsState, approvalsState, dealId);
+        const validation = getGeneralValidation(deal);
+        return {
+            deal,
+            approval,
+            isCurrentApprovalLoading: approvalsState.isLoading[dealId],
+            canRequestMinimumDownpayment: canRequestMinimumDownpayment(deal.businessParams),
+            finalPrice: getFinalPrice(deal),
+            generalValidation: validation,
+            dealProgressState: getDealProgressState(deal, approval, clockState.currentDate),
+            headerAdditionalDescription: getHeaderAdditionalDescription(deal),
+            canBeFinalized: canBeFinalized(deal, approval, clockState.currentDate),
+            isLoadingAny: isLoadingAny(deal.isLoadingItemized),
+            canRequestApproval: deal.businessParams.carModelSelected
+                && deal.businessParams.isDealFinalized === false
+                && deal.downplaymentInputState.isValid
+                && validation.downpaymentExceedsPrice === false
+        };
+    }
+    function getDealProgressState(deal, approval, currentDate) {
+        if (deal.businessParams.isDealFinalized) {
+            return 'deal-finalized';
+        }
+        if (!approval || approval.isApproved === false) {
+            return 'no-approval';
+        }
+        const expiration = approval.expiration;
+        if (!expiration) {
+            return 'approval-perpetual';
+        }
+        if (expiration <= currentDate) {
+            return 'approval-expired';
+        }
+        return { approvalExpiresAt: expiration };
+    }
+    function canRequestMinimumDownpayment(deal) {
+        return deal.carModelSelected
+            && deal.isDealFinalized === false;
+    }
+    const getFinalPrice = multimethod('type', DealTag, (deal) => {
         var _a;
         const basePriceUSD = (_a = deal.businessParams.carModelSelected) === null || _a === void 0 ? void 0 : _a.basePriceUSD;
         if (!basePriceUSD) {
@@ -8413,15 +8245,47 @@ var app = (function () {
         // https://stackoverflow.com/a/588014/882936
         return basePriceUSD + priceIncrease;
     });
+    function getGeneralValidation(deal) {
+        const downpaymentExceedsPrice = !!(deal.businessParams.carModelSelected
+            && deal.businessParams.downpayment > getFinalPrice(deal));
+        const validation = {
+            downpaymentExceedsPrice
+        };
+        return validation;
+    }
     function validateDealBusinessParams(params) {
         if (!params.carModelSelected) {
             throw new Error("Car model not selected.");
         }
     }
-    multimethod('type', DealTag, (deal) => {
+    function canBeFinalized(deal, approval, currentDate) {
+        return deal.businessParams.isDealFinalized === false
+            && (approval === null || approval === void 0 ? void 0 : approval.isApproved)
+            && (!approval.expiration || approval.expiration >= currentDate);
+    }
+    function getDealById(state, dealId) {
+        return state.deals.find(x => x.businessParams.dealId === dealId);
+    }
+    function getCurrentApproval(dealsState, approvalsState, dealId) {
+        const deal = getDealById(dealsState, dealId);
+        if (!deal) {
+            return undefined;
+        }
+        return getLatestMatchingApproval(approvalsState, deal);
+    }
+    function getLatestMatchingApproval(state, deal) {
+        var _a, _b;
+        const currentDealRequest = prepareRequstApprovalCall(deal).request;
+        return (_b = (_a = state.approvals[deal.businessParams.dealId]) === null || _a === void 0 ? void 0 : _a.filter(({ request }) => {
+            //relies on insurance plans always being in same order;
+            //in the real world request should probably also include method name
+            return lodash_isequal(request, currentDealRequest);
+        }).sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf())[0]) === null || _b === void 0 ? void 0 : _b.result;
+    }
+    const getHeaderAdditionalDescription = multimethod('type', DealTag, (deal) => {
         return '';
     });
-    multimethod('type', DealTag, (deal) => {
+    const getMinimumPossibleDownpayment = multimethod('type', DealTag, (deal) => {
         return financingClient.getMinimumPossibleDownpayment(deal.businessParams.carModelSelected, deal.businessParams.insurancePlansSelected.map(x => x.type));
     });
     const prepareRequstApprovalCall = multimethod('type', DealTag, (deal) => {
@@ -8437,553 +8301,2556 @@ var app = (function () {
         };
     });
 
-    const defaultState = {
-        approvals: {},
-        isLoading: {}
-    };
-    const approvalsReducers = {
-        storeApprovalReqStatus(state, dealId, reqStatus) {
-            if (!state.approvals[dealId]) {
-                state.approvals[dealId] = [];
-            }
-            state.approvals[dealId].push(reqStatus);
-        },
-        setIsLoading(state, dealId, isLoading) {
-            state.isLoading[dealId] = isLoading;
+    class CarInventoryClient {
+        async getAvaliableCarModels() {
+            console.log(`server call getAvaliableCarModels`);
+            await delay(500);
+            return [
+                {
+                    id: 1,
+                    description: 'Ford Mustang',
+                    basePriceUSD: 100000
+                },
+                {
+                    id: 2,
+                    description: 'Kia Sorento',
+                    basePriceUSD: 26000
+                },
+                {
+                    id: 3,
+                    description: 'Porsche Cayene',
+                    basePriceUSD: 90000
+                }
+            ];
         }
+    }
+    const carInvenotryClient = new CarInventoryClient();
+
+    /**
+     * Lodash (Custom Build) <https://lodash.com/>
+     * Build: `lodash modularize exports="npm" -o ./`
+     * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
+     * Released under MIT license <https://lodash.com/license>
+     * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+     * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+     */
+
+    var lodash_merge = createCommonjsModule(function (module, exports) {
+    /** Used as the size to enable large array optimizations. */
+    var LARGE_ARRAY_SIZE = 200;
+
+    /** Used to stand-in for `undefined` hash values. */
+    var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+    /** Used to detect hot functions by number of calls within a span of milliseconds. */
+    var HOT_COUNT = 800,
+        HOT_SPAN = 16;
+
+    /** Used as references for various `Number` constants. */
+    var MAX_SAFE_INTEGER = 9007199254740991;
+
+    /** `Object#toString` result references. */
+    var argsTag = '[object Arguments]',
+        arrayTag = '[object Array]',
+        asyncTag = '[object AsyncFunction]',
+        boolTag = '[object Boolean]',
+        dateTag = '[object Date]',
+        errorTag = '[object Error]',
+        funcTag = '[object Function]',
+        genTag = '[object GeneratorFunction]',
+        mapTag = '[object Map]',
+        numberTag = '[object Number]',
+        nullTag = '[object Null]',
+        objectTag = '[object Object]',
+        proxyTag = '[object Proxy]',
+        regexpTag = '[object RegExp]',
+        setTag = '[object Set]',
+        stringTag = '[object String]',
+        undefinedTag = '[object Undefined]',
+        weakMapTag = '[object WeakMap]';
+
+    var arrayBufferTag = '[object ArrayBuffer]',
+        dataViewTag = '[object DataView]',
+        float32Tag = '[object Float32Array]',
+        float64Tag = '[object Float64Array]',
+        int8Tag = '[object Int8Array]',
+        int16Tag = '[object Int16Array]',
+        int32Tag = '[object Int32Array]',
+        uint8Tag = '[object Uint8Array]',
+        uint8ClampedTag = '[object Uint8ClampedArray]',
+        uint16Tag = '[object Uint16Array]',
+        uint32Tag = '[object Uint32Array]';
+
+    /**
+     * Used to match `RegExp`
+     * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
+     */
+    var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
+
+    /** Used to detect host constructors (Safari). */
+    var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+    /** Used to detect unsigned integer values. */
+    var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+    /** Used to identify `toStringTag` values of typed arrays. */
+    var typedArrayTags = {};
+    typedArrayTags[float32Tag] = typedArrayTags[float64Tag] =
+    typedArrayTags[int8Tag] = typedArrayTags[int16Tag] =
+    typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] =
+    typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] =
+    typedArrayTags[uint32Tag] = true;
+    typedArrayTags[argsTag] = typedArrayTags[arrayTag] =
+    typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] =
+    typedArrayTags[dataViewTag] = typedArrayTags[dateTag] =
+    typedArrayTags[errorTag] = typedArrayTags[funcTag] =
+    typedArrayTags[mapTag] = typedArrayTags[numberTag] =
+    typedArrayTags[objectTag] = typedArrayTags[regexpTag] =
+    typedArrayTags[setTag] = typedArrayTags[stringTag] =
+    typedArrayTags[weakMapTag] = false;
+
+    /** Detect free variable `global` from Node.js. */
+    var freeGlobal = typeof commonjsGlobal == 'object' && commonjsGlobal && commonjsGlobal.Object === Object && commonjsGlobal;
+
+    /** Detect free variable `self`. */
+    var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+    /** Used as a reference to the global object. */
+    var root = freeGlobal || freeSelf || Function('return this')();
+
+    /** Detect free variable `exports`. */
+    var freeExports = exports && !exports.nodeType && exports;
+
+    /** Detect free variable `module`. */
+    var freeModule = freeExports && 'object' == 'object' && module && !module.nodeType && module;
+
+    /** Detect the popular CommonJS extension `module.exports`. */
+    var moduleExports = freeModule && freeModule.exports === freeExports;
+
+    /** Detect free variable `process` from Node.js. */
+    var freeProcess = moduleExports && freeGlobal.process;
+
+    /** Used to access faster Node.js helpers. */
+    var nodeUtil = (function() {
+      try {
+        // Use `util.types` for Node.js 10+.
+        var types = freeModule && freeModule.require && freeModule.require('util').types;
+
+        if (types) {
+          return types;
+        }
+
+        // Legacy `process.binding('util')` for Node.js < 10.
+        return freeProcess && freeProcess.binding && freeProcess.binding('util');
+      } catch (e) {}
+    }());
+
+    /* Node.js helper references. */
+    var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
+
+    /**
+     * A faster alternative to `Function#apply`, this function invokes `func`
+     * with the `this` binding of `thisArg` and the arguments of `args`.
+     *
+     * @private
+     * @param {Function} func The function to invoke.
+     * @param {*} thisArg The `this` binding of `func`.
+     * @param {Array} args The arguments to invoke `func` with.
+     * @returns {*} Returns the result of `func`.
+     */
+    function apply(func, thisArg, args) {
+      switch (args.length) {
+        case 0: return func.call(thisArg);
+        case 1: return func.call(thisArg, args[0]);
+        case 2: return func.call(thisArg, args[0], args[1]);
+        case 3: return func.call(thisArg, args[0], args[1], args[2]);
+      }
+      return func.apply(thisArg, args);
+    }
+
+    /**
+     * The base implementation of `_.times` without support for iteratee shorthands
+     * or max array length checks.
+     *
+     * @private
+     * @param {number} n The number of times to invoke `iteratee`.
+     * @param {Function} iteratee The function invoked per iteration.
+     * @returns {Array} Returns the array of results.
+     */
+    function baseTimes(n, iteratee) {
+      var index = -1,
+          result = Array(n);
+
+      while (++index < n) {
+        result[index] = iteratee(index);
+      }
+      return result;
+    }
+
+    /**
+     * The base implementation of `_.unary` without support for storing metadata.
+     *
+     * @private
+     * @param {Function} func The function to cap arguments for.
+     * @returns {Function} Returns the new capped function.
+     */
+    function baseUnary(func) {
+      return function(value) {
+        return func(value);
+      };
+    }
+
+    /**
+     * Gets the value at `key` of `object`.
+     *
+     * @private
+     * @param {Object} [object] The object to query.
+     * @param {string} key The key of the property to get.
+     * @returns {*} Returns the property value.
+     */
+    function getValue(object, key) {
+      return object == null ? undefined : object[key];
+    }
+
+    /**
+     * Creates a unary function that invokes `func` with its argument transformed.
+     *
+     * @private
+     * @param {Function} func The function to wrap.
+     * @param {Function} transform The argument transform.
+     * @returns {Function} Returns the new function.
+     */
+    function overArg(func, transform) {
+      return function(arg) {
+        return func(transform(arg));
+      };
+    }
+
+    /** Used for built-in method references. */
+    var arrayProto = Array.prototype,
+        funcProto = Function.prototype,
+        objectProto = Object.prototype;
+
+    /** Used to detect overreaching core-js shims. */
+    var coreJsData = root['__core-js_shared__'];
+
+    /** Used to resolve the decompiled source of functions. */
+    var funcToString = funcProto.toString;
+
+    /** Used to check objects for own properties. */
+    var hasOwnProperty = objectProto.hasOwnProperty;
+
+    /** Used to detect methods masquerading as native. */
+    var maskSrcKey = (function() {
+      var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
+      return uid ? ('Symbol(src)_1.' + uid) : '';
+    }());
+
+    /**
+     * Used to resolve the
+     * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+     * of values.
+     */
+    var nativeObjectToString = objectProto.toString;
+
+    /** Used to infer the `Object` constructor. */
+    var objectCtorString = funcToString.call(Object);
+
+    /** Used to detect if a method is native. */
+    var reIsNative = RegExp('^' +
+      funcToString.call(hasOwnProperty).replace(reRegExpChar, '\\$&')
+      .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+    );
+
+    /** Built-in value references. */
+    var Buffer = moduleExports ? root.Buffer : undefined,
+        Symbol = root.Symbol,
+        Uint8Array = root.Uint8Array,
+        allocUnsafe = Buffer ? Buffer.allocUnsafe : undefined,
+        getPrototype = overArg(Object.getPrototypeOf, Object),
+        objectCreate = Object.create,
+        propertyIsEnumerable = objectProto.propertyIsEnumerable,
+        splice = arrayProto.splice,
+        symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+    var defineProperty = (function() {
+      try {
+        var func = getNative(Object, 'defineProperty');
+        func({}, '', {});
+        return func;
+      } catch (e) {}
+    }());
+
+    /* Built-in method references for those with the same name as other `lodash` methods. */
+    var nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined,
+        nativeMax = Math.max,
+        nativeNow = Date.now;
+
+    /* Built-in method references that are verified to be native. */
+    var Map = getNative(root, 'Map'),
+        nativeCreate = getNative(Object, 'create');
+
+    /**
+     * The base implementation of `_.create` without support for assigning
+     * properties to the created object.
+     *
+     * @private
+     * @param {Object} proto The object to inherit from.
+     * @returns {Object} Returns the new object.
+     */
+    var baseCreate = (function() {
+      function object() {}
+      return function(proto) {
+        if (!isObject(proto)) {
+          return {};
+        }
+        if (objectCreate) {
+          return objectCreate(proto);
+        }
+        object.prototype = proto;
+        var result = new object;
+        object.prototype = undefined;
+        return result;
+      };
+    }());
+
+    /**
+     * Creates a hash object.
+     *
+     * @private
+     * @constructor
+     * @param {Array} [entries] The key-value pairs to cache.
+     */
+    function Hash(entries) {
+      var index = -1,
+          length = entries == null ? 0 : entries.length;
+
+      this.clear();
+      while (++index < length) {
+        var entry = entries[index];
+        this.set(entry[0], entry[1]);
+      }
+    }
+
+    /**
+     * Removes all key-value entries from the hash.
+     *
+     * @private
+     * @name clear
+     * @memberOf Hash
+     */
+    function hashClear() {
+      this.__data__ = nativeCreate ? nativeCreate(null) : {};
+      this.size = 0;
+    }
+
+    /**
+     * Removes `key` and its value from the hash.
+     *
+     * @private
+     * @name delete
+     * @memberOf Hash
+     * @param {Object} hash The hash to modify.
+     * @param {string} key The key of the value to remove.
+     * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+     */
+    function hashDelete(key) {
+      var result = this.has(key) && delete this.__data__[key];
+      this.size -= result ? 1 : 0;
+      return result;
+    }
+
+    /**
+     * Gets the hash value for `key`.
+     *
+     * @private
+     * @name get
+     * @memberOf Hash
+     * @param {string} key The key of the value to get.
+     * @returns {*} Returns the entry value.
+     */
+    function hashGet(key) {
+      var data = this.__data__;
+      if (nativeCreate) {
+        var result = data[key];
+        return result === HASH_UNDEFINED ? undefined : result;
+      }
+      return hasOwnProperty.call(data, key) ? data[key] : undefined;
+    }
+
+    /**
+     * Checks if a hash value for `key` exists.
+     *
+     * @private
+     * @name has
+     * @memberOf Hash
+     * @param {string} key The key of the entry to check.
+     * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+     */
+    function hashHas(key) {
+      var data = this.__data__;
+      return nativeCreate ? (data[key] !== undefined) : hasOwnProperty.call(data, key);
+    }
+
+    /**
+     * Sets the hash `key` to `value`.
+     *
+     * @private
+     * @name set
+     * @memberOf Hash
+     * @param {string} key The key of the value to set.
+     * @param {*} value The value to set.
+     * @returns {Object} Returns the hash instance.
+     */
+    function hashSet(key, value) {
+      var data = this.__data__;
+      this.size += this.has(key) ? 0 : 1;
+      data[key] = (nativeCreate && value === undefined) ? HASH_UNDEFINED : value;
+      return this;
+    }
+
+    // Add methods to `Hash`.
+    Hash.prototype.clear = hashClear;
+    Hash.prototype['delete'] = hashDelete;
+    Hash.prototype.get = hashGet;
+    Hash.prototype.has = hashHas;
+    Hash.prototype.set = hashSet;
+
+    /**
+     * Creates an list cache object.
+     *
+     * @private
+     * @constructor
+     * @param {Array} [entries] The key-value pairs to cache.
+     */
+    function ListCache(entries) {
+      var index = -1,
+          length = entries == null ? 0 : entries.length;
+
+      this.clear();
+      while (++index < length) {
+        var entry = entries[index];
+        this.set(entry[0], entry[1]);
+      }
+    }
+
+    /**
+     * Removes all key-value entries from the list cache.
+     *
+     * @private
+     * @name clear
+     * @memberOf ListCache
+     */
+    function listCacheClear() {
+      this.__data__ = [];
+      this.size = 0;
+    }
+
+    /**
+     * Removes `key` and its value from the list cache.
+     *
+     * @private
+     * @name delete
+     * @memberOf ListCache
+     * @param {string} key The key of the value to remove.
+     * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+     */
+    function listCacheDelete(key) {
+      var data = this.__data__,
+          index = assocIndexOf(data, key);
+
+      if (index < 0) {
+        return false;
+      }
+      var lastIndex = data.length - 1;
+      if (index == lastIndex) {
+        data.pop();
+      } else {
+        splice.call(data, index, 1);
+      }
+      --this.size;
+      return true;
+    }
+
+    /**
+     * Gets the list cache value for `key`.
+     *
+     * @private
+     * @name get
+     * @memberOf ListCache
+     * @param {string} key The key of the value to get.
+     * @returns {*} Returns the entry value.
+     */
+    function listCacheGet(key) {
+      var data = this.__data__,
+          index = assocIndexOf(data, key);
+
+      return index < 0 ? undefined : data[index][1];
+    }
+
+    /**
+     * Checks if a list cache value for `key` exists.
+     *
+     * @private
+     * @name has
+     * @memberOf ListCache
+     * @param {string} key The key of the entry to check.
+     * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+     */
+    function listCacheHas(key) {
+      return assocIndexOf(this.__data__, key) > -1;
+    }
+
+    /**
+     * Sets the list cache `key` to `value`.
+     *
+     * @private
+     * @name set
+     * @memberOf ListCache
+     * @param {string} key The key of the value to set.
+     * @param {*} value The value to set.
+     * @returns {Object} Returns the list cache instance.
+     */
+    function listCacheSet(key, value) {
+      var data = this.__data__,
+          index = assocIndexOf(data, key);
+
+      if (index < 0) {
+        ++this.size;
+        data.push([key, value]);
+      } else {
+        data[index][1] = value;
+      }
+      return this;
+    }
+
+    // Add methods to `ListCache`.
+    ListCache.prototype.clear = listCacheClear;
+    ListCache.prototype['delete'] = listCacheDelete;
+    ListCache.prototype.get = listCacheGet;
+    ListCache.prototype.has = listCacheHas;
+    ListCache.prototype.set = listCacheSet;
+
+    /**
+     * Creates a map cache object to store key-value pairs.
+     *
+     * @private
+     * @constructor
+     * @param {Array} [entries] The key-value pairs to cache.
+     */
+    function MapCache(entries) {
+      var index = -1,
+          length = entries == null ? 0 : entries.length;
+
+      this.clear();
+      while (++index < length) {
+        var entry = entries[index];
+        this.set(entry[0], entry[1]);
+      }
+    }
+
+    /**
+     * Removes all key-value entries from the map.
+     *
+     * @private
+     * @name clear
+     * @memberOf MapCache
+     */
+    function mapCacheClear() {
+      this.size = 0;
+      this.__data__ = {
+        'hash': new Hash,
+        'map': new (Map || ListCache),
+        'string': new Hash
+      };
+    }
+
+    /**
+     * Removes `key` and its value from the map.
+     *
+     * @private
+     * @name delete
+     * @memberOf MapCache
+     * @param {string} key The key of the value to remove.
+     * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+     */
+    function mapCacheDelete(key) {
+      var result = getMapData(this, key)['delete'](key);
+      this.size -= result ? 1 : 0;
+      return result;
+    }
+
+    /**
+     * Gets the map value for `key`.
+     *
+     * @private
+     * @name get
+     * @memberOf MapCache
+     * @param {string} key The key of the value to get.
+     * @returns {*} Returns the entry value.
+     */
+    function mapCacheGet(key) {
+      return getMapData(this, key).get(key);
+    }
+
+    /**
+     * Checks if a map value for `key` exists.
+     *
+     * @private
+     * @name has
+     * @memberOf MapCache
+     * @param {string} key The key of the entry to check.
+     * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+     */
+    function mapCacheHas(key) {
+      return getMapData(this, key).has(key);
+    }
+
+    /**
+     * Sets the map `key` to `value`.
+     *
+     * @private
+     * @name set
+     * @memberOf MapCache
+     * @param {string} key The key of the value to set.
+     * @param {*} value The value to set.
+     * @returns {Object} Returns the map cache instance.
+     */
+    function mapCacheSet(key, value) {
+      var data = getMapData(this, key),
+          size = data.size;
+
+      data.set(key, value);
+      this.size += data.size == size ? 0 : 1;
+      return this;
+    }
+
+    // Add methods to `MapCache`.
+    MapCache.prototype.clear = mapCacheClear;
+    MapCache.prototype['delete'] = mapCacheDelete;
+    MapCache.prototype.get = mapCacheGet;
+    MapCache.prototype.has = mapCacheHas;
+    MapCache.prototype.set = mapCacheSet;
+
+    /**
+     * Creates a stack cache object to store key-value pairs.
+     *
+     * @private
+     * @constructor
+     * @param {Array} [entries] The key-value pairs to cache.
+     */
+    function Stack(entries) {
+      var data = this.__data__ = new ListCache(entries);
+      this.size = data.size;
+    }
+
+    /**
+     * Removes all key-value entries from the stack.
+     *
+     * @private
+     * @name clear
+     * @memberOf Stack
+     */
+    function stackClear() {
+      this.__data__ = new ListCache;
+      this.size = 0;
+    }
+
+    /**
+     * Removes `key` and its value from the stack.
+     *
+     * @private
+     * @name delete
+     * @memberOf Stack
+     * @param {string} key The key of the value to remove.
+     * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+     */
+    function stackDelete(key) {
+      var data = this.__data__,
+          result = data['delete'](key);
+
+      this.size = data.size;
+      return result;
+    }
+
+    /**
+     * Gets the stack value for `key`.
+     *
+     * @private
+     * @name get
+     * @memberOf Stack
+     * @param {string} key The key of the value to get.
+     * @returns {*} Returns the entry value.
+     */
+    function stackGet(key) {
+      return this.__data__.get(key);
+    }
+
+    /**
+     * Checks if a stack value for `key` exists.
+     *
+     * @private
+     * @name has
+     * @memberOf Stack
+     * @param {string} key The key of the entry to check.
+     * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+     */
+    function stackHas(key) {
+      return this.__data__.has(key);
+    }
+
+    /**
+     * Sets the stack `key` to `value`.
+     *
+     * @private
+     * @name set
+     * @memberOf Stack
+     * @param {string} key The key of the value to set.
+     * @param {*} value The value to set.
+     * @returns {Object} Returns the stack cache instance.
+     */
+    function stackSet(key, value) {
+      var data = this.__data__;
+      if (data instanceof ListCache) {
+        var pairs = data.__data__;
+        if (!Map || (pairs.length < LARGE_ARRAY_SIZE - 1)) {
+          pairs.push([key, value]);
+          this.size = ++data.size;
+          return this;
+        }
+        data = this.__data__ = new MapCache(pairs);
+      }
+      data.set(key, value);
+      this.size = data.size;
+      return this;
+    }
+
+    // Add methods to `Stack`.
+    Stack.prototype.clear = stackClear;
+    Stack.prototype['delete'] = stackDelete;
+    Stack.prototype.get = stackGet;
+    Stack.prototype.has = stackHas;
+    Stack.prototype.set = stackSet;
+
+    /**
+     * Creates an array of the enumerable property names of the array-like `value`.
+     *
+     * @private
+     * @param {*} value The value to query.
+     * @param {boolean} inherited Specify returning inherited property names.
+     * @returns {Array} Returns the array of property names.
+     */
+    function arrayLikeKeys(value, inherited) {
+      var isArr = isArray(value),
+          isArg = !isArr && isArguments(value),
+          isBuff = !isArr && !isArg && isBuffer(value),
+          isType = !isArr && !isArg && !isBuff && isTypedArray(value),
+          skipIndexes = isArr || isArg || isBuff || isType,
+          result = skipIndexes ? baseTimes(value.length, String) : [],
+          length = result.length;
+
+      for (var key in value) {
+        if ((inherited || hasOwnProperty.call(value, key)) &&
+            !(skipIndexes && (
+               // Safari 9 has enumerable `arguments.length` in strict mode.
+               key == 'length' ||
+               // Node.js 0.10 has enumerable non-index properties on buffers.
+               (isBuff && (key == 'offset' || key == 'parent')) ||
+               // PhantomJS 2 has enumerable non-index properties on typed arrays.
+               (isType && (key == 'buffer' || key == 'byteLength' || key == 'byteOffset')) ||
+               // Skip index properties.
+               isIndex(key, length)
+            ))) {
+          result.push(key);
+        }
+      }
+      return result;
+    }
+
+    /**
+     * This function is like `assignValue` except that it doesn't assign
+     * `undefined` values.
+     *
+     * @private
+     * @param {Object} object The object to modify.
+     * @param {string} key The key of the property to assign.
+     * @param {*} value The value to assign.
+     */
+    function assignMergeValue(object, key, value) {
+      if ((value !== undefined && !eq(object[key], value)) ||
+          (value === undefined && !(key in object))) {
+        baseAssignValue(object, key, value);
+      }
+    }
+
+    /**
+     * Assigns `value` to `key` of `object` if the existing value is not equivalent
+     * using [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+     * for equality comparisons.
+     *
+     * @private
+     * @param {Object} object The object to modify.
+     * @param {string} key The key of the property to assign.
+     * @param {*} value The value to assign.
+     */
+    function assignValue(object, key, value) {
+      var objValue = object[key];
+      if (!(hasOwnProperty.call(object, key) && eq(objValue, value)) ||
+          (value === undefined && !(key in object))) {
+        baseAssignValue(object, key, value);
+      }
+    }
+
+    /**
+     * Gets the index at which the `key` is found in `array` of key-value pairs.
+     *
+     * @private
+     * @param {Array} array The array to inspect.
+     * @param {*} key The key to search for.
+     * @returns {number} Returns the index of the matched value, else `-1`.
+     */
+    function assocIndexOf(array, key) {
+      var length = array.length;
+      while (length--) {
+        if (eq(array[length][0], key)) {
+          return length;
+        }
+      }
+      return -1;
+    }
+
+    /**
+     * The base implementation of `assignValue` and `assignMergeValue` without
+     * value checks.
+     *
+     * @private
+     * @param {Object} object The object to modify.
+     * @param {string} key The key of the property to assign.
+     * @param {*} value The value to assign.
+     */
+    function baseAssignValue(object, key, value) {
+      if (key == '__proto__' && defineProperty) {
+        defineProperty(object, key, {
+          'configurable': true,
+          'enumerable': true,
+          'value': value,
+          'writable': true
+        });
+      } else {
+        object[key] = value;
+      }
+    }
+
+    /**
+     * The base implementation of `baseForOwn` which iterates over `object`
+     * properties returned by `keysFunc` and invokes `iteratee` for each property.
+     * Iteratee functions may exit iteration early by explicitly returning `false`.
+     *
+     * @private
+     * @param {Object} object The object to iterate over.
+     * @param {Function} iteratee The function invoked per iteration.
+     * @param {Function} keysFunc The function to get the keys of `object`.
+     * @returns {Object} Returns `object`.
+     */
+    var baseFor = createBaseFor();
+
+    /**
+     * The base implementation of `getTag` without fallbacks for buggy environments.
+     *
+     * @private
+     * @param {*} value The value to query.
+     * @returns {string} Returns the `toStringTag`.
+     */
+    function baseGetTag(value) {
+      if (value == null) {
+        return value === undefined ? undefinedTag : nullTag;
+      }
+      return (symToStringTag && symToStringTag in Object(value))
+        ? getRawTag(value)
+        : objectToString(value);
+    }
+
+    /**
+     * The base implementation of `_.isArguments`.
+     *
+     * @private
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+     */
+    function baseIsArguments(value) {
+      return isObjectLike(value) && baseGetTag(value) == argsTag;
+    }
+
+    /**
+     * The base implementation of `_.isNative` without bad shim checks.
+     *
+     * @private
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is a native function,
+     *  else `false`.
+     */
+    function baseIsNative(value) {
+      if (!isObject(value) || isMasked(value)) {
+        return false;
+      }
+      var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
+      return pattern.test(toSource(value));
+    }
+
+    /**
+     * The base implementation of `_.isTypedArray` without Node.js optimizations.
+     *
+     * @private
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+     */
+    function baseIsTypedArray(value) {
+      return isObjectLike(value) &&
+        isLength(value.length) && !!typedArrayTags[baseGetTag(value)];
+    }
+
+    /**
+     * The base implementation of `_.keysIn` which doesn't treat sparse arrays as dense.
+     *
+     * @private
+     * @param {Object} object The object to query.
+     * @returns {Array} Returns the array of property names.
+     */
+    function baseKeysIn(object) {
+      if (!isObject(object)) {
+        return nativeKeysIn(object);
+      }
+      var isProto = isPrototype(object),
+          result = [];
+
+      for (var key in object) {
+        if (!(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+          result.push(key);
+        }
+      }
+      return result;
+    }
+
+    /**
+     * The base implementation of `_.merge` without support for multiple sources.
+     *
+     * @private
+     * @param {Object} object The destination object.
+     * @param {Object} source The source object.
+     * @param {number} srcIndex The index of `source`.
+     * @param {Function} [customizer] The function to customize merged values.
+     * @param {Object} [stack] Tracks traversed source values and their merged
+     *  counterparts.
+     */
+    function baseMerge(object, source, srcIndex, customizer, stack) {
+      if (object === source) {
+        return;
+      }
+      baseFor(source, function(srcValue, key) {
+        stack || (stack = new Stack);
+        if (isObject(srcValue)) {
+          baseMergeDeep(object, source, key, srcIndex, baseMerge, customizer, stack);
+        }
+        else {
+          var newValue = customizer
+            ? customizer(safeGet(object, key), srcValue, (key + ''), object, source, stack)
+            : undefined;
+
+          if (newValue === undefined) {
+            newValue = srcValue;
+          }
+          assignMergeValue(object, key, newValue);
+        }
+      }, keysIn);
+    }
+
+    /**
+     * A specialized version of `baseMerge` for arrays and objects which performs
+     * deep merges and tracks traversed objects enabling objects with circular
+     * references to be merged.
+     *
+     * @private
+     * @param {Object} object The destination object.
+     * @param {Object} source The source object.
+     * @param {string} key The key of the value to merge.
+     * @param {number} srcIndex The index of `source`.
+     * @param {Function} mergeFunc The function to merge values.
+     * @param {Function} [customizer] The function to customize assigned values.
+     * @param {Object} [stack] Tracks traversed source values and their merged
+     *  counterparts.
+     */
+    function baseMergeDeep(object, source, key, srcIndex, mergeFunc, customizer, stack) {
+      var objValue = safeGet(object, key),
+          srcValue = safeGet(source, key),
+          stacked = stack.get(srcValue);
+
+      if (stacked) {
+        assignMergeValue(object, key, stacked);
+        return;
+      }
+      var newValue = customizer
+        ? customizer(objValue, srcValue, (key + ''), object, source, stack)
+        : undefined;
+
+      var isCommon = newValue === undefined;
+
+      if (isCommon) {
+        var isArr = isArray(srcValue),
+            isBuff = !isArr && isBuffer(srcValue),
+            isTyped = !isArr && !isBuff && isTypedArray(srcValue);
+
+        newValue = srcValue;
+        if (isArr || isBuff || isTyped) {
+          if (isArray(objValue)) {
+            newValue = objValue;
+          }
+          else if (isArrayLikeObject(objValue)) {
+            newValue = copyArray(objValue);
+          }
+          else if (isBuff) {
+            isCommon = false;
+            newValue = cloneBuffer(srcValue, true);
+          }
+          else if (isTyped) {
+            isCommon = false;
+            newValue = cloneTypedArray(srcValue, true);
+          }
+          else {
+            newValue = [];
+          }
+        }
+        else if (isPlainObject(srcValue) || isArguments(srcValue)) {
+          newValue = objValue;
+          if (isArguments(objValue)) {
+            newValue = toPlainObject(objValue);
+          }
+          else if (!isObject(objValue) || isFunction(objValue)) {
+            newValue = initCloneObject(srcValue);
+          }
+        }
+        else {
+          isCommon = false;
+        }
+      }
+      if (isCommon) {
+        // Recursively merge objects and arrays (susceptible to call stack limits).
+        stack.set(srcValue, newValue);
+        mergeFunc(newValue, srcValue, srcIndex, customizer, stack);
+        stack['delete'](srcValue);
+      }
+      assignMergeValue(object, key, newValue);
+    }
+
+    /**
+     * The base implementation of `_.rest` which doesn't validate or coerce arguments.
+     *
+     * @private
+     * @param {Function} func The function to apply a rest parameter to.
+     * @param {number} [start=func.length-1] The start position of the rest parameter.
+     * @returns {Function} Returns the new function.
+     */
+    function baseRest(func, start) {
+      return setToString(overRest(func, start, identity), func + '');
+    }
+
+    /**
+     * The base implementation of `setToString` without support for hot loop shorting.
+     *
+     * @private
+     * @param {Function} func The function to modify.
+     * @param {Function} string The `toString` result.
+     * @returns {Function} Returns `func`.
+     */
+    var baseSetToString = !defineProperty ? identity : function(func, string) {
+      return defineProperty(func, 'toString', {
+        'configurable': true,
+        'enumerable': false,
+        'value': constant(string),
+        'writable': true
+      });
+    };
+
+    /**
+     * Creates a clone of  `buffer`.
+     *
+     * @private
+     * @param {Buffer} buffer The buffer to clone.
+     * @param {boolean} [isDeep] Specify a deep clone.
+     * @returns {Buffer} Returns the cloned buffer.
+     */
+    function cloneBuffer(buffer, isDeep) {
+      if (isDeep) {
+        return buffer.slice();
+      }
+      var length = buffer.length,
+          result = allocUnsafe ? allocUnsafe(length) : new buffer.constructor(length);
+
+      buffer.copy(result);
+      return result;
+    }
+
+    /**
+     * Creates a clone of `arrayBuffer`.
+     *
+     * @private
+     * @param {ArrayBuffer} arrayBuffer The array buffer to clone.
+     * @returns {ArrayBuffer} Returns the cloned array buffer.
+     */
+    function cloneArrayBuffer(arrayBuffer) {
+      var result = new arrayBuffer.constructor(arrayBuffer.byteLength);
+      new Uint8Array(result).set(new Uint8Array(arrayBuffer));
+      return result;
+    }
+
+    /**
+     * Creates a clone of `typedArray`.
+     *
+     * @private
+     * @param {Object} typedArray The typed array to clone.
+     * @param {boolean} [isDeep] Specify a deep clone.
+     * @returns {Object} Returns the cloned typed array.
+     */
+    function cloneTypedArray(typedArray, isDeep) {
+      var buffer = isDeep ? cloneArrayBuffer(typedArray.buffer) : typedArray.buffer;
+      return new typedArray.constructor(buffer, typedArray.byteOffset, typedArray.length);
+    }
+
+    /**
+     * Copies the values of `source` to `array`.
+     *
+     * @private
+     * @param {Array} source The array to copy values from.
+     * @param {Array} [array=[]] The array to copy values to.
+     * @returns {Array} Returns `array`.
+     */
+    function copyArray(source, array) {
+      var index = -1,
+          length = source.length;
+
+      array || (array = Array(length));
+      while (++index < length) {
+        array[index] = source[index];
+      }
+      return array;
+    }
+
+    /**
+     * Copies properties of `source` to `object`.
+     *
+     * @private
+     * @param {Object} source The object to copy properties from.
+     * @param {Array} props The property identifiers to copy.
+     * @param {Object} [object={}] The object to copy properties to.
+     * @param {Function} [customizer] The function to customize copied values.
+     * @returns {Object} Returns `object`.
+     */
+    function copyObject(source, props, object, customizer) {
+      var isNew = !object;
+      object || (object = {});
+
+      var index = -1,
+          length = props.length;
+
+      while (++index < length) {
+        var key = props[index];
+
+        var newValue = customizer
+          ? customizer(object[key], source[key], key, object, source)
+          : undefined;
+
+        if (newValue === undefined) {
+          newValue = source[key];
+        }
+        if (isNew) {
+          baseAssignValue(object, key, newValue);
+        } else {
+          assignValue(object, key, newValue);
+        }
+      }
+      return object;
+    }
+
+    /**
+     * Creates a function like `_.assign`.
+     *
+     * @private
+     * @param {Function} assigner The function to assign values.
+     * @returns {Function} Returns the new assigner function.
+     */
+    function createAssigner(assigner) {
+      return baseRest(function(object, sources) {
+        var index = -1,
+            length = sources.length,
+            customizer = length > 1 ? sources[length - 1] : undefined,
+            guard = length > 2 ? sources[2] : undefined;
+
+        customizer = (assigner.length > 3 && typeof customizer == 'function')
+          ? (length--, customizer)
+          : undefined;
+
+        if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+          customizer = length < 3 ? undefined : customizer;
+          length = 1;
+        }
+        object = Object(object);
+        while (++index < length) {
+          var source = sources[index];
+          if (source) {
+            assigner(object, source, index, customizer);
+          }
+        }
+        return object;
+      });
+    }
+
+    /**
+     * Creates a base function for methods like `_.forIn` and `_.forOwn`.
+     *
+     * @private
+     * @param {boolean} [fromRight] Specify iterating from right to left.
+     * @returns {Function} Returns the new base function.
+     */
+    function createBaseFor(fromRight) {
+      return function(object, iteratee, keysFunc) {
+        var index = -1,
+            iterable = Object(object),
+            props = keysFunc(object),
+            length = props.length;
+
+        while (length--) {
+          var key = props[fromRight ? length : ++index];
+          if (iteratee(iterable[key], key, iterable) === false) {
+            break;
+          }
+        }
+        return object;
+      };
+    }
+
+    /**
+     * Gets the data for `map`.
+     *
+     * @private
+     * @param {Object} map The map to query.
+     * @param {string} key The reference key.
+     * @returns {*} Returns the map data.
+     */
+    function getMapData(map, key) {
+      var data = map.__data__;
+      return isKeyable(key)
+        ? data[typeof key == 'string' ? 'string' : 'hash']
+        : data.map;
+    }
+
+    /**
+     * Gets the native function at `key` of `object`.
+     *
+     * @private
+     * @param {Object} object The object to query.
+     * @param {string} key The key of the method to get.
+     * @returns {*} Returns the function if it's native, else `undefined`.
+     */
+    function getNative(object, key) {
+      var value = getValue(object, key);
+      return baseIsNative(value) ? value : undefined;
+    }
+
+    /**
+     * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+     *
+     * @private
+     * @param {*} value The value to query.
+     * @returns {string} Returns the raw `toStringTag`.
+     */
+    function getRawTag(value) {
+      var isOwn = hasOwnProperty.call(value, symToStringTag),
+          tag = value[symToStringTag];
+
+      try {
+        value[symToStringTag] = undefined;
+        var unmasked = true;
+      } catch (e) {}
+
+      var result = nativeObjectToString.call(value);
+      if (unmasked) {
+        if (isOwn) {
+          value[symToStringTag] = tag;
+        } else {
+          delete value[symToStringTag];
+        }
+      }
+      return result;
+    }
+
+    /**
+     * Initializes an object clone.
+     *
+     * @private
+     * @param {Object} object The object to clone.
+     * @returns {Object} Returns the initialized clone.
+     */
+    function initCloneObject(object) {
+      return (typeof object.constructor == 'function' && !isPrototype(object))
+        ? baseCreate(getPrototype(object))
+        : {};
+    }
+
+    /**
+     * Checks if `value` is a valid array-like index.
+     *
+     * @private
+     * @param {*} value The value to check.
+     * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+     * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+     */
+    function isIndex(value, length) {
+      var type = typeof value;
+      length = length == null ? MAX_SAFE_INTEGER : length;
+
+      return !!length &&
+        (type == 'number' ||
+          (type != 'symbol' && reIsUint.test(value))) &&
+            (value > -1 && value % 1 == 0 && value < length);
+    }
+
+    /**
+     * Checks if the given arguments are from an iteratee call.
+     *
+     * @private
+     * @param {*} value The potential iteratee value argument.
+     * @param {*} index The potential iteratee index or key argument.
+     * @param {*} object The potential iteratee object argument.
+     * @returns {boolean} Returns `true` if the arguments are from an iteratee call,
+     *  else `false`.
+     */
+    function isIterateeCall(value, index, object) {
+      if (!isObject(object)) {
+        return false;
+      }
+      var type = typeof index;
+      if (type == 'number'
+            ? (isArrayLike(object) && isIndex(index, object.length))
+            : (type == 'string' && index in object)
+          ) {
+        return eq(object[index], value);
+      }
+      return false;
+    }
+
+    /**
+     * Checks if `value` is suitable for use as unique object key.
+     *
+     * @private
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is suitable, else `false`.
+     */
+    function isKeyable(value) {
+      var type = typeof value;
+      return (type == 'string' || type == 'number' || type == 'symbol' || type == 'boolean')
+        ? (value !== '__proto__')
+        : (value === null);
+    }
+
+    /**
+     * Checks if `func` has its source masked.
+     *
+     * @private
+     * @param {Function} func The function to check.
+     * @returns {boolean} Returns `true` if `func` is masked, else `false`.
+     */
+    function isMasked(func) {
+      return !!maskSrcKey && (maskSrcKey in func);
+    }
+
+    /**
+     * Checks if `value` is likely a prototype object.
+     *
+     * @private
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
+     */
+    function isPrototype(value) {
+      var Ctor = value && value.constructor,
+          proto = (typeof Ctor == 'function' && Ctor.prototype) || objectProto;
+
+      return value === proto;
+    }
+
+    /**
+     * This function is like
+     * [`Object.keys`](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+     * except that it includes inherited enumerable properties.
+     *
+     * @private
+     * @param {Object} object The object to query.
+     * @returns {Array} Returns the array of property names.
+     */
+    function nativeKeysIn(object) {
+      var result = [];
+      if (object != null) {
+        for (var key in Object(object)) {
+          result.push(key);
+        }
+      }
+      return result;
+    }
+
+    /**
+     * Converts `value` to a string using `Object.prototype.toString`.
+     *
+     * @private
+     * @param {*} value The value to convert.
+     * @returns {string} Returns the converted string.
+     */
+    function objectToString(value) {
+      return nativeObjectToString.call(value);
+    }
+
+    /**
+     * A specialized version of `baseRest` which transforms the rest array.
+     *
+     * @private
+     * @param {Function} func The function to apply a rest parameter to.
+     * @param {number} [start=func.length-1] The start position of the rest parameter.
+     * @param {Function} transform The rest array transform.
+     * @returns {Function} Returns the new function.
+     */
+    function overRest(func, start, transform) {
+      start = nativeMax(start === undefined ? (func.length - 1) : start, 0);
+      return function() {
+        var args = arguments,
+            index = -1,
+            length = nativeMax(args.length - start, 0),
+            array = Array(length);
+
+        while (++index < length) {
+          array[index] = args[start + index];
+        }
+        index = -1;
+        var otherArgs = Array(start + 1);
+        while (++index < start) {
+          otherArgs[index] = args[index];
+        }
+        otherArgs[start] = transform(array);
+        return apply(func, this, otherArgs);
+      };
+    }
+
+    /**
+     * Gets the value at `key`, unless `key` is "__proto__" or "constructor".
+     *
+     * @private
+     * @param {Object} object The object to query.
+     * @param {string} key The key of the property to get.
+     * @returns {*} Returns the property value.
+     */
+    function safeGet(object, key) {
+      if (key === 'constructor' && typeof object[key] === 'function') {
+        return;
+      }
+
+      if (key == '__proto__') {
+        return;
+      }
+
+      return object[key];
+    }
+
+    /**
+     * Sets the `toString` method of `func` to return `string`.
+     *
+     * @private
+     * @param {Function} func The function to modify.
+     * @param {Function} string The `toString` result.
+     * @returns {Function} Returns `func`.
+     */
+    var setToString = shortOut(baseSetToString);
+
+    /**
+     * Creates a function that'll short out and invoke `identity` instead
+     * of `func` when it's called `HOT_COUNT` or more times in `HOT_SPAN`
+     * milliseconds.
+     *
+     * @private
+     * @param {Function} func The function to restrict.
+     * @returns {Function} Returns the new shortable function.
+     */
+    function shortOut(func) {
+      var count = 0,
+          lastCalled = 0;
+
+      return function() {
+        var stamp = nativeNow(),
+            remaining = HOT_SPAN - (stamp - lastCalled);
+
+        lastCalled = stamp;
+        if (remaining > 0) {
+          if (++count >= HOT_COUNT) {
+            return arguments[0];
+          }
+        } else {
+          count = 0;
+        }
+        return func.apply(undefined, arguments);
+      };
+    }
+
+    /**
+     * Converts `func` to its source code.
+     *
+     * @private
+     * @param {Function} func The function to convert.
+     * @returns {string} Returns the source code.
+     */
+    function toSource(func) {
+      if (func != null) {
+        try {
+          return funcToString.call(func);
+        } catch (e) {}
+        try {
+          return (func + '');
+        } catch (e) {}
+      }
+      return '';
+    }
+
+    /**
+     * Performs a
+     * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+     * comparison between two values to determine if they are equivalent.
+     *
+     * @static
+     * @memberOf _
+     * @since 4.0.0
+     * @category Lang
+     * @param {*} value The value to compare.
+     * @param {*} other The other value to compare.
+     * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+     * @example
+     *
+     * var object = { 'a': 1 };
+     * var other = { 'a': 1 };
+     *
+     * _.eq(object, object);
+     * // => true
+     *
+     * _.eq(object, other);
+     * // => false
+     *
+     * _.eq('a', 'a');
+     * // => true
+     *
+     * _.eq('a', Object('a'));
+     * // => false
+     *
+     * _.eq(NaN, NaN);
+     * // => true
+     */
+    function eq(value, other) {
+      return value === other || (value !== value && other !== other);
+    }
+
+    /**
+     * Checks if `value` is likely an `arguments` object.
+     *
+     * @static
+     * @memberOf _
+     * @since 0.1.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+     *  else `false`.
+     * @example
+     *
+     * _.isArguments(function() { return arguments; }());
+     * // => true
+     *
+     * _.isArguments([1, 2, 3]);
+     * // => false
+     */
+    var isArguments = baseIsArguments(function() { return arguments; }()) ? baseIsArguments : function(value) {
+      return isObjectLike(value) && hasOwnProperty.call(value, 'callee') &&
+        !propertyIsEnumerable.call(value, 'callee');
+    };
+
+    /**
+     * Checks if `value` is classified as an `Array` object.
+     *
+     * @static
+     * @memberOf _
+     * @since 0.1.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+     * @example
+     *
+     * _.isArray([1, 2, 3]);
+     * // => true
+     *
+     * _.isArray(document.body.children);
+     * // => false
+     *
+     * _.isArray('abc');
+     * // => false
+     *
+     * _.isArray(_.noop);
+     * // => false
+     */
+    var isArray = Array.isArray;
+
+    /**
+     * Checks if `value` is array-like. A value is considered array-like if it's
+     * not a function and has a `value.length` that's an integer greater than or
+     * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+     *
+     * @static
+     * @memberOf _
+     * @since 4.0.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+     * @example
+     *
+     * _.isArrayLike([1, 2, 3]);
+     * // => true
+     *
+     * _.isArrayLike(document.body.children);
+     * // => true
+     *
+     * _.isArrayLike('abc');
+     * // => true
+     *
+     * _.isArrayLike(_.noop);
+     * // => false
+     */
+    function isArrayLike(value) {
+      return value != null && isLength(value.length) && !isFunction(value);
+    }
+
+    /**
+     * This method is like `_.isArrayLike` except that it also checks if `value`
+     * is an object.
+     *
+     * @static
+     * @memberOf _
+     * @since 4.0.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is an array-like object,
+     *  else `false`.
+     * @example
+     *
+     * _.isArrayLikeObject([1, 2, 3]);
+     * // => true
+     *
+     * _.isArrayLikeObject(document.body.children);
+     * // => true
+     *
+     * _.isArrayLikeObject('abc');
+     * // => false
+     *
+     * _.isArrayLikeObject(_.noop);
+     * // => false
+     */
+    function isArrayLikeObject(value) {
+      return isObjectLike(value) && isArrayLike(value);
+    }
+
+    /**
+     * Checks if `value` is a buffer.
+     *
+     * @static
+     * @memberOf _
+     * @since 4.3.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is a buffer, else `false`.
+     * @example
+     *
+     * _.isBuffer(new Buffer(2));
+     * // => true
+     *
+     * _.isBuffer(new Uint8Array(2));
+     * // => false
+     */
+    var isBuffer = nativeIsBuffer || stubFalse;
+
+    /**
+     * Checks if `value` is classified as a `Function` object.
+     *
+     * @static
+     * @memberOf _
+     * @since 0.1.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+     * @example
+     *
+     * _.isFunction(_);
+     * // => true
+     *
+     * _.isFunction(/abc/);
+     * // => false
+     */
+    function isFunction(value) {
+      if (!isObject(value)) {
+        return false;
+      }
+      // The use of `Object#toString` avoids issues with the `typeof` operator
+      // in Safari 9 which returns 'object' for typed arrays and other constructors.
+      var tag = baseGetTag(value);
+      return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
+    }
+
+    /**
+     * Checks if `value` is a valid array-like length.
+     *
+     * **Note:** This method is loosely based on
+     * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
+     *
+     * @static
+     * @memberOf _
+     * @since 4.0.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+     * @example
+     *
+     * _.isLength(3);
+     * // => true
+     *
+     * _.isLength(Number.MIN_VALUE);
+     * // => false
+     *
+     * _.isLength(Infinity);
+     * // => false
+     *
+     * _.isLength('3');
+     * // => false
+     */
+    function isLength(value) {
+      return typeof value == 'number' &&
+        value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+    }
+
+    /**
+     * Checks if `value` is the
+     * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+     * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+     *
+     * @static
+     * @memberOf _
+     * @since 0.1.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+     * @example
+     *
+     * _.isObject({});
+     * // => true
+     *
+     * _.isObject([1, 2, 3]);
+     * // => true
+     *
+     * _.isObject(_.noop);
+     * // => true
+     *
+     * _.isObject(null);
+     * // => false
+     */
+    function isObject(value) {
+      var type = typeof value;
+      return value != null && (type == 'object' || type == 'function');
+    }
+
+    /**
+     * Checks if `value` is object-like. A value is object-like if it's not `null`
+     * and has a `typeof` result of "object".
+     *
+     * @static
+     * @memberOf _
+     * @since 4.0.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+     * @example
+     *
+     * _.isObjectLike({});
+     * // => true
+     *
+     * _.isObjectLike([1, 2, 3]);
+     * // => true
+     *
+     * _.isObjectLike(_.noop);
+     * // => false
+     *
+     * _.isObjectLike(null);
+     * // => false
+     */
+    function isObjectLike(value) {
+      return value != null && typeof value == 'object';
+    }
+
+    /**
+     * Checks if `value` is a plain object, that is, an object created by the
+     * `Object` constructor or one with a `[[Prototype]]` of `null`.
+     *
+     * @static
+     * @memberOf _
+     * @since 0.8.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
+     * @example
+     *
+     * function Foo() {
+     *   this.a = 1;
+     * }
+     *
+     * _.isPlainObject(new Foo);
+     * // => false
+     *
+     * _.isPlainObject([1, 2, 3]);
+     * // => false
+     *
+     * _.isPlainObject({ 'x': 0, 'y': 0 });
+     * // => true
+     *
+     * _.isPlainObject(Object.create(null));
+     * // => true
+     */
+    function isPlainObject(value) {
+      if (!isObjectLike(value) || baseGetTag(value) != objectTag) {
+        return false;
+      }
+      var proto = getPrototype(value);
+      if (proto === null) {
+        return true;
+      }
+      var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
+      return typeof Ctor == 'function' && Ctor instanceof Ctor &&
+        funcToString.call(Ctor) == objectCtorString;
+    }
+
+    /**
+     * Checks if `value` is classified as a typed array.
+     *
+     * @static
+     * @memberOf _
+     * @since 3.0.0
+     * @category Lang
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+     * @example
+     *
+     * _.isTypedArray(new Uint8Array);
+     * // => true
+     *
+     * _.isTypedArray([]);
+     * // => false
+     */
+    var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
+
+    /**
+     * Converts `value` to a plain object flattening inherited enumerable string
+     * keyed properties of `value` to own properties of the plain object.
+     *
+     * @static
+     * @memberOf _
+     * @since 3.0.0
+     * @category Lang
+     * @param {*} value The value to convert.
+     * @returns {Object} Returns the converted plain object.
+     * @example
+     *
+     * function Foo() {
+     *   this.b = 2;
+     * }
+     *
+     * Foo.prototype.c = 3;
+     *
+     * _.assign({ 'a': 1 }, new Foo);
+     * // => { 'a': 1, 'b': 2 }
+     *
+     * _.assign({ 'a': 1 }, _.toPlainObject(new Foo));
+     * // => { 'a': 1, 'b': 2, 'c': 3 }
+     */
+    function toPlainObject(value) {
+      return copyObject(value, keysIn(value));
+    }
+
+    /**
+     * Creates an array of the own and inherited enumerable property names of `object`.
+     *
+     * **Note:** Non-object values are coerced to objects.
+     *
+     * @static
+     * @memberOf _
+     * @since 3.0.0
+     * @category Object
+     * @param {Object} object The object to query.
+     * @returns {Array} Returns the array of property names.
+     * @example
+     *
+     * function Foo() {
+     *   this.a = 1;
+     *   this.b = 2;
+     * }
+     *
+     * Foo.prototype.c = 3;
+     *
+     * _.keysIn(new Foo);
+     * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+     */
+    function keysIn(object) {
+      return isArrayLike(object) ? arrayLikeKeys(object, true) : baseKeysIn(object);
+    }
+
+    /**
+     * This method is like `_.assign` except that it recursively merges own and
+     * inherited enumerable string keyed properties of source objects into the
+     * destination object. Source properties that resolve to `undefined` are
+     * skipped if a destination value exists. Array and plain object properties
+     * are merged recursively. Other objects and value types are overridden by
+     * assignment. Source objects are applied from left to right. Subsequent
+     * sources overwrite property assignments of previous sources.
+     *
+     * **Note:** This method mutates `object`.
+     *
+     * @static
+     * @memberOf _
+     * @since 0.5.0
+     * @category Object
+     * @param {Object} object The destination object.
+     * @param {...Object} [sources] The source objects.
+     * @returns {Object} Returns `object`.
+     * @example
+     *
+     * var object = {
+     *   'a': [{ 'b': 2 }, { 'd': 4 }]
+     * };
+     *
+     * var other = {
+     *   'a': [{ 'c': 3 }, { 'e': 5 }]
+     * };
+     *
+     * _.merge(object, other);
+     * // => { 'a': [{ 'b': 2, 'c': 3 }, { 'd': 4, 'e': 5 }] }
+     */
+    var merge = createAssigner(function(object, source, srcIndex) {
+      baseMerge(object, source, srcIndex);
+    });
+
+    /**
+     * Creates a function that returns `value`.
+     *
+     * @static
+     * @memberOf _
+     * @since 2.4.0
+     * @category Util
+     * @param {*} value The value to return from the new function.
+     * @returns {Function} Returns the new constant function.
+     * @example
+     *
+     * var objects = _.times(2, _.constant({ 'a': 1 }));
+     *
+     * console.log(objects);
+     * // => [{ 'a': 1 }, { 'a': 1 }]
+     *
+     * console.log(objects[0] === objects[1]);
+     * // => true
+     */
+    function constant(value) {
+      return function() {
+        return value;
+      };
+    }
+
+    /**
+     * This method returns the first argument it receives.
+     *
+     * @static
+     * @since 0.1.0
+     * @memberOf _
+     * @category Util
+     * @param {*} value Any value.
+     * @returns {*} Returns `value`.
+     * @example
+     *
+     * var object = { 'a': 1 };
+     *
+     * console.log(_.identity(object) === object);
+     * // => true
+     */
+    function identity(value) {
+      return value;
+    }
+
+    /**
+     * This method returns `false`.
+     *
+     * @static
+     * @memberOf _
+     * @since 4.13.0
+     * @category Util
+     * @returns {boolean} Returns `false`.
+     * @example
+     *
+     * _.times(2, _.stubFalse);
+     * // => [false, false]
+     */
+    function stubFalse() {
+      return false;
+    }
+
+    module.exports = merge;
+    });
+
+    function assert(value) {
+        if (!value) {
+            throw new Error("Assertion failed");
+        }
+    }
+    function guard(guard, diff) {
+        return {
+            guard,
+            diff
+        };
+    }
+
+    const DealForeignCurrencyTag = 'Deal;DealForeignCurrency';
+    const createBlankDealForeignCurrency = () => {
+        const base = createBlankDeal();
+        return lodash_merge(base, {
+            type: DealForeignCurrencyTag,
+            currenciesAvailable: [],
+            exchangeRate: 1,
+            businessParams: {
+                foreignCuurencyHandlingCoeficient: 1.02,
+                downpaymentCurrency: Currency.EUR
+            }
+        });
+    };
+    const isDealForeignCurrency = (deal) => deal.type === DealForeignCurrencyTag;
+    function validateIsDealForeignCurrency(deal) {
+        if (isDealForeignCurrency(deal) === false) {
+            throw new Error(`Deal with is ${deal.businessParams.dealId} was found, but has type: ${deal.type} instead of expected ${DealForeignCurrencyTag}`);
+        }
+    }
+    function getDealForeignCurrencyById(dealsState, dealId) {
+        const deal = dealsState.deals.find(x => x.businessParams.dealId === dealId);
+        validateIsDealForeignCurrency(deal);
+        return deal;
+    }
+    getHeaderAdditionalDescription.override(DealForeignCurrencyTag, (deal) => {
+        return `${deal.businessParams.downpaymentCurrency} `;
+    });
+    getFinalPrice.override(DealForeignCurrencyTag, function (deal) {
+        const basePriceUSD = this.base(deal);
+        const finalPrice = basePriceUSD
+            * deal.businessParams.foreignCuurencyHandlingCoeficient
+            * deal.exchangeRate;
+        return Math.round(finalPrice);
+    });
+    getMinimumPossibleDownpayment.override(DealForeignCurrencyTag, (deal) => {
+        return financingClient.getMinimumPossibleDownpaymentInForeignCurrency(deal.businessParams.carModelSelected, deal.businessParams.insurancePlansSelected.map(x => x.type), deal.businessParams.downpaymentCurrency);
+    });
+    prepareRequstApprovalCall.override(DealForeignCurrencyTag, (deal) => {
+        validateDealBusinessParams(deal.businessParams);
+        const request = [
+            deal.businessParams.carModelSelected,
+            deal.businessParams.insurancePlansSelected.map(x => x.type),
+            deal.businessParams.downpayment,
+            deal.businessParams.downpaymentCurrency
+        ];
+        return {
+            request: request,
+            makeCall: () => financingClient.getApprovalWithForeignCurrency(...request)
+        };
+    });
+
+    const subscriber_queue = [];
+    /**
+     * Create a `Writable` store that allows both updating and reading by subscription.
+     * @param {*=}value initial value
+     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
+     */
+    function writable(value, start = noop) {
+        let stop;
+        const subscribers = new Set();
+        function set(new_value) {
+            if (safe_not_equal(value, new_value)) {
+                value = new_value;
+                if (stop) { // store is ready
+                    const run_queue = !subscriber_queue.length;
+                    for (const subscriber of subscribers) {
+                        subscriber[1]();
+                        subscriber_queue.push(subscriber, value);
+                    }
+                    if (run_queue) {
+                        for (let i = 0; i < subscriber_queue.length; i += 2) {
+                            subscriber_queue[i][0](subscriber_queue[i + 1]);
+                        }
+                        subscriber_queue.length = 0;
+                    }
+                }
+            }
+        }
+        function update(fn) {
+            set(fn(value));
+        }
+        function subscribe(run, invalidate = noop) {
+            const subscriber = [run, invalidate];
+            subscribers.add(subscriber);
+            if (subscribers.size === 1) {
+                stop = start(set) || noop;
+            }
+            run(value);
+            return () => {
+                subscribers.delete(subscriber);
+                if (subscribers.size === 0) {
+                    stop();
+                    stop = null;
+                }
+            };
+        }
+        return { set, update, subscribe };
+    }
+
+    const makeApplyDiff = (update) => (diff) => update((state) => {
+        return Object.assign(state, diff);
+    });
+    function bindToStore(store, updatersMap) {
+        return Object.entries(updatersMap).reduce((prev, [key, updater]) => {
+            prev[key] = (...args) => {
+                const state = get_store_value(store);
+                updater(state, ...args);
+                store.set(state);
+            };
+            return prev;
+        }, {});
+    }
+
+    //this is needed to be able to type generic `set` reducer
+    const defaultState = {
+        nextDealId: 1,
+        deals: [],
+        activeDealId: undefined,
+        newDealIsLoading: false
+    };
+    const dealsReducers = {
+        //much more generazlied form of set
+        mergeWithGuard(state, dealId, payload) {
+            const deal = state.deals.find(x => x.businessParams.dealId === dealId);
+            assert(payload.guard(deal));
+            lodash_merge(deal, payload.diff);
+        },
+        pushNewDeal(state, deal, setActive = true) {
+            state.deals.push(deal);
+            if (setActive) {
+                state.activeDealId = deal.businessParams.dealId;
+            }
+            deal.businessParams.carModelSelected = deal.carModelsAvailable[0];
+        },
+        removeDeal(state, dealId) {
+            var _a, _b, _c;
+            if (dealId === state.activeDealId) {
+                const index = state.deals.findIndex(x => x.businessParams.dealId === dealId);
+                const newActiveDealId = (_b = (_a = state.deals[index - 1]) === null || _a === void 0 ? void 0 : _a.businessParams.dealId) !== null && _b !== void 0 ? _b : (_c = state.deals[index + 1]) === null || _c === void 0 ? void 0 : _c.businessParams.dealId;
+                console.log(newActiveDealId);
+                state.activeDealId = newActiveDealId;
+            }
+            state.deals = state.deals.filter(x => x.businessParams.dealId !== dealId);
+        },
+        updateDownpaymentInputValue(state, dealId, newValue) {
+            const deal = state.deals.find(x => x.businessParams.dealId === dealId);
+            deal.downplaymentInputState = setCurrentUnsavedValue(deal.downplaymentInputState, newValue);
+        },
+        tryCommitDownpaymentInputValue(state, dealId) {
+            var _a;
+            const deal = state.deals.find(x => x.businessParams.dealId === dealId);
+            let res = tryCommitValue(deal.downplaymentInputState, deal.businessParams.downpayment);
+            deal.downplaymentInputState = res.newInputState;
+            deal.businessParams.downpayment = (_a = res.newModelState) !== null && _a !== void 0 ? _a : 0;
+        },
+        setInDeal(state, dealId, diff) {
+            const deal = state.deals.find(x => x.businessParams.dealId === dealId);
+            Object.assign(deal, diff);
+        },
+        setIsLoadingItemized(state, dealId, diff) {
+            const deal = state.deals.find(x => x.businessParams.dealId === dealId);
+            Object.assign(deal.isLoadingItemized, diff);
+        },
+        setInBusinessParams(state, dealId, diff) {
+            const deal = state.deals.find(x => x.businessParams.dealId === dealId);
+            Object.assign(deal.businessParams, diff);
+        },
     };
     function createStore() {
         const store = writable(defaultState);
-        return Object.assign({ subscribe: store.subscribe }, bindToStore(store, approvalsReducers));
+        return Object.assign({ subscribe: store.subscribe, applyDiff: makeApplyDiff(store.update) }, bindToStore(store, dealsReducers));
     }
-    const approvalsEffects = {
-        async requestApproval(approvalsStore, deal) {
-            approvalsStore.setIsLoading(deal.businessParams.dealId, true);
-            const call = prepareRequstApprovalCall(deal);
-            const resp = await call.makeCall();
-            approvalsStore.storeApprovalReqStatus(deal.businessParams.dealId, {
-                request: call.request,
-                result: resp,
-                timestamp: new Date()
-            });
-            approvalsStore.setIsLoading(deal.businessParams.dealId, false);
+    const dealsEffects = {
+        async loadNewDeal(dealsStore) {
+            dealsStore.applyDiff({ newDealIsLoading: true });
+            const newDeal = createBlankDeal();
+            const state = get_store_value(dealsStore);
+            newDeal.businessParams.dealId = state.nextDealId;
+            dealsStore.applyDiff({ nextDealId: state.nextDealId + 1 });
+            await Promise.all([
+                carInvenotryClient.getAvaliableCarModels().then(x => newDeal.carModelsAvailable = x),
+                carInsuranceClient.getAvaliableInsurancePlans().then(x => newDeal.insurancePlansAvailable = x)
+            ]);
+            dealsStore.pushNewDeal(newDeal);
+            dealsStore.applyDiff({ newDealIsLoading: false });
         },
+        async loadNewDealForeignCurrency(dealsStore) {
+            dealsStore.applyDiff({ newDealIsLoading: true });
+            const newDeal = createBlankDealForeignCurrency();
+            const state = get_store_value(dealsStore);
+            newDeal.businessParams.dealId = state.nextDealId;
+            dealsStore.applyDiff({ nextDealId: state.nextDealId + 1 });
+            await Promise.all([
+                carInvenotryClient.getAvaliableCarModels().then(x => newDeal.carModelsAvailable = x),
+                carInsuranceClient.getAvaliableInsurancePlans().then(x => newDeal.insurancePlansAvailable = x),
+                currencyExchangeClient.getCurrencies().then(x => newDeal.currenciesAvailable = x),
+                currencyExchangeClient.getExchangeRate(newDeal.businessParams.downpaymentCurrency).then(x => newDeal.exchangeRate = x)
+            ]);
+            dealsStore.pushNewDeal(newDeal);
+            dealsStore.applyDiff({ newDealIsLoading: false });
+        },
+        async reloadAvailableCarModels(dealsStore, dealId) {
+            dealsStore.setIsLoadingItemized(dealId, { carModelsAvailable: true });
+            const carModels = await carInvenotryClient.getAvaliableCarModels();
+            dealsStore.setInDeal(dealId, { carModelsAvailable: carModels });
+            dealsStore.setIsLoadingItemized(dealId, { carModelsAvailable: false });
+        },
+        async reloadAvailableInsurancePlans(dealsStore, dealId) {
+            dealsStore.setIsLoadingItemized(dealId, { insurancePlansAvailable: true });
+            const insurancePlans = await carInsuranceClient.getAvaliableInsurancePlans();
+            dealsStore.setInDeal(dealId, { insurancePlansAvailable: insurancePlans });
+            dealsStore.setIsLoadingItemized(dealId, { insurancePlansAvailable: false });
+        },
+        async setMinimumPossibleDownpayment(dealsStore, dealId) {
+            dealsStore.setIsLoadingItemized(dealId, { downpayment: true });
+            const state = get_store_value(dealsStore);
+            const deal = state.deals.find(x => x.businessParams.dealId === dealId);
+            validateDealBusinessParams(deal.businessParams);
+            const minPayment = await getMinimumPossibleDownpayment(deal);
+            dealsStore.setInBusinessParams(dealId, { downpayment: minPayment });
+            const clearedDownpaymentInput = setCurrentUnsavedValue(deal.downplaymentInputState, undefined, true);
+            dealsStore.setInDeal(dealId, { downplaymentInputState: clearedDownpaymentInput });
+            dealsStore.setIsLoadingItemized(dealId, { downpayment: false });
+        },
+        async requestApproval(dealsStore, approvalsStore, approvalsEffects, dealId) {
+            const state = get_store_value(dealsStore);
+            const deal = state.deals.find(x => x.businessParams.dealId === dealId);
+            validateDealBusinessParams(deal.businessParams);
+            await approvalsEffects.requestApproval(approvalsStore, deal);
+        },
+        async finalizeDeal(dealsStore, approvalsState, clockState, dealId) {
+            const approval = computeDealDerrivations(get_store_value(dealsStore), get_store_value(approvalsState), get_store_value(clockState), dealId)
+                .approval;
+            if ((approval === null || approval === void 0 ? void 0 : approval.isApproved) !== true) {
+                throw new Error("Attempt to finalize deal without approval.");
+            }
+            dealsStore.setIsLoadingItemized(dealId, { isDealFinalized: true });
+            const res = await financingClient.finalizeFinancing(approval.approvalToken);
+            dealsStore.setInBusinessParams(dealId, { isDealFinalized: res });
+            dealsStore.setIsLoadingItemized(dealId, { isDealFinalized: false });
+        },
+        async setCurrncyAndReloadExchangeRate(dealsStore, [dealId, currency]) {
+            //for deal type validation
+            getDealForeignCurrencyById(get_store_value(dealsStore), dealId);
+            dealsStore.mergeWithGuard(dealId, guard(isDealForeignCurrency, {
+                businessParams: {
+                    downpaymentCurrency: currency
+                },
+                isLoadingItemized: {
+                    exchangeRate: true
+                }
+            }));
+            const exchangeRate = await currencyExchangeClient.getExchangeRate(currency);
+            dealsStore.mergeWithGuard(dealId, guard(isDealForeignCurrency, {
+                exchangeRate: exchangeRate,
+                isLoadingItemized: {
+                    exchangeRate: false
+                }
+            }));
+        }
     };
-    const approvalsStore = createStore();
+    const dealsStore = createStore();
 
-    /* src\generic-components\SelectDropdown.svelte generated by Svelte v3.42.6 */
+    function n(n){for(var r=arguments.length,t=Array(r>1?r-1:0),e=1;e<r;e++)t[e-1]=arguments[e];if("production"!==process.env.NODE_ENV){var i=Y[n],o=i?"function"==typeof i?i.apply(null,t):i:"unknown error nr: "+n;throw Error("[Immer] "+o)}throw Error("[Immer] minified error nr: "+n+(t.length?" "+t.map((function(n){return "'"+n+"'"})).join(","):"")+". Find the full error at: https://bit.ly/3cXEKWf")}function r(n){return !!n&&!!n[Q]}function t(n){return !!n&&(function(n){if(!n||"object"!=typeof n)return !1;var r=Object.getPrototypeOf(n);if(null===r)return !0;var t=Object.hasOwnProperty.call(r,"constructor")&&r.constructor;return "function"==typeof t&&Function.toString.call(t)===Z}(n)||Array.isArray(n)||!!n[L]||!!n.constructor[L]||s(n)||v(n))}function i(n,r,t){void 0===t&&(t=!1),0===o(n)?(t?Object.keys:nn)(n).forEach((function(e){t&&"symbol"==typeof e||r(e,n[e],n);})):n.forEach((function(t,e){return r(e,t,n)}));}function o(n){var r=n[Q];return r?r.i>3?r.i-4:r.i:Array.isArray(n)?1:s(n)?2:v(n)?3:0}function u(n,r){return 2===o(n)?n.has(r):Object.prototype.hasOwnProperty.call(n,r)}function a(n,r){return 2===o(n)?n.get(r):n[r]}function f(n,r,t){var e=o(n);2===e?n.set(r,t):3===e?(n.delete(r),n.add(t)):n[r]=t;}function c(n,r){return n===r?0!==n||1/n==1/r:n!=n&&r!=r}function s(n){return X&&n instanceof Map}function v(n){return q&&n instanceof Set}function p(n){return n.o||n.t}function l(n){if(Array.isArray(n))return Array.prototype.slice.call(n);var r=rn(n);delete r[Q];for(var t=nn(r),e=0;e<t.length;e++){var i=t[e],o=r[i];!1===o.writable&&(o.writable=!0,o.configurable=!0),(o.get||o.set)&&(r[i]={configurable:!0,writable:!0,enumerable:o.enumerable,value:n[i]});}return Object.create(Object.getPrototypeOf(n),r)}function d(n,e){return void 0===e&&(e=!1),y(n)||r(n)||!t(n)?n:(o(n)>1&&(n.set=n.add=n.clear=n.delete=h),Object.freeze(n),e&&i(n,(function(n,r){return d(r,!0)}),!0),n)}function h(){n(2);}function y(n){return null==n||"object"!=typeof n||Object.isFrozen(n)}function b(r){var t=tn[r];return t||n(18,r),t}function _(){return "production"===process.env.NODE_ENV||U||n(0),U}function j(n,r){r&&(b("Patches"),n.u=[],n.s=[],n.v=r);}function g(n){O(n),n.p.forEach(S),n.p=null;}function O(n){n===U&&(U=n.l);}function w(n){return U={p:[],l:U,h:n,m:!0,_:0}}function S(n){var r=n[Q];0===r.i||1===r.i?r.j():r.g=!0;}function P(r,e){e._=e.p.length;var i=e.p[0],o=void 0!==r&&r!==i;return e.h.O||b("ES5").S(e,r,o),o?(i[Q].P&&(g(e),n(4)),t(r)&&(r=M(e,r),e.l||x(e,r)),e.u&&b("Patches").M(i[Q],r,e.u,e.s)):r=M(e,i,[]),g(e),e.u&&e.v(e.u,e.s),r!==H?r:void 0}function M(n,r,t){if(y(r))return r;var e=r[Q];if(!e)return i(r,(function(i,o){return A(n,e,r,i,o,t)}),!0),r;if(e.A!==n)return r;if(!e.P)return x(n,e.t,!0),e.t;if(!e.I){e.I=!0,e.A._--;var o=4===e.i||5===e.i?e.o=l(e.k):e.o;i(3===e.i?new Set(o):o,(function(r,i){return A(n,e,o,r,i,t)})),x(n,o,!1),t&&n.u&&b("Patches").R(e,t,n.u,n.s);}return e.o}function A(e,i,o,a,c,s){if("production"!==process.env.NODE_ENV&&c===o&&n(5),r(c)){var v=M(e,c,s&&i&&3!==i.i&&!u(i.D,a)?s.concat(a):void 0);if(f(o,a,v),!r(v))return;e.m=!1;}if(t(c)&&!y(c)){if(!e.h.F&&e._<1)return;M(e,c),i&&i.A.l||x(e,c);}}function x(n,r,t){void 0===t&&(t=!1),n.h.F&&n.m&&d(r,t);}function z(n,r){var t=n[Q];return (t?p(t):n)[r]}function I(n,r){if(r in n)for(var t=Object.getPrototypeOf(n);t;){var e=Object.getOwnPropertyDescriptor(t,r);if(e)return e;t=Object.getPrototypeOf(t);}}function k(n){n.P||(n.P=!0,n.l&&k(n.l));}function E(n){n.o||(n.o=l(n.t));}function R(n,r,t){var e=s(r)?b("MapSet").N(r,t):v(r)?b("MapSet").T(r,t):n.O?function(n,r){var t=Array.isArray(n),e={i:t?1:0,A:r?r.A:_(),P:!1,I:!1,D:{},l:r,t:n,k:null,o:null,j:null,C:!1},i=e,o=en;t&&(i=[e],o=on);var u=Proxy.revocable(i,o),a=u.revoke,f=u.proxy;return e.k=f,e.j=a,f}(r,t):b("ES5").J(r,t);return (t?t.A:_()).p.push(e),e}function D(e){return r(e)||n(22,e),function n(r){if(!t(r))return r;var e,u=r[Q],c=o(r);if(u){if(!u.P&&(u.i<4||!b("ES5").K(u)))return u.t;u.I=!0,e=F(r,c),u.I=!1;}else e=F(r,c);return i(e,(function(r,t){u&&a(u.t,r)===t||f(e,r,n(t));})),3===c?new Set(e):e}(e)}function F(n,r){switch(r){case 2:return new Map(n);case 3:return Array.from(n)}return l(n)}var G,U,W="undefined"!=typeof Symbol&&"symbol"==typeof Symbol("x"),X="undefined"!=typeof Map,q="undefined"!=typeof Set,B="undefined"!=typeof Proxy&&void 0!==Proxy.revocable&&"undefined"!=typeof Reflect,H=W?Symbol.for("immer-nothing"):((G={})["immer-nothing"]=!0,G),L=W?Symbol.for("immer-draftable"):"__$immer_draftable",Q=W?Symbol.for("immer-state"):"__$immer_state",Y={0:"Illegal state",1:"Immer drafts cannot have computed properties",2:"This object has been frozen and should not be mutated",3:function(n){return "Cannot use a proxy that has been revoked. Did you pass an object from inside an immer function to an async process? "+n},4:"An immer producer returned a new value *and* modified its draft. Either return a new value *or* modify the draft.",5:"Immer forbids circular references",6:"The first or second argument to `produce` must be a function",7:"The third argument to `produce` must be a function or undefined",8:"First argument to `createDraft` must be a plain object, an array, or an immerable object",9:"First argument to `finishDraft` must be a draft returned by `createDraft`",10:"The given draft is already finalized",11:"Object.defineProperty() cannot be used on an Immer draft",12:"Object.setPrototypeOf() cannot be used on an Immer draft",13:"Immer only supports deleting array indices",14:"Immer only supports setting array indices and the 'length' property",15:function(n){return "Cannot apply patch, path doesn't resolve: "+n},16:'Sets cannot have "replace" patches.',17:function(n){return "Unsupported patch operation: "+n},18:function(n){return "The plugin for '"+n+"' has not been loaded into Immer. To enable the plugin, import and call `enable"+n+"()` when initializing your application."},20:"Cannot use proxies if Proxy, Proxy.revocable or Reflect are not available",21:function(n){return "produce can only be called on things that are draftable: plain objects, arrays, Map, Set or classes that are marked with '[immerable]: true'. Got '"+n+"'"},22:function(n){return "'current' expects a draft, got: "+n},23:function(n){return "'original' expects a draft, got: "+n},24:"Patching reserved attributes like __proto__, prototype and constructor is not allowed"},Z=""+Object.prototype.constructor,nn="undefined"!=typeof Reflect&&Reflect.ownKeys?Reflect.ownKeys:void 0!==Object.getOwnPropertySymbols?function(n){return Object.getOwnPropertyNames(n).concat(Object.getOwnPropertySymbols(n))}:Object.getOwnPropertyNames,rn=Object.getOwnPropertyDescriptors||function(n){var r={};return nn(n).forEach((function(t){r[t]=Object.getOwnPropertyDescriptor(n,t);})),r},tn={},en={get:function(n,r){if(r===Q)return n;var e=p(n);if(!u(e,r))return function(n,r,t){var e,i=I(r,t);return i?"value"in i?i.value:null===(e=i.get)||void 0===e?void 0:e.call(n.k):void 0}(n,e,r);var i=e[r];return n.I||!t(i)?i:i===z(n.t,r)?(E(n),n.o[r]=R(n.A.h,i,n)):i},has:function(n,r){return r in p(n)},ownKeys:function(n){return Reflect.ownKeys(p(n))},set:function(n,r,t){var e=I(p(n),r);if(null==e?void 0:e.set)return e.set.call(n.k,t),!0;if(!n.P){var i=z(p(n),r),o=null==i?void 0:i[Q];if(o&&o.t===t)return n.o[r]=t,n.D[r]=!1,!0;if(c(t,i)&&(void 0!==t||u(n.t,r)))return !0;E(n),k(n);}return n.o[r]===t&&"number"!=typeof t||(n.o[r]=t,n.D[r]=!0,!0)},deleteProperty:function(n,r){return void 0!==z(n.t,r)||r in n.t?(n.D[r]=!1,E(n),k(n)):delete n.D[r],n.o&&delete n.o[r],!0},getOwnPropertyDescriptor:function(n,r){var t=p(n),e=Reflect.getOwnPropertyDescriptor(t,r);return e?{writable:!0,configurable:1!==n.i||"length"!==r,enumerable:e.enumerable,value:t[r]}:e},defineProperty:function(){n(11);},getPrototypeOf:function(n){return Object.getPrototypeOf(n.t)},setPrototypeOf:function(){n(12);}},on={};i(en,(function(n,r){on[n]=function(){return arguments[0]=arguments[0][0],r.apply(this,arguments)};})),on.deleteProperty=function(r,t){return "production"!==process.env.NODE_ENV&&isNaN(parseInt(t))&&n(13),en.deleteProperty.call(this,r[0],t)},on.set=function(r,t,e){return "production"!==process.env.NODE_ENV&&"length"!==t&&isNaN(parseInt(t))&&n(14),en.set.call(this,r[0],t,e,r[0])};var un=function(){function e(r){var e=this;this.O=B,this.F=!0,this.produce=function(r,i,o){if("function"==typeof r&&"function"!=typeof i){var u=i;i=r;var a=e;return function(n){var r=this;void 0===n&&(n=u);for(var t=arguments.length,e=Array(t>1?t-1:0),o=1;o<t;o++)e[o-1]=arguments[o];return a.produce(n,(function(n){var t;return (t=i).call.apply(t,[r,n].concat(e))}))}}var f;if("function"!=typeof i&&n(6),void 0!==o&&"function"!=typeof o&&n(7),t(r)){var c=w(e),s=R(e,r,void 0),v=!0;try{f=i(s),v=!1;}finally{v?g(c):O(c);}return "undefined"!=typeof Promise&&f instanceof Promise?f.then((function(n){return j(c,o),P(n,c)}),(function(n){throw g(c),n})):(j(c,o),P(f,c))}if(!r||"object"!=typeof r){if((f=i(r))===H)return;return void 0===f&&(f=r),e.F&&d(f,!0),f}n(21,r);},this.produceWithPatches=function(n,r){return "function"==typeof n?function(r){for(var t=arguments.length,i=Array(t>1?t-1:0),o=1;o<t;o++)i[o-1]=arguments[o];return e.produceWithPatches(r,(function(r){return n.apply(void 0,[r].concat(i))}))}:[e.produce(n,r,(function(n,r){t=n,i=r;})),t,i];var t,i;},"boolean"==typeof(null==r?void 0:r.useProxies)&&this.setUseProxies(r.useProxies),"boolean"==typeof(null==r?void 0:r.autoFreeze)&&this.setAutoFreeze(r.autoFreeze);}var i=e.prototype;return i.createDraft=function(e){t(e)||n(8),r(e)&&(e=D(e));var i=w(this),o=R(this,e,void 0);return o[Q].C=!0,O(i),o},i.finishDraft=function(r,t){var e=r&&r[Q];"production"!==process.env.NODE_ENV&&(e&&e.C||n(9),e.I&&n(10));var i=e.A;return j(i,t),P(void 0,i)},i.setAutoFreeze=function(n){this.F=n;},i.setUseProxies=function(r){r&&!B&&n(20),this.O=r;},i.applyPatches=function(n,t){var e;for(e=t.length-1;e>=0;e--){var i=t[e];if(0===i.path.length&&"replace"===i.op){n=i.value;break}}var o=b("Patches").$;return r(n)?o(n,t):this.produce(n,(function(n){return o(n,t.slice(e+1))}))},e}(),an=new un,fn=an.produce;an.produceWithPatches.bind(an);an.setAutoFreeze.bind(an);an.setUseProxies.bind(an);an.applyPatches.bind(an);an.createDraft.bind(an);an.finishDraft.bind(an);
 
-    const { Error: Error_1 } = globals;
-    const file$1 = "src\\generic-components\\SelectDropdown.svelte";
+    const defaultState1 = {
+        a: 1,
+        b: 2
+    };
 
-    function get_each_context(ctx, list, i) {
-    	const child_ctx = ctx.slice();
-    	child_ctx[7] = list[i];
-    	return child_ctx;
+    function createStore1() {
+        const { subscribe, set, update } = writable(defaultState1);
+
+        return {
+            subscribe,
+            incr1: () => update(x => {x.a++; return x}),
+            incr2: () => update(x => {x.b++; return x}),
+        }
     }
 
-    // (29:4) {#if p.hasEmptyOption}
-    function create_if_block(ctx) {
-    	let option;
-    	let t0_value = /*p*/ ctx[0].emptyPlaceholder + "";
-    	let t0;
-    	let t1;
+    const store1 = createStore1();
 
-    	const block = {
-    		c: function create() {
-    			option = element("option");
-    			t0 = text(t0_value);
-    			t1 = space();
-    			option.__value = "";
-    			option.value = option.__value;
-    			add_location(option, file$1, 29, 8, 908);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, option, anchor);
-    			append_dev(option, t0);
-    			append_dev(option, t1);
-    		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*p*/ 1 && t0_value !== (t0_value = /*p*/ ctx[0].emptyPlaceholder + "")) set_data_dev(t0, t0_value);
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(option);
-    		}
-    	};
+    const defaultState2 = {
+        a: {val: 1},
+        b: {val: 2}
+    };
 
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_if_block.name,
-    		type: "if",
-    		source: "(29:4) {#if p.hasEmptyOption}",
-    		ctx
-    	});
+    function createStore2() {
+        const { subscribe, set, update } = writable(defaultState2);
 
-    	return block;
+        return {
+            subscribe,
+            incr1: () => update(x => {x.a.val++; return x}),
+            incr2: () => update(x => {x.b.val++; return x}),
+        }
     }
 
-    // (35:4) {#each p.availableItems as item (getKeyValue(item))}
-    function create_each_block(key_1, ctx) {
-    	let option;
-    	let t0_value = /*getDescription*/ ctx[2](/*item*/ ctx[7]) + "";
-    	let t0;
-    	let t1;
-    	let option_value_value;
+    const store2 = createStore2();
 
-    	const block = {
-    		key: key_1,
-    		first: null,
-    		c: function create() {
-    			option = element("option");
-    			t0 = text(t0_value);
-    			t1 = space();
-    			option.__value = option_value_value = /*getKeyValue*/ ctx[1](/*item*/ ctx[7]);
-    			option.value = option.__value;
-    			add_location(option, file$1, 35, 8, 1061);
-    			this.first = option;
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, option, anchor);
-    			append_dev(option, t0);
-    			append_dev(option, t1);
-    		},
-    		p: function update(new_ctx, dirty) {
-    			ctx = new_ctx;
-    			if (dirty & /*getDescription, p*/ 5 && t0_value !== (t0_value = /*getDescription*/ ctx[2](/*item*/ ctx[7]) + "")) set_data_dev(t0, t0_value);
+    function createStoreImmut(){
+        const { subscribe, set, update } = writable(defaultState2);
 
-    			if (dirty & /*getKeyValue, p*/ 3 && option_value_value !== (option_value_value = /*getKeyValue*/ ctx[1](/*item*/ ctx[7]))) {
-    				prop_dev(option, "__value", option_value_value);
-    				option.value = option.__value;
-    			}
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(option);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_each_block.name,
-    		type: "each",
-    		source: "(35:4) {#each p.availableItems as item (getKeyValue(item))}",
-    		ctx
-    	});
-
-    	return block;
+        return {
+            subscribe,
+            incr1: () => update(x => fn(x, draft => {draft.a.val++;})),
+            incr2: () => update(x => fn(x, draft => {draft.b.val++;})),
+        }
     }
 
-    function create_fragment$1(ctx) {
-    	let select;
-    	let if_block_anchor;
-    	let each_blocks = [];
-    	let each_1_lookup = new Map();
-    	let select_disabled_value;
-    	let select_value_value;
-    	let t;
-    	let mounted;
-    	let dispose;
-    	let if_block = /*p*/ ctx[0].hasEmptyOption && create_if_block(ctx);
-    	let each_value = /*p*/ ctx[0].availableItems;
-    	validate_each_argument(each_value);
-    	const get_key = ctx => /*getKeyValue*/ ctx[1](/*item*/ ctx[7]);
-    	validate_each_keys(ctx, each_value, get_each_context, get_key);
-
-    	for (let i = 0; i < each_value.length; i += 1) {
-    		let child_ctx = get_each_context(ctx, each_value, i);
-    		let key = get_key(child_ctx);
-    		each_1_lookup.set(key, each_blocks[i] = create_each_block(key, child_ctx));
-    	}
-
-    	let select_levels = [
-    		/*p*/ ctx[0].selectAttributes ?? {},
-    		{
-    			disabled: select_disabled_value = /*p*/ ctx[0].disabled
-    		},
-    		{
-    			value: select_value_value = /*p*/ ctx[0].modelState
-    			? /*getKeyValue*/ ctx[1](/*p*/ ctx[0].modelState)
-    			: ""
-    		}
-    	];
-
-    	let select_data = {};
-
-    	for (let i = 0; i < select_levels.length; i += 1) {
-    		select_data = assign(select_data, select_levels[i]);
-    	}
-
-    	const block = {
-    		c: function create() {
-    			select = element("select");
-    			if (if_block) if_block.c();
-    			if_block_anchor = empty();
-
-    			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].c();
-    			}
-
-    			t = text(";");
-    			set_attributes(select, select_data);
-    			add_location(select, file$1, 22, 0, 679);
-    		},
-    		l: function claim(nodes) {
-    			throw new Error_1("options.hydrate only works if the component was compiled with the `hydratable: true` option");
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, select, anchor);
-    			if (if_block) if_block.m(select, null);
-    			append_dev(select, if_block_anchor);
-
-    			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(select, null);
-    			}
-
-    			(select_data.multiple ? select_options : select_option)(select, select_data.value);
-    			if (select.autofocus) select.focus();
-    			insert_dev(target, t, anchor);
-
-    			if (!mounted) {
-    				dispose = listen_dev(select, "change", /*change_handler*/ ctx[6], false, false, false);
-    				mounted = true;
-    			}
-    		},
-    		p: function update(ctx, [dirty]) {
-    			if (/*p*/ ctx[0].hasEmptyOption) {
-    				if (if_block) {
-    					if_block.p(ctx, dirty);
-    				} else {
-    					if_block = create_if_block(ctx);
-    					if_block.c();
-    					if_block.m(select, if_block_anchor);
-    				}
-    			} else if (if_block) {
-    				if_block.d(1);
-    				if_block = null;
-    			}
-
-    			if (dirty & /*getKeyValue, p, getDescription*/ 7) {
-    				each_value = /*p*/ ctx[0].availableItems;
-    				validate_each_argument(each_value);
-    				validate_each_keys(ctx, each_value, get_each_context, get_key);
-    				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, select, destroy_block, create_each_block, null, get_each_context);
-    			}
-
-    			set_attributes(select, select_data = get_spread_update(select_levels, [
-    				dirty & /*p*/ 1 && (/*p*/ ctx[0].selectAttributes ?? {}),
-    				dirty & /*p*/ 1 && select_disabled_value !== (select_disabled_value = /*p*/ ctx[0].disabled) && { disabled: select_disabled_value },
-    				dirty & /*p, getKeyValue*/ 3 && select_value_value !== (select_value_value = /*p*/ ctx[0].modelState
-    				? /*getKeyValue*/ ctx[1](/*p*/ ctx[0].modelState)
-    				: "") && { value: select_value_value }
-    			]));
-
-    			if (dirty & /*p, getKeyValue*/ 3 && 'value' in select_data) (select_data.multiple ? select_options : select_option)(select, select_data.value);
-    			
-    		},
-    		i: noop,
-    		o: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(select);
-    			if (if_block) if_block.d();
-
-    			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].d();
-    			}
-
-    			if (detaching) detach_dev(t);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_fragment$1.name,
-    		type: "component",
-    		source: "",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    function instance$1($$self, $$props, $$invalidate) {
-    	let getKeyValue;
-    	let getDescription;
-    	let { $$slots: slots = {}, $$scope } = $$props;
-    	validate_slots('SelectDropdown', slots, []);
-    	var _a, _b;
-    	let { p } = $$props;
-
-    	function handleSelect(value) {
-    		const selectedItem = p.availableItems.find(i => value === getKeyValue(i));
-
-    		// sattisfy compiler
-    		if (p.hasEmptyOption === true) {
-    			p.onSelect(selectedItem);
-    		} else {
-    			if (selectedItem === undefined) {
-    				throw new Error();
-    			}
-
-    			p.onSelect(selectedItem);
-    		}
-    	}
-
-    	const writable_props = ['p'];
-
-    	Object.keys($$props).forEach(key => {
-    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<SelectDropdown> was created with unknown prop '${key}'`);
-    	});
-
-    	const change_handler = e => handleSelect(e.currentTarget.value);
-
-    	$$self.$$set = $$props => {
-    		if ('p' in $$props) $$invalidate(0, p = $$props.p);
-    	};
-
-    	$$self.$capture_state = () => ({
-    		_a,
-    		_b,
-    		_a,
-    		_b,
-    		p,
-    		handleSelect,
-    		getKeyValue,
-    		getDescription
-    	});
-
-    	$$self.$inject_state = $$props => {
-    		if ('_a' in $$props) $$invalidate(4, _a = $$props._a);
-    		if ('_b' in $$props) $$invalidate(5, _b = $$props._b);
-    		if ('p' in $$props) $$invalidate(0, p = $$props.p);
-    		if ('getKeyValue' in $$props) $$invalidate(1, getKeyValue = $$props.getKeyValue);
-    		if ('getDescription' in $$props) $$invalidate(2, getDescription = $$props.getDescription);
-    	};
-
-    	if ($$props && "$$inject" in $$props) {
-    		$$self.$inject_state($$props.$$inject);
-    	}
-
-    	$$self.$$.update = () => {
-    		if ($$self.$$.dirty & /*p, _a*/ 17) {
-    			$$invalidate(1, getKeyValue = $$invalidate(4, _a = p.getKeyValue) !== null && _a !== void 0
-    			? _a
-    			: x => x.toString());
-    		}
-
-    		if ($$self.$$.dirty & /*p, _b*/ 33) {
-    			$$invalidate(2, getDescription = $$invalidate(5, _b = p.getDescription) !== null && _b !== void 0
-    			? _b
-    			: x => x.toString());
-    		}
-    	};
-
-    	return [p, getKeyValue, getDescription, handleSelect, _a, _b, change_handler];
-    }
-
-    class SelectDropdown extends SvelteComponentDev {
-    	constructor(options) {
-    		super(options);
-    		init(this, options, instance$1, create_fragment$1, safe_not_equal, { p: 0 });
-
-    		dispatch_dev("SvelteRegisterComponent", {
-    			component: this,
-    			tagName: "SelectDropdown",
-    			options,
-    			id: create_fragment$1.name
-    		});
-
-    		const { ctx } = this.$$;
-    		const props = options.props || {};
-
-    		if (/*p*/ ctx[0] === undefined && !('p' in props)) {
-    			console.warn("<SelectDropdown> was created without expected prop 'p'");
-    		}
-    	}
-
-    	get p() {
-    		throw new Error_1("<SelectDropdown>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set p(value) {
-    		throw new Error_1("<SelectDropdown>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-    }
+    const storeImmut = createStoreImmut();
 
     /* src\App.svelte generated by Svelte v3.42.6 */
+
+    const { console: console_1 } = globals;
     const file = "src\\App.svelte";
 
     function create_fragment(ctx) {
-    	let main;
-    	let h1;
+    	let div10;
+    	let div0;
+    	let t0_value = /*$store1*/ ctx[3].a + "";
     	let t0;
     	let t1;
-    	let t2;
+    	let button0;
     	let t3;
-    	let p0;
+    	let div1;
+    	let t4_value = /*$store1*/ ctx[3].b + "";
     	let t4;
-    	let a;
-    	let t6;
+    	let t5;
+    	let button1;
     	let t7;
-    	let p1;
-    	let t8_value = /*$clockStore*/ ctx[2].currentDate + "";
+    	let div2;
+    	let t8_value = /*$store2*/ ctx[2].a.val + "";
     	let t8;
     	let t9;
-    	let p2;
-
-    	let t10_value = (/*$clockStore*/ ctx[2].tickIntervalHandle
-    	? "is ticking"
-    	: "is NOT ticking") + "";
-
-    	let t10;
+    	let button2;
     	let t11;
-    	let button0;
+    	let div3;
+    	let t12_value = /*$store2*/ ctx[2].b.val + "";
+    	let t12;
     	let t13;
-    	let button1;
+    	let button3;
     	let t15;
-    	let div0;
-    	let t16_value = JSON.stringify(/*$approvalsStore*/ ctx[3]) + "";
+    	let div4;
+    	let t16_value = /*$storeImmut*/ ctx[1].a.val + "";
     	let t16;
     	let t17;
-    	let button2;
+    	let button4;
     	let t19;
-    	let dropdown;
+    	let div5;
+    	let t20_value = /*$storeImmut*/ ctx[1].b.val + "";
     	let t20;
-    	let div1;
-    	let t21_value = /*params*/ ctx[1].modelState + "";
     	let t21;
-    	let current;
+    	let button5;
+    	let t23;
+    	let div6;
+    	let t25;
+    	let div9;
+    	let div7;
+    	let button6;
+    	let t26;
+    	let button6_disabled_value;
+    	let t27;
+    	let button7;
+    	let t28;
+    	let button7_disabled_value;
+    	let t29;
+    	let div8;
     	let mounted;
     	let dispose;
 
-    	dropdown = new SelectDropdown({
-    			props: { p: /*params*/ ctx[1] },
-    			$$inline: true
-    		});
-
     	const block = {
     		c: function create() {
-    			main = element("main");
-    			h1 = element("h1");
-    			t0 = text("Hello ");
-    			t1 = text(/*name*/ ctx[0]);
-    			t2 = text("!");
+    			div10 = element("div");
+    			div0 = element("div");
+    			t0 = text(t0_value);
+    			t1 = space();
+    			button0 = element("button");
+    			button0.textContent = "+";
     			t3 = space();
-    			p0 = element("p");
-    			t4 = text("Visit the ");
-    			a = element("a");
-    			a.textContent = "Svelte tutorial";
-    			t6 = text(" to learn\r\n        how to build Svelte apps.");
+    			div1 = element("div");
+    			t4 = text(t4_value);
+    			t5 = space();
+    			button1 = element("button");
+    			button1.textContent = "+";
     			t7 = space();
-    			p1 = element("p");
+    			div2 = element("div");
     			t8 = text(t8_value);
     			t9 = space();
-    			p2 = element("p");
-    			t10 = text(t10_value);
+    			button2 = element("button");
+    			button2.textContent = "+";
     			t11 = space();
-    			button0 = element("button");
-    			button0.textContent = "Start";
+    			div3 = element("div");
+    			t12 = text(t12_value);
     			t13 = space();
-    			button1 = element("button");
-    			button1.textContent = "Stop";
+    			button3 = element("button");
+    			button3.textContent = "+";
     			t15 = space();
-    			div0 = element("div");
+    			div4 = element("div");
     			t16 = text(t16_value);
     			t17 = space();
-    			button2 = element("button");
-    			button2.textContent = "Toggle";
+    			button4 = element("button");
+    			button4.textContent = "+";
     			t19 = space();
-    			create_component(dropdown.$$.fragment);
-    			t20 = space();
-    			div1 = element("div");
-    			t21 = text(t21_value);
-    			attr_dev(h1, "class", "svelte-u9qvfs");
-    			add_location(h1, file, 16, 4, 537);
-    			attr_dev(a, "href", "https://svelte.dev/tutorial");
-    			add_location(a, file, 18, 18, 588);
-    			add_location(p0, file, 17, 4, 565);
-    			add_location(p1, file, 21, 4, 705);
-    			add_location(p2, file, 24, 4, 759);
-    			add_location(button0, file, 27, 4, 854);
-    			add_location(button1, file, 28, 4, 930);
-    			add_location(div0, file, 29, 4, 1004);
-    			add_location(button2, file, 32, 4, 1070);
-    			add_location(div1, file, 44, 4, 1451);
-    			attr_dev(main, "class", "svelte-u9qvfs");
-    			add_location(main, file, 15, 0, 525);
+    			div5 = element("div");
+    			t20 = text(t20_value);
+    			t21 = space();
+    			button5 = element("button");
+    			button5.textContent = "+";
+    			t23 = space();
+    			div6 = element("div");
+    			div6.textContent = "Crazy Ivan Motors (Svelte)";
+    			t25 = space();
+    			div9 = element("div");
+    			div7 = element("div");
+    			button6 = element("button");
+    			t26 = text("Add deal");
+    			t27 = space();
+    			button7 = element("button");
+    			t28 = text("Add foreign currency deal");
+    			t29 = space();
+    			div8 = element("div");
+    			add_location(button0, file, 27, 8, 1107);
+    			add_location(div0, file, 25, 4, 1071);
+    			add_location(button1, file, 31, 8, 1211);
+    			add_location(div1, file, 29, 4, 1175);
+    			add_location(button2, file, 35, 8, 1319);
+    			add_location(div2, file, 33, 4, 1279);
+    			add_location(button3, file, 39, 8, 1427);
+    			add_location(div3, file, 37, 4, 1387);
+    			add_location(button4, file, 43, 8, 1539);
+    			add_location(div4, file, 41, 4, 1495);
+    			add_location(button5, file, 47, 8, 1655);
+    			add_location(div5, file, 45, 4, 1611);
+    			attr_dev(div6, "class", "main-logo svelte-u16sho");
+    			add_location(div6, file, 51, 4, 1731);
+    			attr_dev(button6, "class", "button-add-new-deal");
+    			button6.disabled = button6_disabled_value = /*$dealsStore*/ ctx[0].newDealIsLoading;
+    			add_location(button6, file, 57, 8, 1865);
+    			attr_dev(button7, "class", "button-add-new-deal");
+    			button7.disabled = button7_disabled_value = /*$dealsStore*/ ctx[0].newDealIsLoading;
+    			add_location(button7, file, 65, 8, 2089);
+    			attr_dev(div7, "class", "tabs svelte-u16sho");
+    			add_location(div7, file, 56, 6, 1837);
+    			attr_dev(div8, "class", "" + (null_to_empty(`active-tab`) + " svelte-u16sho"));
+    			add_location(div8, file, 79, 6, 2556);
+    			attr_dev(div9, "class", "screens svelte-u16sho");
+    			add_location(div9, file, 55, 4, 1808);
+    			attr_dev(div10, "id", "app-root");
+    			attr_dev(div10, "class", "svelte-u16sho");
+    			add_location(div10, file, 24, 0, 1046);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, main, anchor);
-    			append_dev(main, h1);
-    			append_dev(h1, t0);
-    			append_dev(h1, t1);
-    			append_dev(h1, t2);
-    			append_dev(main, t3);
-    			append_dev(main, p0);
-    			append_dev(p0, t4);
-    			append_dev(p0, a);
-    			append_dev(p0, t6);
-    			append_dev(main, t7);
-    			append_dev(main, p1);
-    			append_dev(p1, t8);
-    			append_dev(main, t9);
-    			append_dev(main, p2);
-    			append_dev(p2, t10);
-    			append_dev(main, t11);
-    			append_dev(main, button0);
-    			append_dev(main, t13);
-    			append_dev(main, button1);
-    			append_dev(main, t15);
-    			append_dev(main, div0);
-    			append_dev(div0, t16);
-    			append_dev(main, t17);
-    			append_dev(main, button2);
-    			append_dev(main, t19);
-    			mount_component(dropdown, main, null);
-    			append_dev(main, t20);
-    			append_dev(main, div1);
-    			append_dev(div1, t21);
-    			current = true;
+    			insert_dev(target, div10, anchor);
+    			append_dev(div10, div0);
+    			append_dev(div0, t0);
+    			append_dev(div0, t1);
+    			append_dev(div0, button0);
+    			append_dev(div10, t3);
+    			append_dev(div10, div1);
+    			append_dev(div1, t4);
+    			append_dev(div1, t5);
+    			append_dev(div1, button1);
+    			append_dev(div10, t7);
+    			append_dev(div10, div2);
+    			append_dev(div2, t8);
+    			append_dev(div2, t9);
+    			append_dev(div2, button2);
+    			append_dev(div10, t11);
+    			append_dev(div10, div3);
+    			append_dev(div3, t12);
+    			append_dev(div3, t13);
+    			append_dev(div3, button3);
+    			append_dev(div10, t15);
+    			append_dev(div10, div4);
+    			append_dev(div4, t16);
+    			append_dev(div4, t17);
+    			append_dev(div4, button4);
+    			append_dev(div10, t19);
+    			append_dev(div10, div5);
+    			append_dev(div5, t20);
+    			append_dev(div5, t21);
+    			append_dev(div5, button5);
+    			append_dev(div10, t23);
+    			append_dev(div10, div6);
+    			append_dev(div10, t25);
+    			append_dev(div10, div9);
+    			append_dev(div9, div7);
+    			append_dev(div7, button6);
+    			append_dev(button6, t26);
+    			append_dev(div7, t27);
+    			append_dev(div7, button7);
+    			append_dev(button7, t28);
+    			append_dev(div9, t29);
+    			append_dev(div9, div8);
 
     			if (!mounted) {
     				dispose = [
-    					listen_dev(button0, "click", /*click_handler*/ ctx[4], false, false, false),
-    					listen_dev(button1, "click", /*click_handler_1*/ ctx[5], false, false, false),
-    					listen_dev(button2, "click", /*click_handler_2*/ ctx[6], false, false, false)
+    					listen_dev(button0, "click", /*click_handler*/ ctx[8], false, false, false),
+    					listen_dev(button1, "click", /*click_handler_1*/ ctx[9], false, false, false),
+    					listen_dev(button2, "click", /*click_handler_2*/ ctx[10], false, false, false),
+    					listen_dev(button3, "click", /*click_handler_3*/ ctx[11], false, false, false),
+    					listen_dev(button4, "click", /*click_handler_4*/ ctx[12], false, false, false),
+    					listen_dev(button5, "click", /*click_handler_5*/ ctx[13], false, false, false),
+    					listen_dev(button6, "click", /*click_handler_6*/ ctx[14], false, false, false),
+    					listen_dev(button7, "click", /*click_handler_7*/ ctx[15], false, false, false)
     				];
 
     				mounted = true;
     			}
     		},
     		p: function update(ctx, [dirty]) {
-    			if (!current || dirty & /*name*/ 1) set_data_dev(t1, /*name*/ ctx[0]);
-    			if ((!current || dirty & /*$clockStore*/ 4) && t8_value !== (t8_value = /*$clockStore*/ ctx[2].currentDate + "")) set_data_dev(t8, t8_value);
+    			if (dirty & /*$store1*/ 8 && t0_value !== (t0_value = /*$store1*/ ctx[3].a + "")) set_data_dev(t0, t0_value);
+    			if (dirty & /*$store1*/ 8 && t4_value !== (t4_value = /*$store1*/ ctx[3].b + "")) set_data_dev(t4, t4_value);
+    			if (dirty & /*$store2*/ 4 && t8_value !== (t8_value = /*$store2*/ ctx[2].a.val + "")) set_data_dev(t8, t8_value);
+    			if (dirty & /*$store2*/ 4 && t12_value !== (t12_value = /*$store2*/ ctx[2].b.val + "")) set_data_dev(t12, t12_value);
+    			if (dirty & /*$storeImmut*/ 2 && t16_value !== (t16_value = /*$storeImmut*/ ctx[1].a.val + "")) set_data_dev(t16, t16_value);
+    			if (dirty & /*$storeImmut*/ 2 && t20_value !== (t20_value = /*$storeImmut*/ ctx[1].b.val + "")) set_data_dev(t20, t20_value);
 
-    			if ((!current || dirty & /*$clockStore*/ 4) && t10_value !== (t10_value = (/*$clockStore*/ ctx[2].tickIntervalHandle
-    			? "is ticking"
-    			: "is NOT ticking") + "")) set_data_dev(t10, t10_value);
+    			if (dirty & /*$dealsStore*/ 1 && button6_disabled_value !== (button6_disabled_value = /*$dealsStore*/ ctx[0].newDealIsLoading)) {
+    				prop_dev(button6, "disabled", button6_disabled_value);
+    			}
 
-    			if ((!current || dirty & /*$approvalsStore*/ 8) && t16_value !== (t16_value = JSON.stringify(/*$approvalsStore*/ ctx[3]) + "")) set_data_dev(t16, t16_value);
-    			const dropdown_changes = {};
-    			if (dirty & /*params*/ 2) dropdown_changes.p = /*params*/ ctx[1];
-    			dropdown.$set(dropdown_changes);
-    			if ((!current || dirty & /*params*/ 2) && t21_value !== (t21_value = /*params*/ ctx[1].modelState + "")) set_data_dev(t21, t21_value);
+    			if (dirty & /*$dealsStore*/ 1 && button7_disabled_value !== (button7_disabled_value = /*$dealsStore*/ ctx[0].newDealIsLoading)) {
+    				prop_dev(button7, "disabled", button7_disabled_value);
+    			}
     		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(dropdown.$$.fragment, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(dropdown.$$.fragment, local);
-    			current = false;
-    		},
+    		i: noop,
+    		o: noop,
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(main);
-    			destroy_component(dropdown);
+    			if (detaching) detach_dev(div10);
     			mounted = false;
     			run_all(dispose);
     		}
@@ -9000,87 +10867,166 @@ var app = (function () {
     	return block;
     }
 
+    window.process = { env: { NODE_ENV: 'production' } };
+
     function instance($$self, $$props, $$invalidate) {
-    	let $clockStore;
-    	let $approvalsStore;
-    	validate_store(clockStore, 'clockStore');
-    	component_subscribe($$self, clockStore, $$value => $$invalidate(2, $clockStore = $$value));
-    	validate_store(approvalsStore, 'approvalsStore');
-    	component_subscribe($$self, approvalsStore, $$value => $$invalidate(3, $approvalsStore = $$value));
+    	let store1a;
+    	let store2a;
+    	let storeImmutA;
+    	let activeDealId;
+    	let activeDeal;
+    	let $dealsStore;
+    	let $storeImmut;
+    	let $store2;
+    	let $store1;
+    	validate_store(dealsStore, 'dealsStore');
+    	component_subscribe($$self, dealsStore, $$value => $$invalidate(0, $dealsStore = $$value));
+    	validate_store(storeImmut, 'storeImmut');
+    	component_subscribe($$self, storeImmut, $$value => $$invalidate(1, $storeImmut = $$value));
+    	validate_store(store2, 'store2');
+    	component_subscribe($$self, store2, $$value => $$invalidate(2, $store2 = $$value));
+    	validate_store(store1, 'store1');
+    	component_subscribe($$self, store1, $$value => $$invalidate(3, $store1 = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('App', slots, []);
-    	let { name } = $$props;
-
-    	let params = {
-    		availableItems: [1, 2, 3],
-    		hasEmptyOption: true,
-    		modelState: 2,
-    		emptyPlaceholder: 'none',
-    		onSelect: i => $$invalidate(1, params.modelState = i, params)
-    	};
-
-    	const writable_props = ['name'];
+    	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
-    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<App> was created with unknown prop '${key}'`);
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console_1.warn(`<App> was created with unknown prop '${key}'`);
     	});
 
-    	const click_handler = () => clockEffects.start(clockStore);
-    	const click_handler_1 = () => clockEffects.stop(clockStore);
-
-    	const click_handler_2 = () => {
-    		const deal = createBlankDeal();
-
-    		deal.businessParams.carModelSelected = {
-    			id: 1,
-    			description: "",
-    			basePriceUSD: 100
-    		};
-
-    		approvalsEffects.requestApproval(approvalsStore, deal);
-    	};
-
-    	$$self.$$set = $$props => {
-    		if ('name' in $$props) $$invalidate(0, name = $$props.name);
-    	};
+    	const click_handler = () => store1.incr1();
+    	const click_handler_1 = () => store1.incr2();
+    	const click_handler_2 = () => store2.incr1();
+    	const click_handler_3 = () => store2.incr2();
+    	const click_handler_4 = () => storeImmut.incr1();
+    	const click_handler_5 = () => storeImmut.incr2();
+    	const click_handler_6 = () => dealsEffects.loadNewDeal(dealsStore);
+    	const click_handler_7 = () => dealsEffects.loadNewDealForeignCurrency(dealsStore);
 
     	$$self.$capture_state = () => ({
-    		clockStore,
-    		clockEffects,
-    		approvalsStore,
-    		approvalsEffects,
-    		createBlankDeal,
-    		Dropdown: SelectDropdown,
-    		name,
-    		params,
-    		$clockStore,
-    		$approvalsStore
+    		dealsStore,
+    		dealsEffects,
+    		store1,
+    		store2,
+    		storeImmut,
+    		activeDealId,
+    		activeDeal,
+    		storeImmutA,
+    		store2a,
+    		store1a,
+    		$dealsStore,
+    		$storeImmut,
+    		$store2,
+    		$store1
     	});
 
     	$$self.$inject_state = $$props => {
-    		if ('name' in $$props) $$invalidate(0, name = $$props.name);
-    		if ('params' in $$props) $$invalidate(1, params = $$props.params);
+    		if ('activeDealId' in $$props) $$invalidate(4, activeDealId = $$props.activeDealId);
+    		if ('activeDeal' in $$props) activeDeal = $$props.activeDeal;
+    		if ('storeImmutA' in $$props) $$invalidate(5, storeImmutA = $$props.storeImmutA);
+    		if ('store2a' in $$props) $$invalidate(6, store2a = $$props.store2a);
+    		if ('store1a' in $$props) $$invalidate(7, store1a = $$props.store1a);
     	};
 
     	if ($$props && "$$inject" in $$props) {
     		$$self.$inject_state($$props.$$inject);
     	}
 
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*$store1*/ 8) {
+    			console.log(`Store1:`, $store1);
+    		}
+
+    		if ($$self.$$.dirty & /*$store1*/ 8) {
+    			console.log(`Store1.a:`, $store1.a);
+    		}
+
+    		if ($$self.$$.dirty & /*$store1*/ 8) {
+    			console.log(`Store1.b:`, $store1.b);
+    		}
+
+    		if ($$self.$$.dirty & /*$store1*/ 8) {
+    			$$invalidate(7, store1a = $store1.a);
+    		}
+
+    		if ($$self.$$.dirty & /*store1a*/ 128) {
+    			console.log(`store1a`, store1a);
+    		}
+
+    		if ($$self.$$.dirty & /*$store2*/ 4) {
+    			console.log(`Store2:`, $store2);
+    		}
+
+    		if ($$self.$$.dirty & /*$store2*/ 4) {
+    			console.log(`Store2.a.val:`, $store2.a.val);
+    		}
+
+    		if ($$self.$$.dirty & /*$store2*/ 4) {
+    			console.log(`Store2.b.val:`, $store2.b.val);
+    		}
+
+    		if ($$self.$$.dirty & /*$store2*/ 4) {
+    			$$invalidate(6, store2a = $store2.a);
+    		}
+
+    		if ($$self.$$.dirty & /*store2a*/ 64) {
+    			console.log(`store2a`, store2a);
+    		}
+
+    		if ($$self.$$.dirty & /*$storeImmut*/ 2) {
+    			console.log(`Store2:`, $storeImmut);
+    		}
+
+    		if ($$self.$$.dirty & /*$storeImmut*/ 2) {
+    			console.log(`Store2.a.val:`, $storeImmut.a.val);
+    		}
+
+    		if ($$self.$$.dirty & /*$storeImmut*/ 2) {
+    			console.log(`Store2.b.val:`, $storeImmut.b.val);
+    		}
+
+    		if ($$self.$$.dirty & /*$storeImmut*/ 2) {
+    			$$invalidate(5, storeImmutA = $storeImmut.a);
+    		}
+
+    		if ($$self.$$.dirty & /*storeImmutA*/ 32) {
+    			console.log(`store2a`, storeImmutA);
+    		}
+
+    		if ($$self.$$.dirty & /*$dealsStore*/ 1) {
+    			$$invalidate(4, activeDealId = $dealsStore.activeDealId);
+    		}
+
+    		if ($$self.$$.dirty & /*$dealsStore, activeDealId*/ 17) {
+    			activeDeal = $dealsStore.deals.find(x => x.businessParams.dealId === activeDealId);
+    		}
+    	};
+
     	return [
-    		name,
-    		params,
-    		$clockStore,
-    		$approvalsStore,
+    		$dealsStore,
+    		$storeImmut,
+    		$store2,
+    		$store1,
+    		activeDealId,
+    		storeImmutA,
+    		store2a,
+    		store1a,
     		click_handler,
     		click_handler_1,
-    		click_handler_2
+    		click_handler_2,
+    		click_handler_3,
+    		click_handler_4,
+    		click_handler_5,
+    		click_handler_6,
+    		click_handler_7
     	];
     }
 
     class App extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance, create_fragment, safe_not_equal, { name: 0 });
+    		init(this, options, instance, create_fragment, not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
@@ -9088,29 +11034,12 @@ var app = (function () {
     			options,
     			id: create_fragment.name
     		});
-
-    		const { ctx } = this.$$;
-    		const props = options.props || {};
-
-    		if (/*name*/ ctx[0] === undefined && !('name' in props)) {
-    			console.warn("<App> was created without expected prop 'name'");
-    		}
-    	}
-
-    	get name() {
-    		throw new Error("<App>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set name(value) {
-    		throw new Error("<App>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
     }
 
     const app = new App({
         target: document.getElementById('root'),
-        props: {
-            name: 'world'
-        }
+        props: {}
     });
 
     return app;
