@@ -3,7 +3,7 @@ if(branchNameFromEnv){
     const newBaseUrl = `https://uiappashowcases.blob.core.windows.net/$web/${branchNameFromEnv}/`;
     console.log(`Setting url base to ${newBaseUrl}`);
     const fs = require('fs');
-    const filePath = './build/index.html';
+    const filePath = './public/index.html';
     const indexFileText = fs.readFileSync(filePath, {
         encoding: 'UTF8'
     });
