@@ -15,7 +15,7 @@
         grid-template-rows: 2em 5em 2em auto 2em auto 2em auto;
     }
 
-    :global(.car-purchase-deal) > * {
+    :global(.car-purchase-deal > *) {
         margin: 2px;
     }
 

@@ -13442,7 +13442,7 @@ var app = (function () {
     		c: function create() {
     			div = element("div");
     			create_component(dealcmpbare.$$.fragment);
-    			attr_dev(div, "class", "car-purchase-deal svelte-1pfbqd");
+    			attr_dev(div, "class", "car-purchase-deal");
     			add_location(div, file$3, 4, 0, 101);
     		},
     		l: function claim(nodes) {
