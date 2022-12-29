@@ -1,17 +1,25 @@
-import React from 'react';
+import { Component, createEffect, createSignal } from 'solid-js';
 
-import './App.css';
+import styles from './App.module.scss';
 
-export const App = () => {
-  return <div id='app-root'>
-
-    <div className='main-logo'>
-      Welcome to Crazy Ivan Motors
+const App: Component = () => {
+  return (
+    <div class={styles.App}>
+      <header class={styles.header}>
+        <p>
+          Edit <code>src/App.tsx</code> and save to reload.
+        </p>
+        <a
+          class={styles.link}
+          href="https://github.com/solidjs/solid"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Learn Solid
+        </a>
+      </header>
     </div>
-
-    <div className='screens'>
-
-    </div>
-  </div>
-
+  );
 };
+
+export default App;
