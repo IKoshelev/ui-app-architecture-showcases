@@ -1,17 +1,19 @@
 import { expandMagnitudeShortcuts } from "../util/numeric";
+import { NumberAtomicValidatorDefinition, NumberAtomicValidatorState, getNumberAtomicValidatorFunctionFromDefinition } from "./AtomicValidators";
 
-export function getBlankNumericInputState(requirments?:  {
-    integer: boolean,
-    positive: boolean
-}) {
+export function getBlankNumericInputState(
+    ...params: NumberAtomicValidatorDefinition[]
+) {
+    
     return {
         currentUnsavedValue: undefined as string | undefined,
-        message: undefined as string | undefined,
-        isValid: true as boolean | undefined,
-        reuirments: requirments ?? {
-            integer: false,
-            positive: false
-        }
+        value: undefined as number | undefined,
+        unsavedValueParsingError: undefined as string | undefined,
+        atomicValidators: params.map(x => ({
+            definition: x,
+            isValid: true,
+            message: ""
+        })) as NumberAtomicValidatorState[]
     }
 }
 
@@ -19,26 +21,46 @@ export type NumericInputState = ReturnType<typeof getBlankNumericInputState>;
 
 export function setCurrentUnsavedValue(
     state: NumericInputState, 
-    currentUnsavedValue: string | undefined, 
-    clearValidity = false){
+    newUnsavedValue: string | undefined){
 
-    state.currentUnsavedValue = currentUnsavedValue;
+    state.currentUnsavedValue = newUnsavedValue;
+    state.unsavedValueParsingError = undefined;
+}
 
-    if(clearValidity) {
-        state.message = undefined;
-        state.isValid = true;
+export function clearValidity(
+    state: NumericInputState){
+
+    for (const validator of state.atomicValidators){
+        validator.isValid = true;
+        validator.message = "";
     }
 }
 
-export function tryCommitValue(
-    inputState: NumericInputState,
-    setModelState: (val: number) => void,
-    additionalValidityCheck?: (val: number) => string | undefined){
+export function validate(
+    validators: NumberAtomicValidatorState[],
+    potentialNumber: Number){
 
-    if (!inputState.currentUnsavedValue) {
-        inputState.currentUnsavedValue = undefined;
-        inputState.isValid = true;
-        inputState.message = undefined;
+
+
+    for (const validator of validators){
+        const message = getNumberAtomicValidatorFunctionFromDefinition(
+            validator.definition)(potentialNumber);
+        if (message) {
+            validator.isValid = false;
+            validator.message = message;
+        } else {
+            validator.isValid = true;
+            validator.message = "";
+        }
+    }
+}
+
+
+export function tryCommitValue(
+    inputState: NumericInputState){
+
+    if (inputState.currentUnsavedValue === undefined) {
+        inputState.value = undefined;
         return;
     }
 
@@ -50,39 +72,16 @@ export function tryCommitValue(
 
     if(Number.isNaN(num) 
         || !Number.isFinite(num)) {
-
-            inputState.isValid = false;
-            inputState.message = 'Please enter a valid number';
+            clearValidity(inputState);
+            inputState.unsavedValueParsingError = 'Please enter a valid number';
             return;
     }
 
-
-    if (inputState.reuirments.integer 
-        && !Number.isInteger(num)) {
-
-            inputState.isValid = false;
-            inputState.message = 'Please enter a valid integer';
-            return;
-    }
-
-    if (inputState.reuirments.positive 
-        && num < 0) {
-
-            inputState.isValid = false;
-            inputState.message = 'Value must be positive';
-            return;
-    }
-
-    const additionalValidityCheckRes = additionalValidityCheck?.(num);
-    if(additionalValidityCheck) {
-        inputState.isValid = false;
-        inputState.message = additionalValidityCheckRes;
+    validate(inputState.atomicValidators, num);
+    if (inputState.atomicValidators.some(x => x.isValid === false)){
         return;
     }
 
     inputState.currentUnsavedValue = undefined;
-    inputState.isValid = true;
-    inputState.message = undefined;
-
-    setModelState(num);
+    inputState.value = num;
 }

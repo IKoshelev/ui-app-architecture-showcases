@@ -1,18 +1,24 @@
-import { Component, createEffect, createSignal } from 'solid-js';
-import { createStore, produce } from 'solid-js/store';
+import { Component } from 'solid-js';
+import { createStore } from 'solid-js/store';
 
 import styles from './App.module.scss';
-import { getBlankNumericInputState, setCurrentUnsavedValue, tryCommitValue } from './generic-components/NumericInput';
+import { getBlankNumericInputState} from './generic-components/NumericInput';
 import { clockStore } from './stores/clock.store';
 import { NumericInputComponent } from './generic-components/NumericInput.Component';
+import { numberAtomicValidators } from './generic-components/AtomicValidators';
 
 const App: Component = () => {
 
   const [storeState, setStoreState] = createStore({
-    input: getBlankNumericInputState(),
-    modelState: 0
+    form: {
+      input1: getBlankNumericInputState(
+        numberAtomicValidators.integer(),
+        numberAtomicValidators.positive(),
+        numberAtomicValidators.lessThan(100),
+        numberAtomicValidators.between(20, 5000)
+      )
+    }
   });
-
 
   return (
     <div class={styles.App}>
@@ -23,22 +29,16 @@ const App: Component = () => {
       </header>
       <div>
         <NumericInputComponent
-          inputState={storeState.input}
-          modelState={storeState.modelState}
-          onChange={(inputVal) => setStoreState(produce((newState) => {
-              setCurrentUnsavedValue(newState.input, inputVal)
-            }
-          ))}
-          onBlur={() => setStoreState(produce((newState) => {
-              tryCommitValue(
-                newState.input, 
-                (newModelState) => newState.modelState = newModelState);
-            }))}
+          store={storeState}
+          setStore={setStoreState}
+          getInput={(s) => s.form.input1}
         />
       </div>
+      <pre>
       {
-        JSON.stringify(storeState)
+        JSON.stringify(storeState, null, 2)
       }
+      </pre>
     </div>
   );
 };

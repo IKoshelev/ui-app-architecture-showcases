@@ -16,9 +16,9 @@
     "lodash.merge": "^4.6.2",
     "moment": "^2.24.0",
     "multimethod-type-tag-hierarchy": "^0.3.0",
-    "ts-typing-util": "0.0.10",
-
     "sass": "^1.57.1",
+    "ts-typing-util": "0.0.10",
+    "type-fest": "^3.5.0",
     "typescript": "^4.9.4",
     "vite": "^4.0.3",
     "vite-plugin-solid": "^2.5.0"
