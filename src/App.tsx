@@ -1,24 +1,41 @@
-import { Component } from 'solid-js';
-import { createStore } from 'solid-js/store';
+import { Component, createMemo, For } from 'solid-js';
+import { createStore, produce } from 'solid-js/store';
 
-import styles from './App.module.scss';
-import { getBlankNumericInputState} from './generic-components/NumericInput';
-import { clockStore } from './stores/clock.store';
+import styles from './App.module.scss'; import { clockStore } from './stores/clock.store';
 import { NumericInputComponent } from './generic-components/NumericInput.Component';
-import { numberAtomicValidators } from './generic-components/AtomicValidators';
+import { getInputState, InputState } from './generic-components/UserInput.pure';
+import { getNumericInputVM } from './generic-components/NumericInput.vm';
+import { getSubStoreWProduce } from './util/subStore';
+
+const [storeState, setStoreState] = createStore({
+  form: {
+    input1: getInputState<number | undefined, string>(undefined),
+    inputsArr: [] as InputState<number | undefined, string>[]
+  }
+});
+
+export function appVm(state: typeof storeState, setState: typeof setStoreState) {
+
+  console.log("recrating vm");
+  return {
+    // todo add vm memoization with weak map? 
+    input1: getNumericInputVM(
+      ...getSubStoreWProduce(state, setState, x => x.form.input1)
+    ),
+    // todo better way to map these?
+    inputsArr: state.form.inputsArr.map((x, i) => {
+      return getNumericInputVM(
+        ...getSubStoreWProduce(state, setState, x => x.form.inputsArr[i])
+      )
+    })
+  };
+}
 
 const App: Component = () => {
 
-  const [storeState, setStoreState] = createStore({
-    form: {
-      input1: getBlankNumericInputState(
-        numberAtomicValidators.integer(),
-        numberAtomicValidators.positive(),
-        numberAtomicValidators.lessThan(100),
-        numberAtomicValidators.between(20, 5000)
-      )
-    }
-  });
+  const vm = createMemo(() => {
+    return appVm(storeState, setStoreState);
+  })
 
   return (
     <div class={styles.App}>
@@ -29,15 +46,27 @@ const App: Component = () => {
       </header>
       <div>
         <NumericInputComponent
-          store={storeState}
-          setStore={setStoreState}
-          getInput={(s) => s.form.input1}
+          vm={vm().input1}
         />
       </div>
+      <For each={vm().inputsArr}>{(inputVM, i) =>
+        <div>
+          <NumericInputComponent
+            vm={inputVM}
+          />
+        </div>}
+      </For>
+      <button
+        onClick={() => setStoreState(produce(draft => {
+          draft.form.inputsArr.push(
+            getInputState<number | undefined, string>(undefined)
+          );
+        }))}
+      >Add numeric input</button>
       <pre>
-      {
-        JSON.stringify(storeState, null, 2)
-      }
+        {
+          JSON.stringify(storeState, null, 2)
+        }
       </pre>
     </div>
   );

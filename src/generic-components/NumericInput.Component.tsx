@@ -1,76 +1,52 @@
 import { createMemo, For, JSX, Show } from "solid-js";
 import { produce, SetStoreFunction } from "solid-js/store";
-import { NumericInputState, setCurrentUnsavedValue, tryCommitValue } from "./NumericInput";
+import { NumericInputVM } from "./NumericInput.vm";
+import { isDisabled, isValid } from "./UserInput.pure";
 
-export function NumericInputComponent<TStore>(props: {
+export function NumericInputComponent(props: {
     inputAttributes?: JSX.HTMLAttributes<HTMLInputElement>,
     messageAttributes?: JSX.HTMLAttributes<HTMLDivElement>,
     placeholder?: string,
 
-    disabled?: boolean,
-    store: TStore,
-    setStore: SetStoreFunction<TStore>,
-    getInput: (val: TStore) => NumericInputState,
+    vm: NumericInputVM,
     onChangeAdditional?: (newVal: string) => void,
     onBlurAdditional?: () => void,
 }) {
 
-    const inputState = createMemo(() => props.getInput(props.store));
-
-    const validity = createMemo(
-        () => {
-            const v = inputState().atomicValidators;
-            return {
-                isValid: !inputState().unsavedValueParsingError 
-                    && v.every(x => x.isValid),
-                messages: v.map(x => x.message)
-            };
-        },
-        true);
+    const inputState = createMemo(() => props.vm.getState());
+    const _isValid = createMemo(() => isValid(inputState()));
 
     return <>
         <input
             {...props.inputAttributes}
             classList={{
                 ...props.inputAttributes?.classList,
-                invalid: !validity().isValid
+                invalid: !_isValid()
             }}
             value={
-                inputState().currentUnsavedValue
-                ?? inputState().value
+                inputState().uncommittedValue
+                ?? props.vm.getDisplayValue()
             }
             placeholder={props.placeholder}
-            disabled={props.disabled}
+            disabled={isDisabled(inputState())}
             onChange={(e) => {
-                props.setStore(produce(newState => {
-                    const input = props.getInput(newState);
-                    setCurrentUnsavedValue(input, e.currentTarget.value);
-                }));
+                props.vm.setCurrentUnsavedValue(e.currentTarget.value);
                 props.onChangeAdditional?.(e.currentTarget.value);
 
             }}
             onBlur={(e) => {
-                props.setStore(produce(newState => {
-                    const input = props.getInput(newState);
-                    tryCommitValue(input);
-                }));
+                props.vm.tryCommitValue();
                 props.onBlurAdditional?.();
 
             }}
         ></input>
         <Show
-            when={ !validity().isValid}
+            when={inputState().messages.length > 0}
             keyed={true}
         >
             <div {...props.messageAttributes}>
-                <Show
-                    when={inputState().unsavedValueParsingError}
-                    keyed={true}
-                >
-                    <div>{inputState().unsavedValueParsingError}</div>
-                </Show>
-                <For each={validity().messages}>{(message, i) =>
-                        <div>{message}</div>
+                <For each={inputState().messages}>{(message, i) =>
+                        <div>{message.type}: {message.message}</div>
                     }
                 </For>
             </div>
