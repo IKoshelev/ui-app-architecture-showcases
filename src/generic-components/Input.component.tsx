@@ -1,14 +1,13 @@
 import { createMemo, For, JSX, Show } from "solid-js";
-import { produce, SetStoreFunction } from "solid-js/store";
-import { NumericInputVM } from "./NumericInput.vm";
-import { isDisabled, isValid } from "./UserInput.pure";
+import { isDisabled, isValid } from "./input-models/UserInput.pure";
+import { UserInputVM } from "./input-models/UserInput.vm";
 
-export function NumericInputComponent(props: {
+export function InputComponent(props: {
     inputAttributes?: JSX.HTMLAttributes<HTMLInputElement>,
     messageAttributes?: JSX.HTMLAttributes<HTMLDivElement>,
     placeholder?: string,
 
-    vm: NumericInputVM,
+    vm: UserInputVM<any, string, string>,
     onChangeAdditional?: (newVal: string) => void,
     onBlurAdditional?: () => void,
 }) {

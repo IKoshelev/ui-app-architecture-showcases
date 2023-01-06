@@ -37,3 +37,6 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
         removeReasonToDisable: bindFnToState(removeReasonToDisable) 
     }
 }
+
+export type UserInputVM<TModel, TInput = any, TDisplay = TInput>
+    = ReturnType<typeof getUserInputVM<TModel, TInput, TDisplay>>;

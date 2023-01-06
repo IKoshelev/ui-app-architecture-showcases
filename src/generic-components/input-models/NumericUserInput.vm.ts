@@ -1,7 +1,6 @@
-import { expandMagnitudeShortcuts } from "../util/numeric";
+import { expandMagnitudeShortcuts } from "../../util/numeric";
 import { Validator, numberValidator, getInputState, InputState } from "./UserInput.pure";
 import { getUserInputVM } from "./UserInput.vm";
-
 
 // Normally there would be versions for both Number and Number | undefined.
 // For demo purposes I keep it short.
@@ -57,5 +56,5 @@ export const getNumericInputVM = (
     (val) => (val ?? "").toString(),
     validators);
 
-export type NumericInputVM = ReturnType<typeof getNumericInputVM>;
+export type NumericUserInputVM = ReturnType<typeof getNumericInputVM>;
     

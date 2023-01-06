@@ -2,9 +2,9 @@ import { Component, createMemo, For } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 
 import styles from './App.module.scss'; import { clockStore } from './stores/clock.store';
-import { NumericInputComponent } from './generic-components/NumericInput.Component';
+import { InputComponent } from './generic-components/Input.component';
 import { getInputState, InputState } from './generic-components/UserInput.pure';
-import { getNumericInputVM, numberValidatorFns } from './generic-components/NumericInput.vm';
+import { getNumericInputVM, numberValidatorFns } from './generic-components/NumericUserInput.vm';
 import { getDeeperSubStore, getSubStoreFromStore } from './util/subStore';
 
 const [storeState, setStoreState] = createStore({
@@ -56,13 +56,13 @@ const App: Component = () => {
         <button onClick={clockStore.commands.stop}>stop</button>
       </header>
       <div>
-        <NumericInputComponent
+        <InputComponent
           vm={vm().input1}
         />
       </div>
       <For each={vm().inputsArr()}>{(inputVM, i) =>
         <div>
-          <NumericInputComponent
+          <InputComponent
             vm={inputVM}
           />
         </div>}
