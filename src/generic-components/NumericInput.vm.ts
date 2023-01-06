@@ -1,31 +1,31 @@
 import { expandMagnitudeShortcuts } from "../util/numeric";
-import { AtomicValidator, atomicValidator, getInputState, InputState } from "./UserInput.pure";
+import { Validator, numberValidator, getInputState, InputState } from "./UserInput.pure";
 import { getUserInputVM } from "./UserInput.vm";
 
 
 // Normally there would be versions for both Number and Number | undefined.
 // For demo purposes I keep it short.
 
-const numberAtomicValidatorFns = {
+export const numberValidatorFns = {
 
-    integer:() => atomicValidator(
-        "numberAtomicValidator.integer",
+    integer:() => numberValidator(
+        "numberValidator.integer",
         (val: number | undefined) => typeof val !== 'number' || Number.isInteger(val),
         (val: number | undefined) =>`Value ${val} must be an integer`),
     
-    positive:() => atomicValidator(
-        "numberAtomicValidator.positive",
+    positive:() => numberValidator(
+        "numberValidator.positive",
         (val: number | undefined) => typeof val !== 'number' || val < 0,
         (val: number | undefined) => `Value ${val} must be positive`),
     
-    lessThan:(bound: number) => atomicValidator(
-        "numberAtomicValidator.lessThan",
+    lessThan:(bound: number) => numberValidator(
+        "numberValidator.lessThan",
         (val: number | undefined) => typeof val !== 'number' || val >= bound,
         (val: number | undefined) => `Value ${val} must be less than ${bound}`),
 
-    between:(loverBound: number, upperBound: number) => atomicValidator(
-        "numberAtomicValidator.between",
-        (val: number | undefined) => typeof val !== 'number' || loverBound > val || val > upperBound,
+    between:(loverBound: number, upperBound: number) => numberValidator(
+        "numberValidator.between",
+        (val: number | undefined) => typeof val !== 'number' || (loverBound < val && val < upperBound),
         (val: number | undefined) => `Value ${val} must be between ${loverBound} and ${upperBound}`),
     
     // many more...
@@ -35,7 +35,7 @@ const numberAtomicValidatorFns = {
 export const getNumericInputVM = (
     getState: () => InputState<number | undefined, string>,
     updateState: (update: (stateDraft: InputState<number | undefined, string>) => void) => void,
-    validators: AtomicValidator<number | undefined>[] = []
+    validators: Validator<number | undefined>[] = []
 ) => getUserInputVM(
     getState,
     updateState,

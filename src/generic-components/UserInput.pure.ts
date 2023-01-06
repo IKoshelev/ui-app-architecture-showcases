@@ -6,7 +6,7 @@ export type InputMessage = {
     message: string,
 }
 
-export type AtomicValidator<TModel> = (val: TModel) => {
+export type Validator<TModel> = (val: TModel) => {
     status: "invalid",
     message: InputMessage
 } | {
@@ -14,10 +14,10 @@ export type AtomicValidator<TModel> = (val: TModel) => {
     code: string
 }
 
-export const atomicValidator = <TModel>(
+export const numberValidator = <TModel>(
     code: string,
     validWhen: (val: TModel) => boolean,
-    messageFn: (val: TModel) => string): AtomicValidator<TModel> =>
+    messageFn: (val: TModel) => string): Validator<TModel> =>
     (val: TModel) => {
         if (!validWhen(val)) {
             return {
@@ -83,20 +83,22 @@ export function spliceMessage(
 
     const previousParsingErrorIndex = messages.findIndex(x => x.code === code);
 
-    if(previousParsingErrorIndex !== -1)
+    if(previousParsingErrorIndex === -1)
     {
-        if (newMessage) {
-            messages[previousParsingErrorIndex].message = newMessage.message;
-        } else {
-            messages.splice(previousParsingErrorIndex, 1);
+        if (newMessage){
+            messages.push(newMessage);
+            return 'added new message';
         }
+        return 'no changes';
     }
 
-    if (newMessage){
-        messages.push(newMessage);
+    if (newMessage) {
+        messages[previousParsingErrorIndex].message = newMessage.message;
+        return 'updated existing message';
+    } else {
+        messages.splice(previousParsingErrorIndex, 1);
+        return 'removed message';
     }
-   
-    return true;
 }
 
 export function setCurrentUnsavedValue<TModel, TInput = any>(
@@ -123,13 +125,13 @@ export function clearMessages<TModel, TInput = any>(
 
 export function revalidateCommittedValue<TModel, TInput = any>(
     state: InputState<TModel, TInput>,
-    validators: AtomicValidator<TModel>[]) {
+    validators: Validator<TModel>[]) {
 
     for (const validator of validators) {
         const result = validator(state.committedValue);
         if (result.status === "valid") {
             spliceMessage(state.messages, result.code);
-            return;
+            continue;
         }
         spliceMessage(state.messages, result.message.code, result.message);
     }
@@ -159,7 +161,7 @@ export function tryCommitValue<TModel, TInput = any>(
         status: "error",
         message: string,
     },
-    validators: AtomicValidator<TModel>[]) {
+    validators: Validator<TModel>[]) {
 
     if (state.uncommittedValue === undefined) {
         return false;

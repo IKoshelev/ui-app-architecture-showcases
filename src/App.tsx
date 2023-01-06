@@ -4,7 +4,7 @@ import { createStore, produce } from 'solid-js/store';
 import styles from './App.module.scss'; import { clockStore } from './stores/clock.store';
 import { NumericInputComponent } from './generic-components/NumericInput.Component';
 import { getInputState, InputState } from './generic-components/UserInput.pure';
-import { getNumericInputVM } from './generic-components/NumericInput.vm';
+import { getNumericInputVM, numberValidatorFns } from './generic-components/NumericInput.vm';
 import { getDeeperSubStore, getSubStoreFromStore } from './util/subStore';
 
 const [storeState, setStoreState] = createStore({
@@ -27,7 +27,11 @@ export function appVm(state: typeof storeState, setState: typeof setStoreState) 
   return {
     // todo add vm memoization with weak map? 
     input1: getNumericInputVM(
-      ...getSubStoreFromStore(state, setState, x => x.form.input1)
+      ...getSubStoreFromStore(state, setState, x => x.form.input1),
+      [
+        numberValidatorFns.integer(),
+        numberValidatorFns.between(10,20)
+      ]
     ),
     inputsArr: () => state.form.inputsArr.map((x, i) => {
       console.log("recreating array vms");
