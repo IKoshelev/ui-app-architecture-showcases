@@ -5,7 +5,7 @@ import styles from './App.module.scss'; import { clockStore } from './stores/clo
 import { NumericInputComponent } from './generic-components/NumericInput.Component';
 import { getInputState, InputState } from './generic-components/UserInput.pure';
 import { getNumericInputVM } from './generic-components/NumericInput.vm';
-import { getSubStoreWProduce } from './util/subStore';
+import { getDeeperSubStore, getSubStoreFromStore } from './util/subStore';
 
 const [storeState, setStoreState] = createStore({
   form: {
@@ -14,18 +14,25 @@ const [storeState, setStoreState] = createStore({
   }
 });
 
+const subStore1 = getSubStoreFromStore(
+  storeState, 
+  setStoreState, 
+  x => x.form);
+
+  const subStore2 = getDeeperSubStore(...subStore1, x => x.input1);
+
 export function appVm(state: typeof storeState, setState: typeof setStoreState) {
 
   console.log("recreating entire vm");
   return {
     // todo add vm memoization with weak map? 
     input1: getNumericInputVM(
-      ...getSubStoreWProduce(state, setState, x => x.form.input1)
+      ...getSubStoreFromStore(state, setState, x => x.form.input1)
     ),
     inputsArr: () => state.form.inputsArr.map((x, i) => {
       console.log("recreating array vms");
       return getNumericInputVM(
-        ...getSubStoreWProduce(state, setState, x => x.form.inputsArr[i])
+        ...getSubStoreFromStore(state, setState, x => x.form.inputsArr[i])
       )
     })
   };
@@ -68,6 +75,17 @@ const App: Component = () => {
           JSON.stringify(storeState, null, 2)
         }
       </pre>
+      Substore: 
+      <pre>
+        {
+          JSON.stringify(subStore2[0](), null, 2)
+        }
+      </pre>
+      <button
+        onClick={() => subStore2[1](x => x.committedValue = 112358)}
+      >
+        Set value to 112358
+      </button>
     </div>
   );
 };
