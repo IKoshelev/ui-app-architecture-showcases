@@ -68,7 +68,7 @@ export function appVm(state: typeof storeState, setState: typeof setStoreState) 
     itemDescriptionInput: getUserInputVM<string | undefined, ItemWithId, string>(
       ...getSubStoreFromStore(state, setState, x => x.form.itemDescriptionInput),
       (m) => m ?? "",
-      (v) => ({ status: "parsed", parsed: v.description})
+      (v) => ({ status: "parsed", parsed: v.id})
     ),
     stringInput: getUserInputVM<string | undefined, string, string>(
       ...getSubStoreFromStore(state, setState, x => x.form.stringInput),
@@ -101,6 +101,7 @@ const App: Component = () => {
           vm={vm().wholeItemInput}
           getItemId={(i) => i.id}
           getItemDescription={(i) => i.description}
+          getModelId={(i) => i?.id ?? ""}
           availableItems={items}
           hasEmptyOption={true}
         />
@@ -110,6 +111,7 @@ const App: Component = () => {
           vm={vm().itemDescriptionInput}
           getItemId={(i) => i.id}
           getItemDescription={(i) => i.description}
+          getModelId={(i) => i ?? ""}
           availableItems={items}
           hasEmptyOption={true}
         />

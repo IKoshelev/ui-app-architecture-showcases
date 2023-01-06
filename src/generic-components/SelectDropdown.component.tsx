@@ -11,16 +11,17 @@ type SelectDropdownProps<TModel, TItem> =
         availableItems: TItem[],
         getItemId?: (item: TItem) => string,  
         getItemDescription?: (item: TItem) => string,
-        getOverrideModelDescription?: (item: TModel) => string,
         onBlurAdditional?: () => void,
     }
     & ({
         hasEmptyOption: false,
         vm: UserInputVM<TModel, TItem, string>,
+        getModelId?: (item: TModel) => string,
         onChangeAdditional?: (newVal: TItem) => void,
     } | {
         hasEmptyOption: true,
         vm: UserInputVM<TModel | undefined, TItem, string>,
+        getModelId?: (item: TModel | undefined) => string,
         emptyPlaceholder?: string,
         onChangeAdditional?: (newVal: TItem | undefined) => void,
     });
@@ -57,20 +58,12 @@ export function SelectDropdown<TModel, TItem>(
 
         if (uncommittedValue !== undefined)
         {
-            return getItemDescription(uncommittedValue);
+            return getItemId(uncommittedValue);
         }
 
         const committedValue = inputState().committedValue;
 
-        if(props.getOverrideModelDescription) {
-            props.getOverrideModelDescription(committedValue!);
-        }
-        
-        if (committedValue === undefined && props.hasEmptyOption){
-            return props.emptyPlaceholder ?? "";
-        }
-
-        return props.vm.getDisplayValue();
+        return props.getModelId?.(committedValue!) ?? committedValue ?? "";
     });
 
     return <>
