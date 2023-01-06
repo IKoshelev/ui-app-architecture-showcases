@@ -13,7 +13,6 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
     modelToDisplayValue: (val: TModel) => TDisplay,
     validators: AtomicValidator<TModel>[]
 ) {
-
     const bindFnToState = <TRestArgs extends any[], TReturn>(
         fn: (state: InputState<TModel, TInput>, ...args: TRestArgs) => TReturn
     ) => (...args: TRestArgs) => {

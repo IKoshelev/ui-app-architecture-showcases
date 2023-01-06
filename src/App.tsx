@@ -16,14 +16,14 @@ const [storeState, setStoreState] = createStore({
 
 export function appVm(state: typeof storeState, setState: typeof setStoreState) {
 
-  console.log("recrating vm");
+  console.log("recreating entire vm");
   return {
     // todo add vm memoization with weak map? 
     input1: getNumericInputVM(
       ...getSubStoreWProduce(state, setState, x => x.form.input1)
     ),
-    // todo better way to map these?
-    inputsArr: state.form.inputsArr.map((x, i) => {
+    inputsArr: () => state.form.inputsArr.map((x, i) => {
+      console.log("recreating array vms");
       return getNumericInputVM(
         ...getSubStoreWProduce(state, setState, x => x.form.inputsArr[i])
       )
@@ -49,7 +49,7 @@ const App: Component = () => {
           vm={vm().input1}
         />
       </div>
-      <For each={vm().inputsArr}>{(inputVM, i) =>
+      <For each={vm().inputsArr()}>{(inputVM, i) =>
         <div>
           <NumericInputComponent
             vm={inputVM}
