@@ -20,7 +20,9 @@ export function InputComponent(props: {
             {...props.inputAttributes}
             classList={{
                 ...props.inputAttributes?.classList,
-                invalid: !_isValid()
+                invalid: !_isValid(),
+                touched: inputState().isTouched,
+                pristine: inputState().committedValue === inputState().pristineValue
             }}
             value={
                 inputState().uncommittedValue

@@ -3,6 +3,7 @@ import { addReasonToDisable, Validator, InputState, removeReasonToDisable, reset
 export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
     getState: () => InputState<TModel, TInput>,
     updateState: (update: (stateDraft: InputState<TModel, TInput>) => void) => void,
+    modelToDisplayValue: (val: TModel) => TDisplay,
     parseInput: (val: TInput) => { 
         status: "parsed",
         parsed: TModel 
@@ -10,8 +11,8 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
         status: "error",
         message: string,
     },
-    modelToDisplayValue: (val: TModel) => TDisplay,
-    validators: Validator<TModel>[]
+    
+    validators: Validator<TModel>[] = []
 ) {
     const bindFnToState = <TRestArgs extends any[], TReturn>(
         fn: (state: InputState<TModel, TInput>, ...args: TRestArgs) => TReturn

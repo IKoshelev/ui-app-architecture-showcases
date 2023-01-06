@@ -38,6 +38,7 @@ export const getNumericInputVM = (
 ) => getUserInputVM(
     getState,
     updateState,
+    (val) => (val ?? "").toString(),
     (val) => {
         const expanded = expandMagnitudeShortcuts(val);
         const num = Number(expanded);
@@ -53,7 +54,6 @@ export const getNumericInputVM = (
             parsed: num
         }
     },
-    (val) => (val ?? "").toString(),
     validators);
 
 export type NumericUserInputVM = ReturnType<typeof getNumericInputVM>;

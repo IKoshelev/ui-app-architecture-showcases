@@ -3,14 +3,35 @@ import { createStore, produce } from 'solid-js/store';
 
 import styles from './App.module.scss'; import { clockStore } from './stores/clock.store';
 import { InputComponent } from './generic-components/Input.component';
-import { getInputState, InputState } from './generic-components/UserInput.pure';
-import { getNumericInputVM, numberValidatorFns } from './generic-components/NumericUserInput.vm';
+import { getInputState, InputState } from './generic-components/input-models/UserInput.pure';
+import { getNumericInputVM, numberValidatorFns } from './generic-components/input-models/NumericUserInput.vm';
 import { getDeeperSubStore, getSubStoreFromStore } from './util/subStore';
+import { getUserInputVM } from './generic-components/input-models/UserInput.vm';
+import { SelectDropdown } from './generic-components/SelectDropdown.component';
+
+type ItemWithId = {
+  id: string,
+  description: string
+}
+
+const items: ItemWithId[] = [{
+  id: "1",
+  description: "apple"
+},{
+  id: "2",
+  description: "orange"
+},{
+  id: "3",
+  description: "banana"
+}]
 
 const [storeState, setStoreState] = createStore({
   form: {
-    input1: getInputState<number | undefined, string>(undefined),
-    inputsArr: [] as InputState<number | undefined, string>[]
+    numberInput: getInputState<number | undefined, string>(undefined),
+    arrayOfNumberInputs: [] as InputState<number | undefined, string>[],
+    wholeItemInput: getInputState<ItemWithId | undefined, ItemWithId>(undefined),
+    itemDescriptionInput: getInputState<string | undefined, ItemWithId>(undefined),
+    stringInput: getInputState<string | undefined, string>(undefined),
   }
 });
 
@@ -19,26 +40,41 @@ const subStore1 = getSubStoreFromStore(
   setStoreState, 
   x => x.form);
 
-  const subStore2 = getDeeperSubStore(...subStore1, x => x.input1);
+  const subStore2 = getDeeperSubStore(...subStore1, x => x.numberInput);
 
 export function appVm(state: typeof storeState, setState: typeof setStoreState) {
 
   console.log("recreating entire vm");
   return {
     // todo add vm memoization with weak map? 
-    input1: getNumericInputVM(
-      ...getSubStoreFromStore(state, setState, x => x.form.input1),
+    numberInput: getNumericInputVM(
+      ...getSubStoreFromStore(state, setState, x => x.form.numberInput),
       [
         numberValidatorFns.integer(),
         numberValidatorFns.between(10,20)
       ]
     ),
-    inputsArr: () => state.form.inputsArr.map((x, i) => {
+    arrayOfNumberInputs: () => state.form.arrayOfNumberInputs.map((x, i) => {
       console.log("recreating array vms");
       return getNumericInputVM(
-        ...getSubStoreFromStore(state, setState, x => x.form.inputsArr[i])
+        ...getSubStoreFromStore(state, setState, x => x.form.arrayOfNumberInputs[i])
       )
-    })
+    }),
+    wholeItemInput: getUserInputVM<ItemWithId | undefined, ItemWithId, string>(
+      ...getSubStoreFromStore(state, setState, x => x.form.wholeItemInput),
+      (m) => m?.description ?? "",
+      (v) => ({ status: "parsed", parsed: v})
+    ),
+    itemDescriptionInput: getUserInputVM<string | undefined, ItemWithId, string>(
+      ...getSubStoreFromStore(state, setState, x => x.form.itemDescriptionInput),
+      (m) => m ?? "",
+      (v) => ({ status: "parsed", parsed: v.description})
+    ),
+    stringInput: getUserInputVM<string | undefined, string, string>(
+      ...getSubStoreFromStore(state, setState, x => x.form.stringInput),
+      (m) => m ?? "",
+      (v) => ({ status: "parsed", parsed: v})
+    )
   };
 }
 
@@ -57,10 +93,35 @@ const App: Component = () => {
       </header>
       <div>
         <InputComponent
-          vm={vm().input1}
+          vm={vm().numberInput}
         />
       </div>
-      <For each={vm().inputsArr()}>{(inputVM, i) =>
+      <div>
+        <SelectDropdown
+          vm={vm().wholeItemInput}
+          getItemId={(i) => i.id}
+          getItemDescription={(i) => i.description}
+          availableItems={items}
+          hasEmptyOption={true}
+        />
+      </div>
+      <div>
+        <SelectDropdown
+          vm={vm().itemDescriptionInput}
+          getItemId={(i) => i.id}
+          getItemDescription={(i) => i.description}
+          availableItems={items}
+          hasEmptyOption={true}
+        />
+      </div>
+      <div>
+        <SelectDropdown
+          vm={vm().stringInput}
+          availableItems={items.map(x => x.description)}
+          hasEmptyOption={true}
+        />
+      </div>
+      <For each={vm().arrayOfNumberInputs()}>{(inputVM, i) =>
         <div>
           <InputComponent
             vm={inputVM}
@@ -69,7 +130,7 @@ const App: Component = () => {
       </For>
       <button
         onClick={() => setStoreState(produce(draft => {
-          draft.form.inputsArr.push(
+          draft.form.arrayOfNumberInputs.push(
             getInputState<number | undefined, string>(undefined)
           );
         }))}
