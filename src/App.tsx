@@ -1,7 +1,8 @@
 import { Component, createMemo, For } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 
-import styles from './App.module.scss'; import { clockStore } from './stores/clock.store';
+import styles from './App.module.scss'; 
+import { clockStore } from './stores/clock.store';
 import { InputComponent } from './generic-components/Input.component';
 import { getInputState, InputState } from './generic-components/input-models/UserInput.pure';
 import { getNumericInputVM, numberValidatorFns } from './generic-components/input-models/NumericUserInput.vm';
@@ -63,6 +64,8 @@ export function appVm(state: typeof storeState, setState: typeof setStoreState) 
         ...getSubStoreFromStore(state, setState, x => x.form.arrayOfNumberInputs[i])
       )
     }),
+    // in a prod project, following vms would have specialized 
+    // factory functions for brevity
     wholeItemInput: getUserInputVM<ItemWithId | undefined, ItemWithId, string>(
       ...getSubStoreFromStore(state, setState, x => x.form.wholeItemInput),
       (m) => m?.description ?? "",
