@@ -3,7 +3,7 @@ import { createFunctionMemo } from "../util/createFunctionMemo";
 import { isDisabled, isValid } from "./input-models/UserInput.pure";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
-type SelectDropdownProps<TModel, TItem> =
+type SelectMultipleProps<TModel, TItem> =
     {
         selectAttributes?: JSX.HTMLAttributes<HTMLSelectElement>,
         messagesContainerAttributes?: JSX.HTMLAttributes<HTMLDivElement>,
@@ -11,23 +11,14 @@ type SelectDropdownProps<TModel, TItem> =
         availableItems: TItem[],
         getItemId?: (item: TItem) => string,
         getItemDescription?: (item: TItem) => string,
-        onBlurAdditional?: () => void,
-    }
-    & ({
-        hasEmptyOption: false,
-        vm: UserInputVM<TModel, TItem, unknown>,
         getModelId?: (item: TModel) => string,
-        onChangeAdditional?: (newVal: TItem) => void,
-    } | {
-        hasEmptyOption: true,
-        vm: UserInputVM<TModel | undefined, TItem, unknown>,
-        getModelId?: (item: TModel | undefined) => string,
-        emptyPlaceholder?: string,
-        onChangeAdditional?: (newVal: TItem | undefined) => void,
-    });
+        vm: UserInputVM<TModel[], TItem[], unknown>,
+        onChangeAdditional?: (newVal: TItem[]) => void, 
+        onBlurAdditional?: () => void,
+    };
 
-export function SelectDropdown<TModel, TItem>(
-    props: SelectDropdownProps<TModel, TItem>) {
+export function SelectMultiple<TModel, TItem>(
+    props: SelectMultipleProps<TModel, TItem>) {
 
     const inputState = createMemo(() => props.vm.getState());
     const _isValid = createMemo(() => isValid(inputState()));
@@ -46,23 +37,24 @@ export function SelectDropdown<TModel, TItem>(
             (i) => id === getItemId(i)
         );
 
-        if (props.hasEmptyOption !== true && selectedItem === undefined) {
+        if (selectedItem === undefined) {
             throw new Error();
         }
 
         return selectedItem;
     }
 
-    const selectedId = createMemo(() => {
+    const selectedIds = createMemo(() => {
         const uncommittedValue = inputState().uncommittedValue;
 
         if (uncommittedValue !== undefined) {
-            return getItemId(uncommittedValue);
+            return uncommittedValue.map(x => getItemId(x));
         }
 
         const committedValue = inputState().committedValue;
 
-        return props.getModelId?.(committedValue!) ?? committedValue ?? "";
+        return committedValue.map(x => 
+            props.getModelId?.(x) ?? x?.toString() ?? "" );
     });
 
     return <>
@@ -74,28 +66,27 @@ export function SelectDropdown<TModel, TItem>(
                 touched: inputState().isTouched,
                 pristine: inputState().committedValue === inputState().pristineValue
             }}
-            value={selectedId()}
             disabled={isDisabled(inputState())}
+            multiple={true}
             onChange={(e) => {
-                const selectedItem = getSelectItemFromId(e.currentTarget.value);
-                props.vm.setCurrentUnsavedValue(selectedItem);
-                props.onChangeAdditional?.(selectedItem!);
+                const selectedItems =
+                    [...e.currentTarget.selectedOptions].map(x =>  getSelectItemFromId(x.value));
+                props.vm.setCurrentUnsavedValue(selectedItems);
+                props.onChangeAdditional?.(selectedItems);
             }}
             onBlur={(e) => {
                 props.vm.tryCommitValue();
                 props.onBlurAdditional?.();
             }}
         >
-            <Show when={props.hasEmptyOption}>
-                <option value={''}>
-                    {props.hasEmptyOption && props.emptyPlaceholder}
-                </option>
-            </Show>
             <For each={props.availableItems}>{
                 (item, i) => {
                     const id = getItemId(item);
                     const description = getItemDescription(item);
-                    return <option value={id}>
+                    return <option 
+                            value={id}
+                            selected={selectedIds().includes(id)}
+                        >
                         {description}
                     </option>
                 }}

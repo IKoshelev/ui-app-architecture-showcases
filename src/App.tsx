@@ -8,6 +8,7 @@ import { getNumericInputVM, numberValidatorFns } from './generic-components/inpu
 import { getDeeperSubStore, getSubStoreFromStore } from './util/subStore';
 import { getUserInputVM } from './generic-components/input-models/UserInput.vm';
 import { SelectDropdown } from './generic-components/SelectDropdown.component';
+import { SelectMultiple } from './generic-components/SelectMultiple.component';
 
 type ItemWithId = {
   id: string,
@@ -32,6 +33,8 @@ const [storeState, setStoreState] = createStore({
     wholeItemInput: getInputState<ItemWithId | undefined, ItemWithId>(undefined),
     itemDescriptionInput: getInputState<string | undefined, ItemWithId>(undefined),
     stringInput: getInputState<string | undefined, string>(undefined),
+    multipleOptionsInput: getInputState<string[], ItemWithId[]>([]),
+    multipleStringInput: getInputState<string[], string[]>([]),
   }
 });
 
@@ -74,7 +77,17 @@ export function appVm(state: typeof storeState, setState: typeof setStoreState) 
       ...getSubStoreFromStore(state, setState, x => x.form.stringInput),
       (m) => m ?? "",
       (v) => ({ status: "parsed", parsed: v})
-    )
+    ),
+    multipleOptionsInput:  getUserInputVM<string[], ItemWithId[], any>(
+      ...getSubStoreFromStore(state, setState, x => x.form.multipleOptionsInput),
+      (m) => m ?? "",
+      (v) => ({ status: "parsed", parsed: v.map(x => x.id)})
+    ),
+    multipleStringInput: getUserInputVM<string[], string[], any>(
+      ...getSubStoreFromStore(state, setState, x => x.form.multipleStringInput),
+      (m) => m ?? "",
+      (v) => ({ status: "parsed", parsed: v})
+    ),
   };
 }
 
@@ -121,6 +134,21 @@ const App: Component = () => {
           vm={vm().stringInput}
           availableItems={items.map(x => x.description)}
           hasEmptyOption={true}
+        />
+      </div>
+      <div>
+        <SelectMultiple
+          vm={vm().multipleOptionsInput}
+          getItemId={(i) => i.id}
+          getItemDescription={(i) => i.description}
+          getModelId={(i) => i ?? ""}
+          availableItems={items}
+        />
+      </div>
+      <div>
+        <SelectMultiple
+          vm={vm().multipleStringInput}
+          availableItems={items.map(x => x.description)}
         />
       </div>
       <For each={vm().arrayOfNumberInputs()}>{(inputVM, i) =>
