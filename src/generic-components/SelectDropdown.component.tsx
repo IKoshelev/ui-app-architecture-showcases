@@ -6,10 +6,10 @@ import { UserInputVM } from "./input-models/UserInput.vm";
 type SelectDropdownProps<TModel, TItem> =
     {
         selectAttributes?: JSX.HTMLAttributes<HTMLSelectElement>,
-        messageAttributes?: JSX.HTMLAttributes<HTMLDivElement>,  
+        messageAttributes?: JSX.HTMLAttributes<HTMLDivElement>,
 
         availableItems: TItem[],
-        getItemId?: (item: TItem) => string,  
+        getItemId?: (item: TItem) => string,
         getItemDescription?: (item: TItem) => string,
         onBlurAdditional?: () => void,
     }
@@ -27,16 +27,16 @@ type SelectDropdownProps<TModel, TItem> =
     });
 
 export function SelectDropdown<TModel, TItem>(
-    props: SelectDropdownProps<TModel,TItem>) {
+    props: SelectDropdownProps<TModel, TItem>) {
 
     const inputState = createMemo(() => props.vm.getState());
     const _isValid = createMemo(() => isValid(inputState()));
 
-    const getItemId = createFunctionMemo(() => 
+    const getItemId = createFunctionMemo(() =>
         props.getItemId ?? ((x: any) => x?.toString() ?? "")
     );
 
-    const getItemDescription = createFunctionMemo(() => 
+    const getItemDescription = createFunctionMemo(() =>
         props.getItemDescription ?? ((x: any) => x?.toString() ?? "")
     );
 
@@ -48,7 +48,7 @@ export function SelectDropdown<TModel, TItem>(
 
         if (props.hasEmptyOption !== true && selectedItem === undefined) {
             throw new Error();
-        } 
+        }
 
         return selectedItem;
     }
@@ -56,8 +56,7 @@ export function SelectDropdown<TModel, TItem>(
     const value = createMemo(() => {
         const uncommittedValue = inputState().uncommittedValue;
 
-        if (uncommittedValue !== undefined)
-        {
+        if (uncommittedValue !== undefined) {
             return getItemId(uncommittedValue);
         }
 
@@ -79,20 +78,15 @@ export function SelectDropdown<TModel, TItem>(
             disabled={isDisabled(inputState())}
             onChange={(e) => {
                 const selectedItem = getSelectItemFromId(e.currentTarget.value);
-
                 props.vm.setCurrentUnsavedValue(selectedItem);
                 props.onChangeAdditional?.(selectedItem!);
-
             }}
             onBlur={(e) => {
                 props.vm.tryCommitValue();
                 props.onBlurAdditional?.();
-
             }}
         >
-            <Show
-                when={props.hasEmptyOption}
-            >
+            <Show when={props.hasEmptyOption}>
                 <option value={''}>
                     {props.hasEmptyOption && props.emptyPlaceholder}
                 </option>
@@ -101,12 +95,9 @@ export function SelectDropdown<TModel, TItem>(
                 (item, i) => {
                     const id = getItemId(item);
                     const description = getItemDescription(item);
-
-                    return <option
-                        value={id}
-                    >
+                    return <option value={id}>
                         {description}
-                </option>
+                    </option>
                 }}
             </For>
         </select>
@@ -116,8 +107,8 @@ export function SelectDropdown<TModel, TItem>(
         >
             <div {...props.messageAttributes}>
                 <For each={inputState().messages}>{(message, i) =>
-                        <div>{message.type}: {message.message}</div>
-                    }
+                    <div>{message.type}: {message.message}</div>
+                }
                 </For>
             </div>
         </Show>
