@@ -15,10 +15,10 @@ export type FinancingNotApproved = {
     message: string
 }
 
-type GetApprovalResult = FinancingApproved | FinancingNotApproved;
+export type GetApprovalResult = FinancingApproved | FinancingNotApproved;
 
 
-const approvedFinacings: FinancingApproved[] = [];
+const approvedFinancings: FinancingApproved[] = [];
 
 function getApprovedFinancing(expiration?: Date) {
 
@@ -28,7 +28,7 @@ function getApprovedFinancing(expiration?: Date) {
         approvalToken: Math.random().toString()
     };
 
-    approvedFinacings.push(res);
+    approvedFinancings.push(res);
 
     return res
 }
@@ -113,7 +113,7 @@ class FinancingClient {
 
         await delay(500);
 
-        return approvedFinacings.some(x =>
+        return approvedFinancings.some(x =>
             x.approvalToken === approvalToken
             && (!x.expiration || x.expiration >= new Date())
         )

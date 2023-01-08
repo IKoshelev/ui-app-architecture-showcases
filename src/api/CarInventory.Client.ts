@@ -8,8 +8,8 @@ export type CarModel = {
 
 class CarInventoryClient {
 
-    public async getAvaliableCarModels(): Promise<CarModel[]> {
-        console.log(`server call getAvaliableCarModels`);
+    public async getAvailableCarModels(): Promise<CarModel[]> {
+        console.log(`server call getAvailableCarModels`);
         await delay(500);
         return [
             {
@@ -32,4 +32,4 @@ class CarInventoryClient {
 }
 
 
-export const carInvenotryClient = new CarInventoryClient();
+export const carInventoryClient = new CarInventoryClient();

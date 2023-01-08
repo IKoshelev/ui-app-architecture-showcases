@@ -1,8 +1,8 @@
-import { addReasonToDisable, Validator, InputState, removeReasonToDisable, resetValueToPristine, revalidateCommittedValue, setCurrentUnsavedValue, tryCommitValue } from "./UserInput.pure";
+import { addReasonToDisable, Validator, UserInputState, removeReasonToDisable, resetValueToPristine, revalidateCommittedValue, setCurrentUnsavedValue, tryCommitValue } from "./UserInput.pure";
 
 export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
-    getState: () => InputState<TModel, TInput>,
-    updateState: (update: (stateDraft: InputState<TModel, TInput>) => void) => void,
+    getState: () => UserInputState<TModel, TInput>,
+    updateState: (update: (stateDraft: UserInputState<TModel, TInput>) => void) => void,
     modelToDisplayValue: (val: TModel) => TDisplay,
     parseInput: (val: TInput) => { 
         status: "parsed",
@@ -15,7 +15,7 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
     validators: Validator<TModel>[] = []
 ) {
     const bindFnToState = <TRestArgs extends any[], TReturn>(
-        fn: (state: InputState<TModel, TInput>, ...args: TRestArgs) => TReturn
+        fn: (state: UserInputState<TModel, TInput>, ...args: TRestArgs) => TReturn
     ) => (...args: TRestArgs) => {
         let ret: TReturn;
         updateState((draft) => { ret = fn(draft, ...args); })

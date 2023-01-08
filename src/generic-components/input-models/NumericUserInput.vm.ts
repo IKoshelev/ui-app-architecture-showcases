@@ -1,5 +1,5 @@
 import { expandMagnitudeShortcuts } from "../../util/numeric";
-import { Validator, numberValidator, getInputState, InputState } from "./UserInput.pure";
+import { Validator, validator, getUserInputState, UserInputState } from "./UserInput.pure";
 import { getUserInputVM } from "./UserInput.vm";
 
 // Normally there would be versions for both Number and Number | undefined.
@@ -7,22 +7,22 @@ import { getUserInputVM } from "./UserInput.vm";
 
 export const numberValidatorFns = {
 
-    integer:() => numberValidator(
+    integer:() => validator(
         "numberValidator.integer",
         (val: number | undefined) => typeof val !== 'number' || Number.isInteger(val),
         (val: number | undefined) =>`Value ${val} must be an integer`),
     
-    positive:() => numberValidator(
+    positive:() => validator(
         "numberValidator.positive",
         (val: number | undefined) => typeof val !== 'number' || val < 0,
         (val: number | undefined) => `Value ${val} must be positive`),
     
-    lessThan:(bound: number) => numberValidator(
+    lessThan:(bound: number) => validator(
         "numberValidator.lessThan",
         (val: number | undefined) => typeof val !== 'number' || val >= bound,
         (val: number | undefined) => `Value ${val} must be less than ${bound}`),
 
-    between:(loverBound: number, upperBound: number) => numberValidator(
+    between:(loverBound: number, upperBound: number) => validator(
         "numberValidator.between",
         (val: number | undefined) => typeof val !== 'number' || (loverBound < val && val < upperBound),
         (val: number | undefined) => `Value ${val} must be between ${loverBound} and ${upperBound}`),
@@ -32,8 +32,8 @@ export const numberValidatorFns = {
 
 
 export const getNumericInputVM = (
-    getState: () => InputState<number | undefined, string>,
-    updateState: (update: (stateDraft: InputState<number | undefined, string>) => void) => void,
+    getState: () => UserInputState<number | undefined, string>,
+    updateState: (update: (stateDraft: UserInputState<number | undefined, string>) => void) => void,
     validators: Validator<number | undefined>[] = []
 ) => getUserInputVM(
     getState,

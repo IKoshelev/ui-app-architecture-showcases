@@ -4,7 +4,7 @@ import { createStore, produce } from 'solid-js/store';
 import styles from './App.module.scss'; 
 import { clockStore } from './stores/clock.store';
 import { InputComponent } from './generic-components/Input.component';
-import { getInputState, InputState } from './generic-components/input-models/UserInput.pure';
+import { getUserInputState, UserInputState } from './generic-components/input-models/UserInput.pure';
 import { getNumericInputVM, numberValidatorFns } from './generic-components/input-models/NumericUserInput.vm';
 import { getDeeperSubStore, getSubStoreFromStore } from './util/subStore';
 import { getUserInputVM } from './generic-components/input-models/UserInput.vm';
@@ -29,13 +29,13 @@ const items: ItemWithId[] = [{
 
 const [storeState, setStoreState] = createStore({
   form: {
-    numberInput: getInputState<number | undefined, string>(undefined),
-    arrayOfNumberInputs: [] as InputState<number | undefined, string>[],
-    wholeItemInput: getInputState<ItemWithId | undefined, ItemWithId>(undefined),
-    itemDescriptionInput: getInputState<string | undefined, ItemWithId>(undefined),
-    stringInput: getInputState<string | undefined, string>(undefined),
-    multipleOptionsInput: getInputState<string[], ItemWithId[]>([]),
-    multipleStringInput: getInputState<string[], string[]>([]),
+    numberInput: getUserInputState<number | undefined, string>(5),
+    arrayOfNumberInputs: [] as UserInputState<number | undefined, string>[],
+    wholeItemInput: getUserInputState<ItemWithId | undefined, ItemWithId>(undefined),
+    itemDescriptionInput: getUserInputState<string | undefined, ItemWithId>(undefined),
+    stringInput: getUserInputState<string | undefined, string>(undefined),
+    multipleOptionsInput: getUserInputState<string[], ItemWithId[]>([]),
+    multipleStringInput: getUserInputState<string[], string[]>([]),
   }
 });
 
@@ -164,7 +164,7 @@ const App: Component = () => {
       <button
         onClick={() => setStoreState(produce(draft => {
           draft.form.arrayOfNumberInputs.push(
-            getInputState<number | undefined, string>(undefined)
+            getUserInputState<number | undefined, string>(undefined)
           );
         }))}
       >Add numeric input</button>

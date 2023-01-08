@@ -1,20 +1,47 @@
-export const PARSING_ERROR = "PARSING_ERROR";
+import { iterateDeep, transform } from "../../util/walkers";
+import { ExpandDeep } from 'ts-mapping-types';
+import cloneDeep from "lodash.clonedeep";
+import { unwrap } from "solid-js/store";
+import { DisplayMessage, spliceMessage } from "../../util/validAndDisabled";
 
-export type InputMessage = {
-    code: string,
-    type: "error" | "warning",
-    message: string,
+export const inputStateMarker = "solidjsdemo:UserInputState:";
+
+export type InputStateMarker = `${typeof inputStateMarker}${string}`;
+
+export function getUserInputState<TModel, TInput = any>(
+    initialValue: TModel
+) {
+    return {
+        __type: inputStateMarker as InputStateMarker,
+        uncommittedValue: undefined as TInput | undefined,
+        committedValue: initialValue,
+        pristineValue: initialValue,
+        isTouched: false,
+        reasonsToDisable: {} as Record<string, true>,
+        messages: [] as DisplayMessage[]
+    }
 }
+
+export type UserInputState<TModel, TInput = any> = ReturnType<typeof getUserInputState<TModel, TInput>>;
+
+export function isUserInputState(target: any): target is UserInputState<unknown, unknown> {
+    return typeof target === "object" 
+        && typeof target.__type === "string" 
+        && target.__type.startsWith(inputStateMarker);
+}
+
+
+export const PARSING_ERROR = "PARSING_ERROR";
 
 export type Validator<TModel> = (val: TModel) => {
     status: "invalid",
-    message: InputMessage
+    message: DisplayMessage
 } | {
     status: "valid",
     code: string
 }
 
-export const numberValidator = <TModel>(
+export const validator = <TModel>(
     code: string,
     validWhen: (val: TModel) => boolean,
     messageFn: (val: TModel) => string): Validator<TModel> =>
@@ -34,75 +61,10 @@ export const numberValidator = <TModel>(
             status: "valid",
             code
         }
-
     }
-
-export function getInputState<TModel, TInput = any>(
-    initialValue: TModel
-) {
-    return {
-        uncommittedValue: undefined as TInput | undefined,
-        committedValue: initialValue,
-        pristineValue: initialValue,
-        isTouched: false,
-        reasonsToDisable: {} as {
-            [reason: string]: true
-        },
-        messages: [] as InputMessage[]
-    }
-}
-
-export type InputState<TModel, TInput = any> = ReturnType<typeof getInputState<TModel, TInput>>;
-
-export function isDisabled<TModel, TInput = any>(
-    state: InputState<TModel, TInput>) {
-    return Object.keys(state.reasonsToDisable).length > 0;
-}
-
-export function isValid<TModel, TInput = any>(
-    state: InputState<TModel, TInput>){
-    return state.messages.some(x => x.type === "error");
-}
-
-export function addReasonToDisable<TModel, TInput = any>(
-    state: InputState<TModel, TInput>,
-    reason: string) {
-    state.reasonsToDisable[reason] = true;
-}
-
-export function removeReasonToDisable<TModel, TInput = any>(
-    state: InputState<TModel, TInput>,
-    reason: string) {
-    delete state.reasonsToDisable[reason];
-}
-
-export function spliceMessage(
-    messages: InputMessage[],
-    code: string,
-    newMessage?: InputMessage) {
-
-    const previousParsingErrorIndex = messages.findIndex(x => x.code === code);
-
-    if(previousParsingErrorIndex === -1)
-    {
-        if (newMessage){
-            messages.push(newMessage);
-            return 'added new message';
-        }
-        return 'no changes';
-    }
-
-    if (newMessage) {
-        messages[previousParsingErrorIndex].message = newMessage.message;
-        return 'updated existing message';
-    } else {
-        messages.splice(previousParsingErrorIndex, 1);
-        return 'removed message';
-    }
-}
 
 export function setCurrentUnsavedValue<TModel, TInput = any>(
-    state: InputState<TModel, TInput>,
+    state: UserInputState<TModel, TInput>,
     newUnsavedValue: TInput | undefined,
     setTouched = true) {
     state.uncommittedValue = newUnsavedValue;
@@ -113,18 +75,18 @@ export function setCurrentUnsavedValue<TModel, TInput = any>(
 }
 
 export function isPristine<TModel, TInput = any>(
-    state: InputState<TModel, TInput>
+    state: UserInputState<TModel, TInput>
 ){
     return state.committedValue === state.pristineValue;
 }
 
 export function clearMessages<TModel, TInput = any>(
-    state: InputState<TModel, TInput>) {
+    state: UserInputState<TModel, TInput>) {
     state.messages = [];
 }
 
 export function revalidateCommittedValue<TModel, TInput = any>(
-    state: InputState<TModel, TInput>,
+    state: UserInputState<TModel, TInput>,
     validators: Validator<TModel>[]) {
 
     for (const validator of validators) {
@@ -138,7 +100,7 @@ export function revalidateCommittedValue<TModel, TInput = any>(
 }
 
 export function resetValueToPristine<TModel, TInput = any>(
-    state: InputState<TModel, TInput>,
+    state: UserInputState<TModel, TInput>,
     resetIsTouched = true,
     clearMessages = true
 ) {
@@ -153,7 +115,7 @@ export function resetValueToPristine<TModel, TInput = any>(
 }
 
 export function tryCommitValue<TModel, TInput = any>(
-    state: InputState<TModel, TInput>,
+    state: UserInputState<TModel, TInput>,
     parseInput: (val: TInput) => {
         status: "parsed",
         parsed: TModel
@@ -183,4 +145,72 @@ export function tryCommitValue<TModel, TInput = any>(
     state.committedValue = parseResult.parsed;
     state.uncommittedValue = undefined;
     revalidateCommittedValue(state, validators);
+}
+
+export function everyUserInputStateIn(
+    target: object, 
+    check: (val: UserInputState<unknown, unknown>) => boolean) {
+    for (const [_, value] of iterateDeep(target)) {
+        if (isUserInputState(value)) {
+            const res = check(value);
+            if(!res) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+export function anyUserInputStateIn(
+    target: object, 
+    check: (val: UserInputState<unknown, unknown>) => boolean) {
+    for (const [_, value] of iterateDeep(target)) {
+        if (isUserInputState(value)) {
+            const res = check(value);
+            if(res) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+type InputStateValue<T> = Pick<UserInputState<T>, '__type' | 'committedValue'>;
+
+type TryPluckCommittedValue<T> = T extends InputStateValue<infer U> ? U : T;
+
+type TryPluckFromTuple<T> = T extends [infer U, ...infer URest] 
+    ?  [TryPluckCommittedValue<U>, ...TryPluckFromTuple<URest>]
+    : TryPluckCommittedValue<T>;
+
+export type InputStateContainerToPojo<T> = 
+    T extends [infer U, ...infer URest] ? TryPluckFromTuple<T> :
+    T extends (infer U)[] ? InputStateContainerToPojo<U>[] :
+    T extends InputStateValue<infer U> ? U :
+    T extends {} ? {
+        [K in keyof T]: InputStateContainerToPojo<T[K]>
+    } :
+    T;
+
+export function clonePojoWithCommittedValues<T extends object>
+    (objectContainingInputStates: T): ExpandDeep<InputStateContainerToPojo<T>> {
+
+    const clone = cloneDeep(unwrap(objectContainingInputStates));
+
+    for (const sym of Object.getOwnPropertySymbols(clone)) {
+        delete (clone as any)[sym];
+    }
+
+    transform(clone, (key, parent, pathToParent) => {
+
+        const val = parent[key];
+        if (isUserInputState(val)) {
+            parent[key] = val.committedValue;
+            return false;
+        }
+
+        return true;
+    })
+
+    return clone as any;
 }

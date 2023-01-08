@@ -19,3 +19,55 @@
     grid-template-columns:  1fr;
     grid-template-rows:  auto auto;
 }
+
+
+.screens>.tabs {
+    grid-row: 1;
+    grid-column: 1 / span 3;
+
+    display: flex;
+    flex-direction: row;
+
+}
+
+.screens>.tabs::after {
+    border-bottom: 2px solid black;
+    content: ' ';
+    flex-grow: 2;
+} 
+
+.screens>.tabs>.deal-tab-header {
+    border: 2px solid black;
+    flex-grow: 0;
+    min-width: 6em;
+    text-align: center;
+    display: flex;
+    flex-direction: row;
+}
+
+.screens>.tabs>.deal-tab-header.active {
+    font-weight: bold;
+    border-bottom: 2px solid #ffffff00;
+}
+
+.screens>.tabs>.deal-tab-header>.header-text {
+    flex-grow: 1;
+    overflow: hidden;
+    padding-left: 2px;
+    padding-right: 2px;
+    font-size: 0.8em;
+}
+
+.screens>.tabs>.deal-tab-header>.close-button {
+    flex-grow: 0;
+}
+
+.screens>.active-tab {
+    grid-row: 2;
+    grid-column: 1;
+
+    border-left: 2px solid black;
+    border-bottom: 2px solid black;
+    border-right: 2px solid black;
+    
+}

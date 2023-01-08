@@ -12,8 +12,8 @@ export type InsurancePlan = {
 }
 
 class CarInsuranceClient {
-    public async getAvaliableInsurancePlans(): Promise<InsurancePlan[]> {
-        console.log(`server call getAvaliableInsurancePlans`);
+    public async getAvailableInsurancePlans(): Promise<InsurancePlan[]> {
+        console.log(`server call getAvailableInsurancePlans`);
         await delay(1500);
         return [{
             type: InsurancePlanType.base,

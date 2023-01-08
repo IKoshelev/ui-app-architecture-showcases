@@ -1,10 +1,12 @@
 import { produce, SetStoreFunction } from "solid-js/store";
 
+export type SubStore<TState> = readonly [() => TState, (update: (draft: TState) => void) => void];
+
 export function getSubStoreFromStore<TStore, TSubStore>(
     store: TStore,
     setStore: SetStoreFunction<TStore>,
     getter: (store: TStore) => TSubStore
-  ) {
+  ): SubStore<TSubStore> {
   
     return [
       () => getter(store),
@@ -19,7 +21,7 @@ export function getSubStoreFromStore<TStore, TSubStore>(
     getState: () => TStore,
     setState: (update: (draft: TStore) => void) => void,
     getter: (store: TStore) => TSubStore
-  ) {
+  ): SubStore<TSubStore> {
   
     return [
       () => getter(getState()),
