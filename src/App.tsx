@@ -12,12 +12,19 @@ import { DealComponent } from './stores/deals/Deal/Deal.component';
 import { getDealForeignCurrencyVM } from './stores/deals/DealForeignCurrency/DealForeignCurrency.vm';
 import { getDealVM } from './stores/deals/Deal/Deal.vm';
 import { unwrap } from 'solid-js/store';
+import { cloneWithoutSymbols } from './util/walkers';
 
 (window as any).getDealsStore = () => console.log(
   unwrap(dealsStore[0]())
 );
 
+(window as any).getApprovalsStore = () => console.log(
+  unwrap(approvalsStore[0]())
+);
+
 start(clockStore);
+
+let savedStores: any = {};
 
 const App: Component = () => {
 
@@ -27,6 +34,18 @@ const App: Component = () => {
 
     <div class='main-logo'>
       Hetman Motors (SolidJS)
+      <button
+        onClick={() => {
+          savedStores.deals = cloneWithoutSymbols(unwrap(dealsStore[0]())),
+          savedStores.approvals = cloneWithoutSymbols(unwrap(approvalsStore[0]()))
+        }}
+      >Save stores</button>
+      <button
+        onClick={() => {
+          dealsStore[1](x => Object.assign(x, savedStores.deals));
+          approvalsStore[1](x => Object.assign(x, savedStores.approvals));
+        }}
+      >load stores</button>
     </div>
 
     <div class='screens'>

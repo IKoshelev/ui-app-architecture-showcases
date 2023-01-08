@@ -1,3 +1,4 @@
+import cloneDeep from "lodash.clonedeep";
 
 export function* iterateDeep(
     target: Record<string, any>, 
@@ -35,4 +36,41 @@ export function transform(
             transform(value, visit, [...path, key]);
         }
     }
-} 
+}
+
+export function removeSymbols<T>(target: any) {
+
+    if (typeof target !== 'object') {
+        return;
+    }
+
+    for(const sym of Object.getOwnPropertySymbols(target)) {
+        delete target[sym];
+    }
+
+    for (const key of Object.keys(target)) {
+        removeSymbols(target[key]);
+    }
+}
+
+// does not handle circular references
+export function cloneWithoutSymbols<T>(val: T): T{
+
+    let clone: any;
+    if (Array.isArray(val)) {
+        clone = [];
+    } else if (val === null) {
+        return null as any;
+    } else if (typeof val === "object"
+        && Object.getPrototypeOf(val) === Object.prototype) {
+        clone = {};
+    } else {
+        return val;
+    }
+
+    for (const key of Object.keys(val)) {
+        clone[key] = cloneWithoutSymbols((val as any)[key]);
+    }
+
+    return clone;
+}
