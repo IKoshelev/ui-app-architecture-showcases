@@ -9,7 +9,7 @@ export const inputStateMarker = "solidjsdemo:UserInputState";
 
 export type InputStateMarker = `${typeof inputStateMarker}${string}`;
 
-export function getUserInputState<TModel, TInput = TModel>(
+export function getUserInputState<TModel, TInput = any>(
     initialValue: TModel
 ) {
     const res = {
@@ -27,7 +27,7 @@ export function getUserInputState<TModel, TInput = TModel>(
     return res;
 }
 
-export type UserInputState<TModel, TInput = TModel> = ReturnType<typeof getUserInputState<TModel, TInput>>;
+export type UserInputState<TModel, TInput = any> = ReturnType<typeof getUserInputState<TModel, TInput>>;
 
 export function isUserInputState(target: any): target is UserInputState<unknown, unknown> {
     return typeof target === "object"
@@ -67,7 +67,7 @@ export const validator = <TModel>(
         }
     }
 
-export function setCurrentUnsavedValue<TModel, TInput = TModel>(
+export function setCurrentUncommittedValue<TModel, TInput = any>(
     state: UserInputState<TModel, TInput>,
     newUnsavedValue: TInput,
     setTouched = true) {
@@ -79,18 +79,18 @@ export function setCurrentUnsavedValue<TModel, TInput = TModel>(
     }
 }
 
-export function isPristine<TModel, TInput = TModel>(
+export function isPristine<TModel, TInput = any>(
     state: UserInputState<TModel, TInput>
 ) {
     return state.committedValue === state.pristineValue;
 }
 
-export function clearMessages<TModel, TInput = TModel>(
+export function clearMessages<TModel, TInput = any>(
     state: UserInputState<TModel, TInput>) {
     state.messages = [];
 }
 
-export function revalidateCommittedValue<TModel, TInput = TModel>(
+export function revalidateCommittedValue<TModel, TInput = any>(
     state: UserInputState<TModel, TInput>,
     validators: Validator<TModel>[]) {
 
@@ -104,7 +104,7 @@ export function revalidateCommittedValue<TModel, TInput = TModel>(
     }
 }
 
-export function resetValueToPristine<TModel, TInput = TModel>(
+export function resetValueToPristine<TModel, TInput = any>(
     state: UserInputState<TModel, TInput>,
     resetIsTouched = true,
     clearMessages = true
@@ -119,7 +119,7 @@ export function resetValueToPristine<TModel, TInput = TModel>(
     }
 }
 
-export function tryCommitValue<TModel, TInput = TModel>(
+export function tryCommitValue<TModel, TInput = any>(
     state: UserInputState<TModel, TInput>,
     parseInput: (val: TInput) => {
         status: "parsed",

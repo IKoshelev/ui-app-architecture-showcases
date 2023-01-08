@@ -1,15 +1,15 @@
 import { getDeeperSubStore, SubStore } from "../../../util/subStore";
 import { canRequestMinimumDownpayment, Deal, getDealProgressState, getFinalPrice, getGeneralValidation, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, areDealBusinessParamsValid } from "./Deal.pure";
 import { runFlow, isLoading, isValid } from '../../../util/validation-flows-messages';
-import { carInventoryClient } from "../../../api/CarInventory.Client";
-import { carInsuranceClient } from "../../../api/CarInsurance.Client";
+import { carInventoryClient, CarModel } from "../../../api/CarInventory.Client";
+import { carInsuranceClient, InsurancePlan } from "../../../api/CarInsurance.Client";
 import { resetValueToPristine } from "../../../generic-components/input-models/UserInput.pure";
 import { financingClient } from "../../../api/Financing.Client";
 import { ApprovalsStoreRoot, getLatestMatchingApproval, storeApprovalReqStatus } from "../../approval.store";
 import { createMemo } from "solid-js";
 import { ClockStoreRoot } from "../../clock.store";
 import { canBeFinalized, prepareRequestApprovalCall } from "./Deal.pure";
-import { getUserInputVM } from "../../../generic-components/input-models/UserInput.vm";
+import { acceptAllParser, getUserInputVM } from "../../../generic-components/input-models/UserInput.vm";
 import { getNumericInputVM, numberValidatorFns } from "../../../generic-components/input-models/NumericUserInput.vm";
 import { DealsStoreRoot, removeDeal } from "../../deals.store";
 
@@ -63,14 +63,14 @@ export function getDealVM<T extends Deal>(
             }
         },
         subVMS: {
-            insurancePlansSelected: getUserInputVM(
+            insurancePlansSelected: getUserInputVM<InsurancePlan[]>(
                 getDeeperSubStore(dealStore, x => x.businessParams.insurancePlansSelected),
-                (m) => m.map(x => x.type),
-                (v) => ({ status: "parsed", parsed: v })),
-            carModelSelected: getUserInputVM(
+                acceptAllParser,
+                (m) => m.map(x => x.description).join(", ")),
+            carModelSelected: getUserInputVM<CarModel | undefined>(
                 getDeeperSubStore(dealStore, x => x.businessParams.carModelSelected),
-                (m) => m?.description ?? "",
-                (v) => ({ status: "parsed", parsed: v })),
+                acceptAllParser,
+                (m) => m?.description ?? ""),
             downpayment: getNumericInputVM(
                 getDeeperSubStore(dealStore, x => x.businessParams.downpayment),
                 [

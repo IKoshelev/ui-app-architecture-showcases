@@ -45,7 +45,7 @@ const App: Component = () => {
           dealsStore[1](x => Object.assign(x, savedStores.deals));
           approvalsStore[1](x => Object.assign(x, savedStores.approvals));
         }}
-      >load stores</button>
+      >Load stores</button>
     </div>
 
     <div class='screens'>
@@ -136,14 +136,14 @@ const TabHeader = (props: {
   const [getClock, setClock] = props.clockStore;
 
   const headerText = createMemo(() => {
-    const deatState = getDeal();
+    const dealState = getDeal();
     const progressState = getDealProgressState(
       getDeal(),
       getLatestMatchingApproval(getApprovals(), getDeal()),
       getClock().currentDate,
     )
 
-    if (!deatState.businessParams.carModelSelected) {
+    if (!dealState.businessParams.carModelSelected) {
       return `blank deal`
     }
 
@@ -156,7 +156,7 @@ const TabHeader = (props: {
       text = `${diffSeconds(progressState.approvalExpiresAt, getClock().currentDate)} sec`;
     }
 
-    return `${deatState.businessParams.carModelSelected.committedValue?.description ?? "No model selected"} ` +
+    return `${dealState.businessParams.carModelSelected.committedValue?.description ?? "No model selected"} ` +
       `${getHeaderAdditionalDescription(getDeal())}${text}`;
   });
 

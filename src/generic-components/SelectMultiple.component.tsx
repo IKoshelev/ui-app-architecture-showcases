@@ -12,7 +12,7 @@ type SelectMultipleProps<TModel, TItem> =
         getItemId?: (item: TItem) => string,
         getItemDescription?: (item: TItem) => string,
         getModelId?: (item: TModel) => string,
-        vm: UserInputVM<TModel[], TItem[], unknown>,
+        vm: UserInputVM<TModel[], TItem[]>,
         disabled?: boolean,
         onChangeAdditional?: (newVal: TItem[]) => void, 
         onBlurAdditional?: () => void,
@@ -72,7 +72,7 @@ export function SelectMultiple<TModel, TItem>(
             onChange={(e) => {
                 const selectedItems =
                     [...e.currentTarget.selectedOptions].map(x =>  getSelectItemFromId(x.value));
-                props.vm.setCurrentUnsavedValue(selectedItems);
+                props.vm.setCurrentUncommittedValue(selectedItems);
                 props.onChangeAdditional?.(selectedItems);
                 props.vm.tryCommitValue();
             }}

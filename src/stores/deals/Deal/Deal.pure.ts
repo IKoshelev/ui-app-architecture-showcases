@@ -1,5 +1,5 @@
-import { InsurancePlan } from "../../../api/CarInsurance.Client";
-import { CarModel } from "../../../api/CarInventory.Client";
+import type { InsurancePlan } from "../../../api/CarInsurance.Client";
+import type { CarModel } from "../../../api/CarInventory.Client";
 import { financingClient, GetApprovalResult } from "../../../api/Financing.Client";
 import { multimethod } from "multimethod-type-tag-hierarchy";
 import { getUserInputState } from "../../../generic-components/input-models/UserInput.pure";
@@ -13,9 +13,9 @@ export const createBlankDeal = () => ({
     businessParams: {
         dealId: 0,
         isDealFinalized: false,
-        downpayment: getUserInputState<number, string>(0),
-        insurancePlansSelected:  getUserInputState<InsurancePlan[], InsurancePlan[]>([]),
-        carModelSelected:  getUserInputState<CarModel | undefined, CarModel>(undefined),
+        downpayment: getUserInputState<number, any>(0),
+        insurancePlansSelected:  getUserInputState<InsurancePlan[], any>([]),
+        carModelSelected:  getUserInputState<CarModel | undefined, any>(undefined),
     },
     isClosed: false,
     activeFlows: {} as Record<

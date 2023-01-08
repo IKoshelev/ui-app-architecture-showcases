@@ -2,12 +2,12 @@ import { createMemo, For, JSX, Show } from "solid-js";
 import { hasActiveFlows, isValid } from "../util/validation-flows-messages";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
-export function Input(props: {
+export function Input<T>(props: {
     inputAttributes?: JSX.HTMLAttributes<HTMLInputElement>,
     messageAttributes?: JSX.HTMLAttributes<HTMLDivElement>,
     placeholder?: string,
 
-    vm: UserInputVM<any, string, string>,
+    vm: UserInputVM<T, string>,
     onChangeAdditional?: (newVal: string) => void,
     onBlurAdditional?: () => void,
     disabled?: boolean
@@ -28,12 +28,12 @@ export function Input(props: {
             value={
                 inputState().uncommittedValue 
                     ? inputState().uncommittedValue?.value
-                    : props.vm.derivedState.displayValue()
+                    : props.vm.derivedState.customStringValue()
             }
             placeholder={props.placeholder}
             disabled={props.disabled ?? hasActiveFlows(inputState())}
             onChange={(e) => {
-                props.vm.setCurrentUnsavedValue(e.currentTarget.value);
+                props.vm.setCurrentUncommittedValue(e.currentTarget.value);
                 props.onChangeAdditional?.(e.currentTarget.value);
 
             }}

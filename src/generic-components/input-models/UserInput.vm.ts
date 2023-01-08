@@ -1,10 +1,16 @@
 import { SubStore } from "../../util/subStore";
 import { addActiveFlow, removeActiveFlow } from "../../util/validation-flows-messages";
-import { Validator, UserInputState, resetValueToPristine, revalidateCommittedValue, setCurrentUnsavedValue, tryCommitValue } from "./UserInput.pure";
+import { Validator, UserInputState, resetValueToPristine, revalidateCommittedValue, setCurrentUncommittedValue, tryCommitValue } from "./UserInput.pure";
 
-export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
+export function acceptAllParser<T>(val: T) {
+    return {
+        status: "parsed" as const,
+        parsed: val
+    }
+};
+
+export function getUserInputVM<TModel, TInput = TModel>(
     store: SubStore<UserInputState<TModel, TInput>>,
-    modelToDisplayValue: (val: TModel) => TDisplay,
     parseInput: (val: TInput) => {
         status: "parsed",
         parsed: TModel
@@ -12,6 +18,7 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
         status: "error",
         message: string,
     },
+    modelToCustomStringValue: (val: TModel) => string = (m) => m?.toString() ?? "",
     onSuccessfulCommit?: (val: UserInputState<TModel, TInput>) => void,
     validators: Validator<TModel>[] = []
 ) {
@@ -28,9 +35,9 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
     return {
         state: getState,
         derivedState: {
-            displayValue: () => modelToDisplayValue(getState().committedValue),
+            customStringValue: () => modelToCustomStringValue(getState().committedValue),
         },
-        setCurrentUnsavedValue: bindFnToState(setCurrentUnsavedValue<TModel, TInput>),
+        setCurrentUncommittedValue: bindFnToState(setCurrentUncommittedValue<TModel, TInput>),
         tryCommitValue: bindFnToState((draft) => {
             const success = tryCommitValue<TModel, TInput>(
                 draft,
@@ -44,10 +51,10 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
         revalidateCommittedValue: bindFnToState(draft => revalidateCommittedValue(draft, validators)),
         setTouched: bindFnToState((draft, isTouched: boolean) => draft.isTouched = isTouched),
         resetValueToPristine: bindFnToState(resetValueToPristine),
-        addReasonToDisable: bindFnToState(addActiveFlow),
-        removeReasonToDisable: bindFnToState(removeActiveFlow)
+        addActiveFlow: bindFnToState(addActiveFlow),
+        removeActiveFlow: bindFnToState(removeActiveFlow)
     }
 }
 
-export type UserInputVM<TModel, TInput = any, TDisplay = TInput>
-    = ReturnType<typeof getUserInputVM<TModel, TInput, TDisplay>>;
+export type UserInputVM<TModel, TInput = any>
+    = ReturnType<typeof getUserInputVM<TModel, TInput>>;

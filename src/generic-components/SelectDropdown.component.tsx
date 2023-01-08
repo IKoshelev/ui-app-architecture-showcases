@@ -16,12 +16,12 @@ type SelectDropdownProps<TModel, TItem> =
     }
     & ({
         hasEmptyOption: false,
-        vm: UserInputVM<TModel, TItem, unknown>,
+        vm: UserInputVM<TModel, TItem>,
         getModelId?: (item: TModel) => string,
         onChangeAdditional?: (newVal: TItem) => void,
     } | {
         hasEmptyOption: true,
-        vm: UserInputVM<TModel | undefined, TItem, unknown>,
+        vm: UserInputVM<TModel | undefined, TItem>,
         getModelId?: (item: TModel | undefined) => string,
         emptyPlaceholder?: string,
         onChangeAdditional?: (newVal: TItem | undefined) => void,
@@ -78,7 +78,7 @@ export function SelectDropdown<TModel, TItem>(
             disabled={props.disabled ?? hasActiveFlows(inputState())}
             onChange={(e) => {
                 const selectedItem = getSelectItemFromId(e.currentTarget.value);
-                props.vm.setCurrentUnsavedValue(selectedItem!);
+                props.vm.setCurrentUncommittedValue(selectedItem!);
                 props.onChangeAdditional?.(selectedItem!);
                 props.vm.tryCommitValue();
             }}

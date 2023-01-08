@@ -37,7 +37,6 @@ export const getNumericInputVM = (
     validators: Validator<number | undefined>[] = []
 ) => getUserInputVM(
     store,
-    (val) => (val ?? "").toString(),
     (val) => {
         const expanded = expandMagnitudeShortcuts(val);
         const num = Number(expanded);
@@ -53,6 +52,7 @@ export const getNumericInputVM = (
             parsed: num
         }
     },
+    (val) => (val ?? "").toString(),
     undefined,
     validators);
 

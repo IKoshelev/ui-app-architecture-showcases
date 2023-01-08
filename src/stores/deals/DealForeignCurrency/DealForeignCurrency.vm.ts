@@ -26,8 +26,8 @@ export function getDealForeignCurrencyVM<T extends DealForeignCurrency>(
         subVMS: {
             downpaymentCurrency: getUserInputVM(
                 getDeeperSubStore(dealStore, x => x.businessParams.downpaymentCurrency),
-                (m) => m.toString(),
                 (v) => ({ status: "parsed", parsed: v}),
+                (m) => m.toString(),
                 (s) => setCurrencyAndReloadExchangeRate(dealStore, s.committedValue)),
         }
     }
