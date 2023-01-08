@@ -55,7 +55,12 @@ export function getDealVM(
                     && isValid(deal.businessParams.downpayment)
                     && generalValidation().downpaymentExceedsPrice === false
             }
-        }
+        },
+        reloadAvailableCarModels: () => reloadAvailableCarModels(dealStore),
+        reloadAvailableInsurancePlans: () => reloadAvailableInsurancePlans(dealStore),
+        setMinimumPossibleDownpayment: () => setMinimumPossibleDownpayment(dealStore),
+        requestApproval: () => requestApproval(dealStore, approvalStore),
+        finalizeDeal: () => finalizeDeal(dealStore, approvalStore),
     };
 };
 
@@ -98,7 +103,6 @@ export async function setMinimumPossibleDownpayment(
     });
 }
 
-
 export async function requestApproval(
     dealStore: SubStore<Deal>,
     approvalStore: SubStore<ApprovalsState>) {
@@ -123,6 +127,7 @@ export async function requestApproval(
         });
     });
 }
+
 export async function finalizeDeal(
     dealStore: SubStore<Deal>,
     approvalStore: SubStore<ApprovalsState>) {

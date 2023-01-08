@@ -1,9 +1,9 @@
 import { createBlankDeal, Deal, getFinalPrice, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, prepareRequestApprovalCall, validateDealBusinessParams } from "../Deal/Deal.pure";
 import merge from 'lodash.merge';
 import { Currency } from "../../../api/CurrencyExchange.Client";
-import { assertNarrowPropType } from "../../../util/assert";
 import { financingClient } from "../../../api/Financing.Client";
 import { getUserInputState } from "../../../generic-components/input-models/UserInput.pure";
+import { ExpandDeep } from "ts-mapping-types";
 
 export const DealForeignCurrencyTag: `Deal;DealForeignCurrency${string}` = 'Deal;DealForeignCurrency';
 
@@ -11,7 +11,7 @@ export const createBlankDealForeignCurrency = () => {
 
     const base = createBlankDeal();
 
-    return merge(base, {
+    const extension = {
         type: DealForeignCurrencyTag,
         currenciesAvailable: [] as Currency[],
         exchangeRate: 1,
@@ -19,7 +19,11 @@ export const createBlankDealForeignCurrency = () => {
             foreignCurrencyHandlingCoefficient: 1.02,
             downpaymentCurrency: getUserInputState<Currency, string>(Currency.EUR), 
         }
-    })
+    };
+
+    //Omit<typeof base, 'type'>
+
+    return merge(base, extension) as ExpandDeep<Omit<typeof base, 'type'> & typeof extension>;
 };
 
 export type DealForeignCurrency = ReturnType<typeof createBlankDealForeignCurrency>;
@@ -33,28 +37,6 @@ export function validateIsDealForeignCurrency(deal: Deal): asserts deal is DealF
         throw new Error(`Deal with is ${deal.businessParams.dealId} was found, but has type: ${deal.type} instead of expected ${DealForeignCurrencyTag}`);
     }
 }
-
-// export const getCachedSelectorDealForeignCurrencyDerrivations = memoizeSelectorCreatorIndeffinitely((dealId: number) => {
-
-//     const baseDerrivationsSelector = getCachedSelectorDealDerrivations(dealId);
-
-//     const selector = createSelector(
-
-//         (state: RootState) => {
-//             const baseDerrivations = baseDerrivationsSelector(state);
-//             //typing change turned our to be the only difference
-//             assertNarrowPropType(baseDerrivations, 'deal', isDealForeignCurrency);
-//             return baseDerrivations;
-//         },
-
-//         (base) => (
-//             //(console.log(`recalc ${dealId}`,[base])), 
-//             {
-//                 ...base,
-//             }));
-
-//     return selector;
-// });
 
 getHeaderAdditionalDescription.override(DealForeignCurrencyTag, (deal: DealForeignCurrency) => {
     return `${deal.businessParams.downpaymentCurrency} `;
