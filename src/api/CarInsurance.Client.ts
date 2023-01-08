@@ -1,8 +1,7 @@
 import { delay } from "../util/delay";
 
-
 export enum InsurancePlanType {
-    base, thridParty, assetProtection
+    base, thirdParty, assetProtection
 }
 
 export type InsurancePlan = {
@@ -20,7 +19,7 @@ class CarInsuranceClient {
             description: 'base plan',
             rate: 0.05
         }, {
-            type: InsurancePlanType.thridParty,
+            type: InsurancePlanType.thirdParty,
             description: '3rd-party liability',
             rate: 0.05
         }, {

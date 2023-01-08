@@ -6,19 +6,34 @@ export type DisplayMessage = {
     message: string,
 }
 
+export function error(code: string, message: string){
+    return {
+        type: "error" as const,
+        code,
+        message
+    };
+}
+
+export function addError(
+    messages: DisplayMessage[], 
+    code: string,
+    message: string){
+        messages.push(error(code, message));
+    }
+
 export function isValid(
     state: { messages: DisplayMessage[] }) {
     return state.messages.some(x => x.type === "error");
 }
 
-export function isDisabled(
-    state: { reasonsToDisable: Record<string, true> }) {
-    return Object.keys(state.reasonsToDisable).length > 0;
+export function hasActiveFlows(
+    state: { activeFlows: Record<string, true> }) {
+    return Object.keys(state.activeFlows).length > 0;
 }
 
 export function isLoading(
-    state: { reasonsToDisable: Record<`loading:${string}`, true> }) {
-    return Object.keys(state.reasonsToDisable).filter(k => k.startsWith('loading:')).length > 0;
+    state: { activeFlows: Record<`loading:${string}`, true> }) {
+    return Object.keys(state.activeFlows).filter(k => k.startsWith('loading:')).length > 0;
 }
 
 export function spliceMessage(
@@ -45,28 +60,28 @@ export function spliceMessage(
     }
 }
 
-export function addReasonToDisable<T extends string>(
-    state: { reasonsToDisable: Record<string, true> },
+export function addActiveFlow<T extends string>(
+    state: { activeFlows: Record<string, true> },
     reason: T) {
-    state.reasonsToDisable[reason] = true;
+    state.activeFlows[reason] = true;
 }
 
-export function removeReasonToDisable<T extends string>(
-    state: { reasonsToDisable: Record<string, true> },
+export function removeActiveFlow<T extends string>(
+    state: { activeFlows: Record<string, true> },
     reason: T) {
-    delete state.reasonsToDisable[reason];
+    delete state.activeFlows[reason];
 }
 
-export async function disable<TRes, T extends string>(
-    setStore: SubStore<{ reasonsToDisable: Record<string, true> }>[1], 
+export async function runFlow<TRes, T extends string>(
+    setStore: SubStore<{ activeFlows: Record<T, true> }>[1], 
     reason: T, 
     fn: () => Promise<TRes>){
 
-    setStore(x => addReasonToDisable(x, reason));
+    setStore(x => addActiveFlow(x, reason));
 
-    const res = await fn();
-
-    setStore(x => removeReasonToDisable(x, reason));
-
-    return res;
+    try {
+        return await fn();
+    } finally {
+        setStore(x => removeActiveFlow(x, reason));
+    }
 }

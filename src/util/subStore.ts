@@ -18,14 +18,13 @@ export function getSubStoreFromStore<TStore, TSubStore>(
   }
 
   export function getDeeperSubStore<TStore, TSubStore>(
-    getState: () => TStore,
-    setState: (update: (draft: TStore) => void) => void,
+    store: SubStore<TStore>,
     getter: (store: TStore) => TSubStore
   ): SubStore<TSubStore> {
-  
+
     return [
-      () => getter(getState()),
-      (update: (draft: TSubStore) => void) => setState(draft => {
+      () => getter(store[0]()),
+      (update: (draft: TSubStore) => void) => store[1](draft => {
         const substoreDraft = getter(draft);
         update(substoreDraft);
       })

@@ -1,5 +1,5 @@
 import { SubStore } from "../../util/subStore";
-import { addReasonToDisable, removeReasonToDisable } from "../../util/validAndDisabled";
+import { addActiveFlow, removeActiveFlow } from "../../util/validAndDisabled";
 import { Validator, UserInputState, resetValueToPristine, revalidateCommittedValue, setCurrentUnsavedValue, tryCommitValue } from "./UserInput.pure";
 
 export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
@@ -38,8 +38,8 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
         revalidateCommittedValue: bindFnToState(draft => revalidateCommittedValue(draft, validators)),
         setTouched: bindFnToState((draft, isTouched: boolean) => draft.isTouched = isTouched),
         resetValueToPristine: bindFnToState(resetValueToPristine),
-        addReasonToDisable: bindFnToState(addReasonToDisable),
-        removeReasonToDisable: bindFnToState(removeReasonToDisable) 
+        addReasonToDisable: bindFnToState(addActiveFlow),
+        removeReasonToDisable: bindFnToState(removeActiveFlow) 
     }
 }
 

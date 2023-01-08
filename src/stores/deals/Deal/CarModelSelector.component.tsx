@@ -1,44 +1,34 @@
-import React from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { Show } from "solid-js";
 import { SelectDropdown } from "../../../generic-components/SelectDropdown.component";
-import type { Dispatch, RootState } from "../../store";
-import { getCachedSelectorDealDerrivations } from "./Deal.pure";
+import { DealVM } from "./Deal.vm";
 
 export const CarModelsSelector = (props: {
-    dealId: number
+    vm: DealVM
 }) => {
 
-    const dispatch = useDispatch<Dispatch>();
-    
-    const dealState = useSelector((state: RootState) => getCachedSelectorDealDerrivations(props.dealId)(state));
-
     return <>
-        {
-            dealState.deal.isLoadingItemized.carModelsAvailable
-                ? <div className='car-model-selector-select'>Loading</div>
-                : <SelectDropdown
-                    selectAttributes={{ className: 'car-model-selector-select' }}
-                    emptyPlaceholder='Please select model'
-
-                    hasEmptyOption={true}
-                    availableItems={dealState.deal.carModelsAvailable}
-                    modelState={dealState.deal.businessParams.carModelSelected}
-                    getKeyValue={(item) => item.id.toString()}
-                    getDescription={(item) => item.description}
-                    disabled={dealState.isLoadingAny
-                                || dealState.deal.businessParams.isDealFinalized}
-                    onSelect={(item) => dispatch.deals.setInBusinessParams(
-                        props.dealId,
-                        {
-                            carModelSelected: item
-                        })}
-                />
-        }
+        <Show
+            when={props.vm.state().activeFlows["loading:car-models"]}
+            fallback={<div class='car-model-selector-select'>Loading</div>}
+        >
+            <SelectDropdown
+                selectAttributes={{ class: 'car-model-selector-select' }}
+                emptyPlaceholder='Please select model'
+                hasEmptyOption={true}
+                availableItems={props.vm.state().carModelsAvailable}
+                vm={props.vm.subVMS.carModelSelected}
+                getItemId={(item) => item.id.toString()}
+                getItemDescription={(item) => item.description}
+                getModelId={(item) => item?.id.toString() ?? ""}
+                disabled={props.vm.derivedState.isLoading()
+                    || props.vm.state().businessParams.isDealFinalized}
+            />
+        </Show>
 
         <button
-            className='car-model-selector-refresh-btn'
-            onClick={() => dispatch.deals.reloadAvailableCarModels(dealState.deal.businessParams.dealId)}
-            disabled={dealState.isLoadingAny || dealState.deal.businessParams.isDealFinalized}
+            class='car-model-selector-refresh-btn'
+            onClick={() => props.vm.reloadAvailableCarModels()}
+            disabled={props.vm.derivedState.isLoading() || props.vm.state().businessParams.isDealFinalized}
         >
             Refresh available models
         </button>

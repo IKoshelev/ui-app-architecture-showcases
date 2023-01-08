@@ -25,15 +25,16 @@ export function pushNewDeal(state: DealsState, deal: Deal, setActive = true) {
 
 export function removeDeal(state: DealsState, dealId: number) {
 
+  const index = state.deals.findIndex(x => x.businessParams.dealId === dealId);
+
   if (dealId === state.activeDealId) {
-    const index = state.deals.findIndex(x => x.businessParams.dealId === dealId);
     const newActiveDealId = state.deals[index - 1]?.businessParams.dealId
       ?? state.deals[index + 1]?.businessParams.dealId;
     console.log(newActiveDealId);
     state.activeDealId = newActiveDealId;
   }
 
-  state.deals = state.deals.filter(x => x.businessParams.dealId !== dealId);
+  state.deals.splice(index);
 
   return state;
 }

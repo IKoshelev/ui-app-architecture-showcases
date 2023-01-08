@@ -17,11 +17,9 @@ export const createBlankDealForeignCurrency = () => {
         exchangeRate: 1,
         businessParams: {
             foreignCurrencyHandlingCoefficient: 1.02,
-            downpaymentCurrency: getUserInputState<Currency, string>(Currency.EUR), 
+            downpaymentCurrency: getUserInputState<Currency>(Currency.EUR), 
         }
     };
-
-    //Omit<typeof base, 'type'>
 
     return merge(base, extension) as ExpandDeep<Omit<typeof base, 'type'> & typeof extension>;
 };

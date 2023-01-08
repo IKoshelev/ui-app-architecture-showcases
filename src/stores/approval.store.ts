@@ -2,7 +2,7 @@ import isEqual from 'lodash.isequal';
 import { GetApprovalResult } from '../api/Financing.Client';
 import { SubStore } from '../util/subStore';
 import { Deal, prepareRequestApprovalCall, validateDealBusinessParams } from './deals/Deal/Deal.pure';
-import { disable } from '../util/validAndDisabled';
+import { runFlow } from '../util/validAndDisabled';
 
 type ApprovalRequestStatus = {
     request: any,
@@ -12,7 +12,7 @@ type ApprovalRequestStatus = {
 
 const defaultState = {
     approvals: {} as Record<number, ApprovalRequestStatus[]>,
-    reasonsToDisable: {} as Record<`loading:${number}`, true>
+    activeFlows: {} as Record<`loading:${number}`, true>
 };
 
 export type ApprovalsState = typeof defaultState;

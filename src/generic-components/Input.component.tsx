@@ -1,8 +1,8 @@
 import { createMemo, For, JSX, Show } from "solid-js";
-import { isDisabled, isValid } from "../util/validAndDisabled";
+import { hasActiveFlows, isValid } from "../util/validAndDisabled";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
-export function InputComponent(props: {
+export function Input(props: {
     inputAttributes?: JSX.HTMLAttributes<HTMLInputElement>,
     messageAttributes?: JSX.HTMLAttributes<HTMLDivElement>,
     placeholder?: string,
@@ -10,6 +10,7 @@ export function InputComponent(props: {
     vm: UserInputVM<any, string, string>,
     onChangeAdditional?: (newVal: string) => void,
     onBlurAdditional?: () => void,
+    disabled?: boolean
 }) {
 
     const inputState = createMemo(() => props.vm.state());
@@ -29,7 +30,7 @@ export function InputComponent(props: {
                 ?? props.vm.derivedState.displayValue()
             }
             placeholder={props.placeholder}
-            disabled={isDisabled(inputState())}
+            disabled={props.disabled ?? hasActiveFlows(inputState())}
             onChange={(e) => {
                 props.vm.setCurrentUnsavedValue(e.currentTarget.value);
                 props.onChangeAdditional?.(e.currentTarget.value);

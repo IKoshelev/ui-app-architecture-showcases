@@ -1,32 +1,26 @@
-
-import React from "react";
-import { getCachedSelectorDealForeignCurrencyDerrivations, isDealForeignCurrency } from "./DealForeignCurrency.pure";
-import './DealForeignCurrency.component.css';
-import { DealCmpBare } from "../Deal/Deal.component";
+import './DealForeignCurrency.component.scss';
+import { DealBare } from "../Deal/Deal.component";
 import { SelectDropdown } from "../../../generic-components/SelectDropdown.component";
-import { useDispatch, useSelector } from "react-redux";
-import type { Dispatch, RootState } from "../../store";
+import { DealForeignCurrencyVM } from "./DealForeignCurrency.vm";
 
-export const CarPurchaseWithForeignCurrencyCmp = (props: { dealId: number }) => {
+export const CarPurchaseWithForeignCurrency = (props: {
+    vm: DealForeignCurrencyVM
+}) => {
 
-    const dealState = useSelector((state: RootState) => getCachedSelectorDealForeignCurrencyDerrivations(props.dealId)(state));
+    return <div class='car-purchase-deal car-purchase-deal-with-foreign-currency'>
 
-    const dispatch = useDispatch<Dispatch>();
+        <DealBare vm={props.vm} />
 
-    return <div className='car-purchase-deal car-purchase-deal-with-foreign-currency'>
-        <DealCmpBare dealId={props.dealId} />
-
-        <div className='car-purchase-downpayment-currency-label'>
+        <div class='car-purchase-downpayment-currency-label'>
             Please select currency
-    </div>
+        </div>
 
         <SelectDropdown
-            selectAttributes={{ className: 'car-purchase-downpayment-currency' }}
+            selectAttributes={{ class: 'car-purchase-downpayment-currency' }}
             hasEmptyOption={false}
-            availableItems={dealState.deal.currenciesAvailable}
-            modelState={dealState.deal.businessParams.downpaymentCurrency}
-            disabled={dealState.isLoadingAny || dealState.deal.businessParams.isDealFinalized}
-            onSelect={(currency) => dispatch.deals.setCurrncyAndReloadExchangeRate([props.dealId, currency])}
+            availableItems={props.vm.state().currenciesAvailable}
+            vm={props.vm.subVMS.downpaymentCurrency}
+            disabled={props.vm.derivedState.isLoading() || props.vm.state().businessParams.isDealFinalized}
         />
 
     </div>;

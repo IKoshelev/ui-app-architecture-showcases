@@ -4,11 +4,11 @@ import cloneDeep from "lodash.clonedeep";
 import { unwrap } from "solid-js/store";
 import { DisplayMessage, spliceMessage } from "../../util/validAndDisabled";
 
-export const inputStateMarker = "solidjsdemo:UserInputState:";
+export const inputStateMarker = "solidjsdemo:UserInputState";
 
 export type InputStateMarker = `${typeof inputStateMarker}${string}`;
 
-export function getUserInputState<TModel, TInput = any>(
+export function getUserInputState<TModel, TInput = TModel>(
     initialValue: TModel
 ) {
     return {
@@ -17,12 +17,12 @@ export function getUserInputState<TModel, TInput = any>(
         committedValue: initialValue,
         pristineValue: initialValue,
         isTouched: false,
-        reasonsToDisable: {} as Record<string, true>,
+        activeFlows: {} as Record<string, true>,
         messages: [] as DisplayMessage[]
     }
 }
 
-export type UserInputState<TModel, TInput = any> = ReturnType<typeof getUserInputState<TModel, TInput>>;
+export type UserInputState<TModel, TInput = TModel> = ReturnType<typeof getUserInputState<TModel, TInput>>;
 
 export function isUserInputState(target: any): target is UserInputState<unknown, unknown> {
     return typeof target === "object" 

@@ -3,6 +3,7 @@ import { CarModel } from "../../../api/CarInventory.Client";
 import { financingClient, GetApprovalResult } from "../../../api/Financing.Client";
 import { multimethod } from "multimethod-type-tag-hierarchy";
 import { getUserInputState } from "../../../generic-components/input-models/UserInput.pure";
+import { DisplayMessage } from "../../../util/validAndDisabled";
 
 export const DealTag: `Deal${string}` = 'Deal';
 
@@ -17,10 +18,16 @@ export const createBlankDeal = () => ({
         carModelSelected:  getUserInputState<CarModel | undefined, CarModel>(undefined),
     },
     isClosed: false,
-    reasonsToDisable: {} as Record<`loading:${string}`, true>,
+    activeFlows: {} as Record<
+        `loading:exchange-rate`
+        | `loading:car-models`
+        | `loading:insurance-plans`
+        | `loading:downpayment`
+        | `loading:approval`
+        | `loading:finalizing`, true>,
     insurancePlansAvailable: [] as InsurancePlan[],
     carModelsAvailable: [] as CarModel[],
-    messages: [] as string[],
+    messages: [] as DisplayMessage[],
 });
 
 export type Deal = ReturnType<typeof createBlankDeal>;

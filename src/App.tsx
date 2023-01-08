@@ -3,7 +3,7 @@ import { createStore, produce } from 'solid-js/store';
 
 import styles from './App.module.scss'; 
 import { clockStore } from './stores/clock.store';
-import { InputComponent } from './generic-components/Input.component';
+import { Input } from './generic-components/Input.component';
 import { getUserInputState, UserInputState } from './generic-components/input-models/UserInput.pure';
 import { getNumericInputVM, numberValidatorFns } from './generic-components/input-models/NumericUserInput.vm';
 import { getDeeperSubStore, getSubStoreFromStore } from './util/subStore';
@@ -44,7 +44,7 @@ const subStore1 = getSubStoreFromStore(
   setStoreState, 
   x => x.form);
 
-  const subStore2 = getDeeperSubStore(...subStore1, x => x.numberInput);
+  const subStore2 = getDeeperSubStore(subStore1, x => x.numberInput);
 
 export function appVm(state: typeof storeState, setState: typeof setStoreState) {
 
@@ -108,7 +108,7 @@ const App: Component = () => {
         <button onClick={clockStore.commands.stop}>stop</button>
       </header>
       <div>
-        <InputComponent
+        <Input
           vm={vm().numberInput}
         />
       </div>
@@ -156,7 +156,7 @@ const App: Component = () => {
       </div>
       <For each={vm().arrayOfNumberInputs()}>{(inputVM, i) =>
         <div>
-          <InputComponent
+          <Input
             vm={inputVM}
           />
         </div>}

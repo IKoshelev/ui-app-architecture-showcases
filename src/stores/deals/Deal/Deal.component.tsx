@@ -1,113 +1,130 @@
-import React from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { NumericInput } from "../../../generic-components/NumericInput.component";
-import type { Dispatch, RootState } from "../../store";
 import { CarModelsSelector } from "./CarModelSelector.component";
-import { DealProgressState, getCachedSelectorDealDerrivations } from "./Deal.pure";
-import './Deal.component.css';
+import { DealProgressState } from "./Deal.pure";
+import './Deal.component.scss';
 import { InsurancePlanSelector } from "./InsurancePlanSelector.component";
 import { diffSeconds } from "../../../util/diffSeconds";
+import { DealVM } from "./Deal.vm";
+import { createMemo, For, Show } from "solid-js";
+import { addError } from "../../../util/validAndDisabled";
+import { Input } from "../../../generic-components/Input.component";
 
-export const DealCmp = (props: {
-    dealId: number
-}) => (<div className='car-purchase-deal'>
-    <DealCmpBare {...props} />
+export const Deal = (props: {
+    vm: DealVM
+}) => (<div class='car-purchase-deal'>
+    <DealBare {...props} />
 </div>);
 
-export const DealCmpBare = (props: {
-    dealId: number
+export const DealBare = (props: {
+    vm: DealVM
 }) => {
 
-    const dealState = useSelector((state: RootState) => getCachedSelectorDealDerrivations(props.dealId)(state));
+    const dealState = createMemo(() => props.vm.state());
 
-    const messages = [
-        ...dealState.deal.messages,
-        ...(dealState.generalValidation.downpaymentExceedsPrice ? [`Downpayment can't exceed total price.`] : []),
-        ...(dealState.approval?.isApproved === false ? [dealState.approval.message] : [])
-    ];
+    const messages = createMemo(() => {
+        const messages = [...dealState().messages];
 
-    const dispatch = useDispatch<Dispatch>();
+        if (props.vm.derivedState.generalValidation().downpaymentExceedsPrice) {
+            addError(
+                messages,
+                "validation:downpayment",
+                `Downpayment can't exceed total price.`)
+        }
+        const approval = props.vm.derivedState.currentApproval();
+        if (approval?.isApproved === false) {
+            addError(
+                messages,
+                "validation:approval",
+                approval.message
+            )
+        }
+
+        return messages;
+    });
+
 
     return <>
-        <div className='car-purchase-model-selector-label'>
+        <div class='car-purchase-model-selector-label'>
             Please select model
-    </div>
-        <CarModelsSelector dealId={props.dealId} />
-        <div className='car-purchase-insurance-selector-label'>
+        </div>
+        <CarModelsSelector vm={props.vm} />
+        <div class='car-purchase-insurance-selector-label'>
             Please select insurance options
-    </div>
-        <InsurancePlanSelector dealId={props.dealId} />
-        <div className='car-purchase-downpayment-label'>
+        </div>
+        <InsurancePlanSelector vm={props.vm} />
+        <div class='car-purchase-downpayment-label'>
             Please select downpayment
-    </div>
-        <NumericInput
-            inputAttributes={{ className: 'car-purchase-downpayment' }}
-            messageAttributes={{ className: 'car-purchase-downpayment-messages' }}
-            modelState={dealState.deal.businessParams.downpayment}
-            inputState={dealState.deal.downplaymentInputState}
-            disabled={dealState.deal.isLoadingItemized.downpayment
-                || dealState.deal.businessParams.isDealFinalized}
-            onChange={(inputVal) => dispatch.deals.updateDownpaymentInputValue(props.dealId, inputVal)}
-            onBlur={() => dispatch.deals.tryCommitDownpaymentInputValue(props.dealId)}
+        </div>
+        <Input
+            inputAttributes={{ class: 'car-purchase-downpayment' }}
+            messageAttributes={{ class: 'car-purchase-downpayment-messages' }}
+            vm={props.vm.subVMS.downpayment}
+            disabled={props.vm.state().activeFlows["loading:downpayment"]
+                || props.vm.state().businessParams.isDealFinalized}
         />
         <button
-            className='button-set-minimum-possible-downpayment'
-            disabled={dealState.isLoadingAny
-                || !dealState.canRequestMinimumDownpayment}
-            onClick={() => dispatch.deals.setMinimumPossibleDownpayment(props.dealId)}
+            class='button-set-minimum-possible-downpayment'
+            disabled={props.vm.derivedState.isLoading()
+                || !props.vm.derivedState.canRequestMinimumDownpayment()}
+            onClick={() => props.vm.setMinimumPossibleDownpayment()}
         >
             Set minimum possible
         </button>
-        <div className='car-purchase-final-price-label'>
+        <div class='car-purchase-final-price-label'>
             Final price
-    </div>
-        <div className='car-final-price'>
-            {dealState.finalPrice}
         </div>
-        {
-            dealState.dealProgressState !== 'no-approval' &&
-            <DealDescription dealId={props.dealId}/>
-        }
+        <div class='car-final-price'>
+            {props.vm.derivedState.finalPrice()}
+        </div>
+        <Show
+            when={props.vm.derivedState.dealProgressState() != 'no-approval'}
+        >
+            <DealDescription vm={props.vm} />
+        </Show>
         <button
-            className='button-request-approval'
-            disabled={dealState.isLoadingAny
-                || dealState.isCurrentApprovalLoading
-                || !dealState.canRequestApproval}
-            onClick={() => dispatch.deals.requestApproval(props.dealId)}
+            class='button-request-approval'
+            disabled={props.vm.derivedState.isLoading()
+                || props.vm.derivedState.isCurrentApprovalLoading()
+                || !props.vm.derivedState.canRequestApproval()}
+            onClick={() => props.vm.requestApproval()}
         >
             Request approval
         </button>
         <button
-            className='button-close-active-deal'
-            onClick={() => dispatch.deals.removeDeal(props.dealId)}
+            class='button-close-active-deal'
+            onClick={() => props.vm.removeThisDeal()}
         >
             Close this deal
-    </button>
+        </button>
         <button
-            className='button-finalzie-deal'
-            disabled={dealState.deal.isLoadingItemized.isDealFinalized
-                        || !dealState.canBeFinalized}
-            onClick={() => dispatch.deals.finalizeDeal(props.dealId)}
+            class='button-finalize-deal'
+            disabled={props.vm.state().activeFlows["loading:finalizing"]
+                || !props.vm.derivedState.canBeFinalized()}
+            onClick={() => props.vm.finalizeDeal()}
         >
             Finalize deal
-    </button>
-        {  
-            (messages.length > 0) &&
-            <div className='car-purchase-messages'>
-                {messages.map(x => (<div key={x}>{x}</div>))}
+        </button>
+        <Show
+            when={messages().length > 0}
+        ><div class='car-purchase-messages'>
+                <For
+                    each={messages()}
+                >{(message) => <div>{message.type}: {message.message}</div>}
+                </For>
             </div>
-        }
+        </Show>
     </>;
 };
 
-function DealDescription(props: {dealId: number}){
+function DealDescription(props: {
+    vm: DealVM
+}) {
 
-    const text =  useSelector((state: RootState) => getDealStateDescription(
-        getCachedSelectorDealDerrivations(props.dealId)(state).dealProgressState,
-        state.clock.currentDate
+    const text = createMemo(() => getDealStateDescription(
+        props.vm.derivedState.dealProgressState(),
+        props.vm.derivedState.currentDate()
     ));
 
-    return <div className='car-purchase-deal-state'>
+    return <div class='car-purchase-deal-state'>
         {text}
     </div>;
 

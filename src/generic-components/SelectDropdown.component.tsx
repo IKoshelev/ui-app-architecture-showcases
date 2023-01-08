@@ -1,6 +1,6 @@
 import { createMemo, For, JSX, Show } from "solid-js";
 import { createFunctionMemo } from "../util/createFunctionMemo";
-import { isDisabled, isValid } from "../util/validAndDisabled";
+import { hasActiveFlows, isValid } from "../util/validAndDisabled";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
 type SelectDropdownProps<TModel, TItem> =
@@ -12,6 +12,7 @@ type SelectDropdownProps<TModel, TItem> =
         getItemId?: (item: TItem) => string,
         getItemDescription?: (item: TItem) => string,
         onBlurAdditional?: () => void,
+        disabled?: boolean,
     }
     & ({
         hasEmptyOption: false,
@@ -75,7 +76,7 @@ export function SelectDropdown<TModel, TItem>(
                 pristine: inputState().committedValue === inputState().pristineValue
             }}
             value={selectedId()}
-            disabled={isDisabled(inputState())}
+            disabled={props.disabled ?? hasActiveFlows(inputState())}
             onChange={(e) => {
                 const selectedItem = getSelectItemFromId(e.currentTarget.value);
                 props.vm.setCurrentUnsavedValue(selectedItem);

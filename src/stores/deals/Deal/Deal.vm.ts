@@ -1,6 +1,6 @@
-import { SubStore } from "../../../util/subStore";
+import { getDeeperSubStore, SubStore } from "../../../util/subStore";
 import { canRequestMinimumDownpayment, Deal, getDealProgressState, getFinalPrice, getGeneralValidation, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, validateDealBusinessParams } from "./Deal.pure";
-import { disable, isLoading, isValid } from '../../../util/validAndDisabled';
+import { runFlow, isLoading, isValid } from '../../../util/validAndDisabled';
 import { carInventoryClient } from "../../../api/CarInventory.Client";
 import { carInsuranceClient } from "../../../api/CarInsurance.Client";
 import { resetValueToPristine } from "../../../generic-components/input-models/UserInput.pure";
@@ -9,13 +9,18 @@ import { ApprovalsState, getLatestMatchingApproval, storeApprovalReqStatus } fro
 import { createMemo } from "solid-js";
 import { ClockState } from "../../clock.store";
 import { canBeFinalized, prepareRequestApprovalCall } from "./Deal.pure";
+import { getUserInputVM } from "../../../generic-components/input-models/UserInput.vm";
+import { getNumericInputVM } from "../../../generic-components/input-models/NumericUserInput.vm";
+import { DealsState, removeDeal } from "../deals.store";
 
-export function getDealVM(
-    dealStore: SubStore<Deal>,
+export function getDealVM<T extends Deal>(
+    dealStore: SubStore<T>,
+    dealsStore: SubStore<DealsState>,
     approvalStore: SubStore<ApprovalsState>,
     clockStore: SubStore<ClockState>) {
 
     const [getDeal, setDeal] = dealStore;
+    const [getDeals, setDeals] = dealsStore;
     const [getApprovals, setApprovals] = approvalStore;
     const [getClock, setClock] = clockStore;
 
@@ -35,8 +40,9 @@ export function getDealVM(
     return {
         state: () => getDeal(),
         derivedState: {
+            currentDate: () =>  getClock().currentDate,
             currentApproval,
-            isCurrentApprovalLoading: () => getApprovals().reasonsToDisable[`loading:${getDeal().businessParams.dealId}`],
+            isCurrentApprovalLoading: () => getApprovals().activeFlows[`loading:${getDeal().businessParams.dealId}`],
             canRequestMinimumDownpayment: () => canRequestMinimumDownpayment(getDeal().businessParams),
             finalPrice: () => getFinalPrice(getDeal()),
             generalValidation,
@@ -56,20 +62,35 @@ export function getDealVM(
                     && generalValidation().downpaymentExceedsPrice === false
             }
         },
+        subVMS: {
+            insurancePlansSelected: getUserInputVM(
+                getDeeperSubStore(dealStore, x => x.businessParams.insurancePlansSelected),
+                (m) => m.map(x => x.type),
+                (v) => ({ status: "parsed", parsed: v})),
+            carModelSelected: getUserInputVM(
+                getDeeperSubStore(dealStore, x => x.businessParams.carModelSelected),
+                (m) => m?.description ?? "",
+                (v) => ({ status: "parsed", parsed: v})),
+            downpayment: getNumericInputVM(
+                getDeeperSubStore(dealStore, x => x.businessParams.downpayment)),
+        },
         reloadAvailableCarModels: () => reloadAvailableCarModels(dealStore),
         reloadAvailableInsurancePlans: () => reloadAvailableInsurancePlans(dealStore),
         setMinimumPossibleDownpayment: () => setMinimumPossibleDownpayment(dealStore),
         requestApproval: () => requestApproval(dealStore, approvalStore),
         finalizeDeal: () => finalizeDeal(dealStore, approvalStore),
+        removeThisDeal: () => setDeals(x => removeDeal(x, getDeal().businessParams.dealId))
     };
 };
+
+export type DealVM = ReturnType<typeof getDealVM>;
 
 export async function reloadAvailableCarModels(
     dealStore: SubStore<Deal>) {
 
     const [getDeal, setDeal] = dealStore;
 
-    disable(setDeal, 'loading:car-models', async () => {
+    runFlow(setDeal, 'loading:car-models', async () => {
         const carModels = await carInventoryClient.getAvailableCarModels();
         setDeal(x => x.carModelsAvailable = carModels);
     });
@@ -80,7 +101,7 @@ export async function reloadAvailableInsurancePlans(
 
     const [getDeal, setDeal] = dealStore;
 
-    disable(setDeal, 'loading:insurance-plans', async () => {
+    runFlow(setDeal, 'loading:insurance-plans', async () => {
         const insurancePlans = await carInsuranceClient.getAvailableInsurancePlans();
         setDeal(x => x.insurancePlansAvailable = insurancePlans);
     });
@@ -91,7 +112,7 @@ export async function setMinimumPossibleDownpayment(
 
     const [getDeal, setDeal] = dealStore;
 
-    disable(setDeal, 'loading:downpayment', async () => {
+    runFlow(setDeal, 'loading:downpayment', async () => {
         validateDealBusinessParams(getDeal().businessParams);
 
         const minPayment = await getMinimumPossibleDownpayment(getDeal());
@@ -110,10 +131,10 @@ export async function requestApproval(
     const [getDeal, setDeal] = dealStore;
     const [getApprovals, setApprovals] = approvalStore;
 
-    disable(setDeal, 'loading:downpayment', async () => {
+    runFlow(setDeal, 'loading:approval', async () => {
         validateDealBusinessParams(getDeal().businessParams);
 
-        disable(setApprovals, `loading:${getDeal().businessParams.dealId}`, async () => {
+        runFlow(setApprovals, `loading:${getDeal().businessParams.dealId}`, async () => {
             const call = prepareRequestApprovalCall(getDeal());
             const resp = await call.makeCall();
 
@@ -144,7 +165,7 @@ export async function finalizeDeal(
         throw new Error("Attempt to finalize deal without approval.");
     }
 
-    disable(setDeal, "loading:approval", async () => {
+    runFlow(setDeal, "loading:finalizing", async () => {
         const res = await financingClient.finalizeFinancing(approval.approvalToken);
 
         setDeal(x => x.businessParams.isDealFinalized = res);

@@ -1,6 +1,6 @@
 import { createMemo, For, JSX, Show } from "solid-js";
 import { createFunctionMemo } from "../util/createFunctionMemo";
-import { isDisabled, isValid } from "../util/validAndDisabled";
+import { hasActiveFlows, isValid } from "../util/validAndDisabled";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
 type SelectMultipleProps<TModel, TItem> =
@@ -13,6 +13,7 @@ type SelectMultipleProps<TModel, TItem> =
         getItemDescription?: (item: TItem) => string,
         getModelId?: (item: TModel) => string,
         vm: UserInputVM<TModel[], TItem[], unknown>,
+        disabled?: boolean,
         onChangeAdditional?: (newVal: TItem[]) => void, 
         onBlurAdditional?: () => void,
     };
@@ -66,7 +67,7 @@ export function SelectMultiple<TModel, TItem>(
                 touched: inputState().isTouched,
                 pristine: inputState().committedValue === inputState().pristineValue
             }}
-            disabled={isDisabled(inputState())}
+            disabled={ props.disabled || hasActiveFlows(inputState())}
             multiple={true}
             onChange={(e) => {
                 const selectedItems =
