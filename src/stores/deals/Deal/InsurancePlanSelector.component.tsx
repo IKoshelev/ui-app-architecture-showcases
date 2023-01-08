@@ -9,7 +9,7 @@ export const InsurancePlanSelector = (props:{
 
     return <>
         <Show
-            when={props.vm.state().activeFlows["loading:insurance-plans"]}
+            when={!props.vm.state().activeFlows["loading:insurance-plans"]}
             fallback={<div class='insurance-plan-selector-select'>Loading</div>}
         >
             <SelectMultiple

@@ -1,20 +1,20 @@
 import { Currency, currencyExchangeClient } from "../../../api/CurrencyExchange.Client";
 import { SubStore } from "../../../util/subStore";
 import { DealForeignCurrency, validateIsDealForeignCurrency } from "./DealForeignCurrency.pure";
-import { runFlow } from "../../../util/validAndDisabled";
-import { ApprovalsState } from "../../approval.store";
-import { ClockState } from "../../clock.store";
+import { runFlow } from "../../../util/validation-flows-messages";
+import { ApprovalsStoreRoot } from "../../approval.store";
+import { ClockStoreRoot } from "../../clock.store";
 import { getDealVM } from "../Deal/Deal.vm";
-import { DealsState } from "../deals.store";
+import { DealsStoreRoot } from "../../deals.store";
 import { getUserInputVM } from "../../../generic-components/input-models/UserInput.vm";
 import { getDeeperSubStore } from "../../../util/subStore";
 import merge from "lodash.merge";
 
 export function getDealForeignCurrencyVM<T extends DealForeignCurrency>(
     dealStore: SubStore<T>,
-    dealsStore: SubStore<DealsState>,
-    approvalStore: SubStore<ApprovalsState>,
-    clockStore: SubStore<ClockState>){
+    dealsStore: SubStore<DealsStoreRoot>,
+    approvalStore: SubStore<ApprovalsStoreRoot>,
+    clockStore: SubStore<ClockStoreRoot>){
 
     const [getDeal, setDeal] = dealStore;
 
@@ -27,7 +27,8 @@ export function getDealForeignCurrencyVM<T extends DealForeignCurrency>(
             downpaymentCurrency: getUserInputVM(
                 getDeeperSubStore(dealStore, x => x.businessParams.downpaymentCurrency),
                 (m) => m.toString(),
-                (v) => ({ status: "parsed", parsed: v})),
+                (v) => ({ status: "parsed", parsed: v}),
+                (s) => setCurrencyAndReloadExchangeRate(dealStore, s.committedValue)),
         }
     }
 

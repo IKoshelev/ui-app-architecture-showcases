@@ -23,7 +23,7 @@ export function addError(
 
 export function isValid(
     state: { messages: DisplayMessage[] }) {
-    return state.messages.some(x => x.type === "error");
+    return state.messages.some(x => x.type === "error") === false;
 }
 
 export function hasActiveFlows(

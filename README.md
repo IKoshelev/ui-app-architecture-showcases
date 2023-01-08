@@ -1,5 +1,5 @@
 # Good news everyone!
-Crazy Ivan Motors has really extended its business thanks to the app you've made! Now we are getting international customers and need to handle deals in foreign currencies! Replace the content of [`api` folder](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/requirments-advanced/src/api) to see how the API was extended to handle foreign currencies. Here is a mockup of what our business needs for now:
+Hetman Motors has really extended its business thanks to the app you've made! Now we are getting international customers and need to handle deals in foreign currencies! Replace the content of [`api` folder](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/requirments-advanced/src/api) to see how the API was extended to handle foreign currencies. Here is a mockup of what our business needs for now:
 
 ![](/requirments-sketches/9.png)
 

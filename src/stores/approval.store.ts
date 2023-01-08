@@ -1,8 +1,6 @@
 import isEqual from 'lodash.isequal';
 import { GetApprovalResult } from '../api/Financing.Client';
-import { SubStore } from '../util/subStore';
-import { Deal, prepareRequestApprovalCall, validateDealBusinessParams } from './deals/Deal/Deal.pure';
-import { runFlow } from '../util/validAndDisabled';
+import { Deal, prepareRequestApprovalCall } from './deals/Deal/Deal.pure';
 
 type ApprovalRequestStatus = {
     request: any,
@@ -10,15 +8,17 @@ type ApprovalRequestStatus = {
     timestamp: Date
 };
 
-const defaultState = {
-    approvals: {} as Record<number, ApprovalRequestStatus[]>,
-    activeFlows: {} as Record<`loading:${number}`, true>
+export function getDefaultApprovalsStoreRoot() {
+    return {
+        approvals: {} as Record<number, ApprovalRequestStatus[]>,
+        activeFlows: {} as Record<`loading:${number}`, true>
+    }
 };
 
-export type ApprovalsState = typeof defaultState;
+export type ApprovalsStoreRoot = ReturnType<typeof getDefaultApprovalsStoreRoot>;
 
 export function storeApprovalReqStatus(
-    state: ApprovalsState,
+    state: ApprovalsStoreRoot,
     dealId: number,
     reqStatus: ApprovalRequestStatus) {
     if (!state.approvals[dealId]) {
@@ -29,10 +29,16 @@ export function storeApprovalReqStatus(
 }
 
 export function getLatestMatchingApproval(
-    state: ApprovalsState,
+    state: ApprovalsStoreRoot,
     deal: Deal): GetApprovalResult | undefined {
 
-    const currentDealRequest = prepareRequestApprovalCall(deal).request;
+    const approvalCall = prepareRequestApprovalCall(deal);
+
+    if (!approvalCall) {
+        return undefined;
+    }
+
+    const currentDealRequest = approvalCall.request;
 
     return state.approvals[deal.businessParams.dealId]
         ?.filter(({ request }) => {

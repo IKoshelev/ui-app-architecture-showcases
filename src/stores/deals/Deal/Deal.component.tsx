@@ -5,16 +5,16 @@ import { InsurancePlanSelector } from "./InsurancePlanSelector.component";
 import { diffSeconds } from "../../../util/diffSeconds";
 import { DealVM } from "./Deal.vm";
 import { createMemo, For, Show } from "solid-js";
-import { addError } from "../../../util/validAndDisabled";
+import { addError } from "../../../util/validation-flows-messages";
 import { Input } from "../../../generic-components/Input.component";
 
-export const Deal = (props: {
+export const DealComponent = (props: {
     vm: DealVM
 }) => (<div class='car-purchase-deal'>
-    <DealBare {...props} />
+    <DealComponentBare {...props} />
 </div>);
 
-export const DealBare = (props: {
+export const DealComponentBare = (props: {
     vm: DealVM
 }) => {
 
@@ -76,7 +76,7 @@ export const DealBare = (props: {
             {props.vm.derivedState.finalPrice()}
         </div>
         <Show
-            when={props.vm.derivedState.dealProgressState() != 'no-approval'}
+            when={props.vm.derivedState.dealProgressState() !== 'no-approval'}
         >
             <DealDescription vm={props.vm} />
         </Show>

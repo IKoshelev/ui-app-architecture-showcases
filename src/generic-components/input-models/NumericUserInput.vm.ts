@@ -15,12 +15,12 @@ export const numberValidatorFns = {
     
     positive:() => validator(
         "numberValidator.positive",
-        (val: number | undefined) => typeof val !== 'number' || val < 0,
+        (val: number | undefined) => typeof val !== 'number' || val > 0,
         (val: number | undefined) => `Value ${val} must be positive`),
     
     lessThan:(bound: number) => validator(
         "numberValidator.lessThan",
-        (val: number | undefined) => typeof val !== 'number' || val >= bound,
+        (val: number | undefined) => typeof val !== 'number' || val < bound,
         (val: number | undefined) => `Value ${val} must be less than ${bound}`),
 
     between:(loverBound: number, upperBound: number) => validator(
@@ -53,6 +53,7 @@ export const getNumericInputVM = (
             parsed: num
         }
     },
+    undefined,
     validators);
 
 export type NumericUserInputVM = ReturnType<typeof getNumericInputVM>;

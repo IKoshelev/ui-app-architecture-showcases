@@ -1,4 +1,4 @@
-import { createBlankDeal, Deal, getFinalPrice, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, prepareRequestApprovalCall, validateDealBusinessParams } from "../Deal/Deal.pure";
+import { createBlankDeal, Deal, getFinalPrice, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, prepareRequestApprovalCall, areDealBusinessParamsValid } from "../Deal/Deal.pure";
 import merge from 'lodash.merge';
 import { Currency } from "../../../api/CurrencyExchange.Client";
 import { financingClient } from "../../../api/Financing.Client";
@@ -28,7 +28,7 @@ export type DealForeignCurrency = ReturnType<typeof createBlankDealForeignCurren
 
 export type DealForeignCurrencyBusinessParams = DealForeignCurrency['businessParams'];
 
-export const isDealForeignCurrency = (deal: Deal): deal is DealForeignCurrency => deal.type === DealForeignCurrencyTag;
+export const isDealForeignCurrency = (deal: Deal): deal is DealForeignCurrency => deal.type.startsWith(DealForeignCurrencyTag);
 
 export function validateIsDealForeignCurrency(deal: Deal): asserts deal is DealForeignCurrency {
     if (isDealForeignCurrency(deal) === false) {
@@ -37,7 +37,7 @@ export function validateIsDealForeignCurrency(deal: Deal): asserts deal is DealF
 }
 
 getHeaderAdditionalDescription.override(DealForeignCurrencyTag, (deal: DealForeignCurrency) => {
-    return `${deal.businessParams.downpaymentCurrency} `;
+    return `${deal.businessParams.downpaymentCurrency.committedValue} `;
 });
 
 getFinalPrice.override(DealForeignCurrencyTag, function (deal: DealForeignCurrency) {
@@ -59,7 +59,9 @@ getMinimumPossibleDownpayment.override(DealForeignCurrencyTag, (deal: DealForeig
 
 prepareRequestApprovalCall.override(DealForeignCurrencyTag, (deal: DealForeignCurrency) => {
 
-    validateDealBusinessParams(deal.businessParams);
+    if(!areDealBusinessParamsValid(deal.businessParams)){
+        return undefined;
+    }
 
     const request = [
         deal.businessParams.carModelSelected.committedValue!,

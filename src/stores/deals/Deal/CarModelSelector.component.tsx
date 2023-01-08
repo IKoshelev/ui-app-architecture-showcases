@@ -8,7 +8,7 @@ export const CarModelsSelector = (props: {
 
     return <>
         <Show
-            when={props.vm.state().activeFlows["loading:car-models"]}
+            when={!props.vm.state().activeFlows["loading:car-models"]}
             fallback={<div class='car-model-selector-select'>Loading</div>}
         >
             <SelectDropdown

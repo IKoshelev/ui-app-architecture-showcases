@@ -1,17 +1,18 @@
 import { SubStore } from "../../util/subStore";
-import { addActiveFlow, removeActiveFlow } from "../../util/validAndDisabled";
+import { addActiveFlow, removeActiveFlow } from "../../util/validation-flows-messages";
 import { Validator, UserInputState, resetValueToPristine, revalidateCommittedValue, setCurrentUnsavedValue, tryCommitValue } from "./UserInput.pure";
 
 export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
     store: SubStore<UserInputState<TModel, TInput>>,
     modelToDisplayValue: (val: TModel) => TDisplay,
-    parseInput: (val: TInput) => { 
+    parseInput: (val: TInput) => {
         status: "parsed",
-        parsed: TModel 
+        parsed: TModel
     } | {
         status: "error",
         message: string,
     },
+    onSuccessfulCommit?: (val: UserInputState<TModel, TInput>) => void,
     validators: Validator<TModel>[] = []
 ) {
     const [getState, setState] = store;
@@ -30,16 +31,21 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
             displayValue: () => modelToDisplayValue(getState().committedValue),
         },
         setCurrentUnsavedValue: bindFnToState(setCurrentUnsavedValue<TModel, TInput>),
-        tryCommitValue: bindFnToState((draft) => tryCommitValue<TModel, TInput>(
-            draft,
-            parseInput,
-            validators
-        )),
+        tryCommitValue: bindFnToState((draft) => {
+            const success = tryCommitValue<TModel, TInput>(
+                draft,
+                parseInput,
+                validators
+            );
+            if (success) {
+                onSuccessfulCommit?.(draft);
+            }
+        }),
         revalidateCommittedValue: bindFnToState(draft => revalidateCommittedValue(draft, validators)),
         setTouched: bindFnToState((draft, isTouched: boolean) => draft.isTouched = isTouched),
         resetValueToPristine: bindFnToState(resetValueToPristine),
         addReasonToDisable: bindFnToState(addActiveFlow),
-        removeReasonToDisable: bindFnToState(removeActiveFlow) 
+        removeReasonToDisable: bindFnToState(removeActiveFlow)
     }
 }
 

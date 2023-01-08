@@ -1,6 +1,6 @@
 import { createMemo, For, JSX, Show } from "solid-js";
 import { createFunctionMemo } from "../util/createFunctionMemo";
-import { hasActiveFlows, isValid } from "../util/validAndDisabled";
+import { hasActiveFlows, isValid } from "../util/validation-flows-messages";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
 type SelectDropdownProps<TModel, TItem> =
@@ -57,8 +57,8 @@ export function SelectDropdown<TModel, TItem>(
     const selectedId = createMemo(() => {
         const uncommittedValue = inputState().uncommittedValue;
 
-        if (uncommittedValue !== undefined) {
-            return getItemId(uncommittedValue);
+        if (uncommittedValue?.value !== undefined) {
+            return getItemId(uncommittedValue.value);
         }
 
         const committedValue = inputState().committedValue;
@@ -75,20 +75,21 @@ export function SelectDropdown<TModel, TItem>(
                 touched: inputState().isTouched,
                 pristine: inputState().committedValue === inputState().pristineValue
             }}
-            value={selectedId()}
             disabled={props.disabled ?? hasActiveFlows(inputState())}
             onChange={(e) => {
                 const selectedItem = getSelectItemFromId(e.currentTarget.value);
-                props.vm.setCurrentUnsavedValue(selectedItem);
+                props.vm.setCurrentUnsavedValue(selectedItem!);
                 props.onChangeAdditional?.(selectedItem!);
+                props.vm.tryCommitValue();
             }}
             onBlur={(e) => {
-                props.vm.tryCommitValue();
                 props.onBlurAdditional?.();
             }}
         >
             <Show when={props.hasEmptyOption}>
-                <option value={''}>
+                <option 
+                    selected={selectedId() === ''}
+                    value={''}>
                     {props.hasEmptyOption && props.emptyPlaceholder}
                 </option>
             </Show>
@@ -96,7 +97,10 @@ export function SelectDropdown<TModel, TItem>(
                 (item, i) => {
                     const id = getItemId(item);
                     const description = getItemDescription(item);
-                    return <option value={id}>
+                    return <option 
+                        value={id}
+                        selected={selectedId() === id}    
+                    >
                         {description}
                     </option>
                 }}

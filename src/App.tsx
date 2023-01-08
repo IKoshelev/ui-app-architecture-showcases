@@ -1,191 +1,166 @@
 import { Component, createMemo, For } from 'solid-js';
-import { createStore, produce } from 'solid-js/store';
+import './App.component.scss';
+import { ClockStoreRoot, start } from './stores/clock.store';
+import { SubStore } from './util/subStore';
+import { diffSeconds } from './util/diffSeconds';
+import { approvalsStore, clockStore, dealsStore } from './App.stores';
+import { DealsStoreRoot, loadNewDeal, loadNewDealForeignCurrency, removeDeal, getDealSubstoreById, isDealForeignCurrencyStore, getActiveDealSubstore } from './stores/deals.store';
+import { Deal, getDealProgressState, getHeaderAdditionalDescription } from './stores/deals/Deal/Deal.pure';
+import { ApprovalsStoreRoot, getLatestMatchingApproval } from './stores/approval.store';
+import { DealWithForeignCurrencyComponent } from './stores/deals/DealForeignCurrency/DealForeignCurrency.component';
+import { DealComponent } from './stores/deals/Deal/Deal.component';
+import { getDealForeignCurrencyVM } from './stores/deals/DealForeignCurrency/DealForeignCurrency.vm';
+import { getDealVM } from './stores/deals/Deal/Deal.vm';
+import { unwrap } from 'solid-js/store';
 
-import styles from './App.module.scss'; 
-import { clockStore } from './stores/clock.store';
-import { Input } from './generic-components/Input.component';
-import { getUserInputState, UserInputState } from './generic-components/input-models/UserInput.pure';
-import { getNumericInputVM, numberValidatorFns } from './generic-components/input-models/NumericUserInput.vm';
-import { getDeeperSubStore, getSubStoreFromStore } from './util/subStore';
-import { getUserInputVM } from './generic-components/input-models/UserInput.vm';
-import { SelectDropdown } from './generic-components/SelectDropdown.component';
-import { SelectMultiple } from './generic-components/SelectMultiple.component';
+(window as any).getDealsStore = () => console.log(
+  unwrap(dealsStore[0]())
+);
 
-type ItemWithId = {
-  id: string,
-  description: string
-}
-
-const items: ItemWithId[] = [{
-  id: "1",
-  description: "apple"
-},{
-  id: "2",
-  description: "orange"
-},{
-  id: "3",
-  description: "banana"
-}]
-
-const [storeState, setStoreState] = createStore({
-  form: {
-    numberInput: getUserInputState<number | undefined, string>(5),
-    arrayOfNumberInputs: [] as UserInputState<number | undefined, string>[],
-    wholeItemInput: getUserInputState<ItemWithId | undefined, ItemWithId>(undefined),
-    itemDescriptionInput: getUserInputState<string | undefined, ItemWithId>(undefined),
-    stringInput: getUserInputState<string | undefined, string>(undefined),
-    multipleOptionsInput: getUserInputState<string[], ItemWithId[]>([]),
-    multipleStringInput: getUserInputState<string[], string[]>([]),
-  }
-});
-
-const subStore1 = getSubStoreFromStore(
-  storeState, 
-  setStoreState, 
-  x => x.form);
-
-  const subStore2 = getDeeperSubStore(subStore1, x => x.numberInput);
-
-export function appVm(state: typeof storeState, setState: typeof setStoreState) {
-
-  console.log("recreating entire vm");
-  return {
-    // todo add vm memoization with weak map? 
-    numberInput: getNumericInputVM(
-      getSubStoreFromStore(state, setState, x => x.form.numberInput),
-      [
-        numberValidatorFns.integer(),
-        numberValidatorFns.between(10,20)
-      ]
-    ),
-    arrayOfNumberInputs: () => state.form.arrayOfNumberInputs.map((x, i) => {
-      console.log("recreating array vms");
-      return getNumericInputVM(
-        getSubStoreFromStore(state, setState, x => x.form.arrayOfNumberInputs[i])
-      )
-    }),
-    // in a prod project, following vms would have specialized 
-    // factory functions for brevity
-    wholeItemInput: getUserInputVM<ItemWithId | undefined, ItemWithId, string>(
-      getSubStoreFromStore(state, setState, x => x.form.wholeItemInput),
-      (m) => m?.description ?? "",
-      (v) => ({ status: "parsed", parsed: v})
-    ),
-    itemDescriptionInput: getUserInputVM<string | undefined, ItemWithId, string>(
-      getSubStoreFromStore(state, setState, x => x.form.itemDescriptionInput),
-      (m) => m ?? "",
-      (v) => ({ status: "parsed", parsed: v.id})
-    ),
-    stringInput: getUserInputVM<string | undefined, string, string>(
-      getSubStoreFromStore(state, setState, x => x.form.stringInput),
-      (m) => m ?? "",
-      (v) => ({ status: "parsed", parsed: v})
-    ),
-    multipleOptionsInput:  getUserInputVM<string[], ItemWithId[], any>(
-      getSubStoreFromStore(state, setState, x => x.form.multipleOptionsInput),
-      (m) => m ?? "",
-      (v) => ({ status: "parsed", parsed: v.map(x => x.id)})
-    ),
-    multipleStringInput: getUserInputVM<string[], string[], any>(
-      getSubStoreFromStore(state, setState, x => x.form.multipleStringInput),
-      (m) => m ?? "",
-      (v) => ({ status: "parsed", parsed: v})
-    ),
-  };
-}
+start(clockStore);
 
 const App: Component = () => {
 
-  const vm = createMemo(() => {
-    return appVm(storeState, setStoreState);
-  })
+  const [getDeals, setDeals] = dealsStore;
 
-  return (
-    <div class={styles.App}>
-      <header class={styles.header}>
-        The current time is: {clockStore.state.currentDate?.toString() ?? ''}.
-        <button onClick={clockStore.commands.start}>start</button>
-        <button onClick={clockStore.commands.stop}>stop</button>
-      </header>
-      <div>
-        <Input
-          vm={vm().numberInput}
-        />
-      </div>
-      <div>
-        <SelectDropdown
-          vm={vm().wholeItemInput}
-          getItemId={(i) => i.id}
-          getItemDescription={(i) => i.description}
-          getModelId={(i) => i?.id ?? ""}
-          availableItems={items}
-          hasEmptyOption={true}
-        />
-      </div>
-      <div>
-        <SelectDropdown
-          vm={vm().itemDescriptionInput}
-          getItemId={(i) => i.id}
-          getItemDescription={(i) => i.description}
-          getModelId={(i) => i ?? ""}
-          availableItems={items}
-          hasEmptyOption={true}
-        />
-      </div>
-      <div>
-        <SelectDropdown
-          vm={vm().stringInput}
-          availableItems={items.map(x => x.description)}
-          hasEmptyOption={true}
-        />
-      </div>
-      <div>
-        <SelectMultiple
-          vm={vm().multipleOptionsInput}
-          getItemId={(i) => i.id}
-          getItemDescription={(i) => i.description}
-          getModelId={(i) => i ?? ""}
-          availableItems={items}
-        />
-      </div>
-      <div>
-        <SelectMultiple
-          vm={vm().multipleStringInput}
-          availableItems={items.map(x => x.description)}
-        />
-      </div>
-      <For each={vm().arrayOfNumberInputs()}>{(inputVM, i) =>
-        <div>
-          <Input
-            vm={inputVM}
-          />
-        </div>}
-      </For>
-      <button
-        onClick={() => setStoreState(produce(draft => {
-          draft.form.arrayOfNumberInputs.push(
-            getUserInputState<number | undefined, string>(undefined)
-          );
-        }))}
-      >Add numeric input</button>
-      <pre>
-        {
-          JSON.stringify(storeState, null, 2)
-        }
-      </pre>
-      Substore: 
-      <pre>
-        {
-          JSON.stringify(subStore2[0](), null, 2)
-        }
-      </pre>
-      <button
-        onClick={() => subStore2[1](x => x.committedValue = 112358)}
-      >
-        Set value to 112358
-      </button>
+  return <div id='app-root'>
+
+    <div class='main-logo'>
+      Hetman Motors (SolidJS)
     </div>
-  );
+
+    <div class='screens'>
+      <div class='tabs'>
+        <button
+          class='button-add-new-deal'
+          disabled={getDeals().newDealIsLoading}
+          onClick={() => loadNewDeal(dealsStore)}
+        >
+          Add deal
+        </button>
+
+        <button
+          class="button-add-new-deal"
+          disabled={getDeals().newDealIsLoading}
+          onClick={() => loadNewDealForeignCurrency(dealsStore)}
+        >
+          Add foreign currency deal
+        </button>
+
+        <For each={getDeals().deals.filter(x => !x.isClosed)}>{(deal) => (<TabHeader
+          dealStore={getDealSubstoreById(dealsStore, deal.businessParams.dealId)}
+          dealsStore={dealsStore}
+          approvalsStore={approvalsStore}
+          clockStore={clockStore} 
+        />)}
+        </For>
+      </div>
+
+      <div class="active-tab">
+        {
+          renderDealTab(
+            getActiveDealSubstore(dealsStore),
+            dealsStore,
+            approvalsStore,
+            clockStore
+          )
+        }
+      </div>
+    </div>
+  </div>;
+
+  function renderDealTab(
+    dealStore: SubStore<Deal>,
+    dealsStore: SubStore<DealsStoreRoot>,
+    approvalsStore: SubStore<ApprovalsStoreRoot>,
+    clockStore: SubStore<ClockStoreRoot>) {
+
+    const [getDeal, setDeal] = dealStore;
+
+    if (typeof getDeal()?.businessParams.dealId === 'undefined') {
+      return <></>;
+    }
+
+    if (isDealForeignCurrencyStore(dealStore)) {
+      const vm = getDealForeignCurrencyVM(
+        dealStore,
+        dealsStore,
+        approvalsStore,
+        clockStore
+      );
+      return <DealWithForeignCurrencyComponent vm={vm} />;
+    }
+
+    const vm = getDealVM(
+      dealStore,
+      dealsStore,
+      approvalsStore,
+      clockStore
+    );
+
+    //default - most basic deal
+    return <DealComponent vm={vm} />;
+  }
+
+};
+
+const TabHeader = (props: {
+  dealStore: SubStore<Deal>,
+  dealsStore: SubStore<DealsStoreRoot>,
+  approvalsStore: SubStore<ApprovalsStoreRoot>,
+  clockStore: SubStore<ClockStoreRoot> 
+}) => {
+
+  const [getDeal, setDeal] = props.dealStore;
+  const [getDeals, setDeals] = props.dealsStore;
+  const [getApprovals, setApprovals] = props.approvalsStore;
+  const [getClock, setClock] = props.clockStore;
+
+  const headerText = createMemo(() => {
+    const deatState = getDeal();
+    const progressState = getDealProgressState(
+      getDeal(),
+      getLatestMatchingApproval(getApprovals(), getDeal()),
+      getClock().currentDate,
+    )
+
+    if (!deatState.businessParams.carModelSelected) {
+      return `blank deal`
+    }
+
+    let text: string = '';
+    if (progressState === 'deal-finalized') {
+      text = 'done';
+    } else if (progressState === 'approval-perpetual') {
+      text = 'approved'
+    } else if (typeof progressState !== 'string') {
+      text = `${diffSeconds(progressState.approvalExpiresAt, getClock().currentDate)} sec`;
+    }
+
+    return `${deatState.businessParams.carModelSelected.committedValue?.description ?? "No model selected"} ` +
+      `${getHeaderAdditionalDescription(getDeal())}${text}`;
+  });
+
+  return <div
+    classList={{
+      'deal-tab-header': true,
+      'active': getDeal().businessParams.dealId === getDeals().activeDealId
+    }}
+  >
+    <div
+      class='header-text'
+      onClick={() => setDeals(x => x.activeDealId = getDeal().businessParams.dealId)}
+    >
+      {headerText}
+    </div>
+
+    <button
+      class='close-button'
+      onClick={() => setDeals((x) => removeDeal(x, getDeal().businessParams.dealId))}
+    >
+      X
+    </button>
+  </div>;
 };
 
 export default App;

@@ -2,7 +2,8 @@ import { iterateDeep, transform } from "../../util/walkers";
 import { ExpandDeep } from 'ts-mapping-types';
 import cloneDeep from "lodash.clonedeep";
 import { unwrap } from "solid-js/store";
-import { DisplayMessage, spliceMessage } from "../../util/validAndDisabled";
+import { DisplayMessage, spliceMessage } from "../../util/validation-flows-messages";
+import { batch } from "solid-js";
 
 export const inputStateMarker = "solidjsdemo:UserInputState";
 
@@ -11,25 +12,28 @@ export type InputStateMarker = `${typeof inputStateMarker}${string}`;
 export function getUserInputState<TModel, TInput = TModel>(
     initialValue: TModel
 ) {
-    return {
+    const res = {
         __type: inputStateMarker as InputStateMarker,
-        uncommittedValue: undefined as TInput | undefined,
         committedValue: initialValue,
+        // this can't be TInput directly, because then we couldn't process
+        // undefined as an actual uncommitted valued. 
+        uncommittedValue: undefined as { value: TInput } | undefined,
         pristineValue: initialValue,
         isTouched: false,
         activeFlows: {} as Record<string, true>,
         messages: [] as DisplayMessage[]
-    }
+    };
+
+    return res;
 }
 
 export type UserInputState<TModel, TInput = TModel> = ReturnType<typeof getUserInputState<TModel, TInput>>;
 
 export function isUserInputState(target: any): target is UserInputState<unknown, unknown> {
-    return typeof target === "object" 
-        && typeof target.__type === "string" 
+    return typeof target === "object"
+        && typeof target.__type === "string"
         && target.__type.startsWith(inputStateMarker);
 }
-
 
 export const PARSING_ERROR = "PARSING_ERROR";
 
@@ -63,29 +67,30 @@ export const validator = <TModel>(
         }
     }
 
-export function setCurrentUnsavedValue<TModel, TInput = any>(
+export function setCurrentUnsavedValue<TModel, TInput = TModel>(
     state: UserInputState<TModel, TInput>,
-    newUnsavedValue: TInput | undefined,
+    newUnsavedValue: TInput,
     setTouched = true) {
-    state.uncommittedValue = newUnsavedValue;
+
+    state.uncommittedValue = { value: newUnsavedValue };
     spliceMessage(state.messages, PARSING_ERROR);
-    if (setTouched){
+    if (setTouched) {
         state.isTouched = true;
     }
 }
 
-export function isPristine<TModel, TInput = any>(
+export function isPristine<TModel, TInput = TModel>(
     state: UserInputState<TModel, TInput>
-){
+) {
     return state.committedValue === state.pristineValue;
 }
 
-export function clearMessages<TModel, TInput = any>(
+export function clearMessages<TModel, TInput = TModel>(
     state: UserInputState<TModel, TInput>) {
     state.messages = [];
 }
 
-export function revalidateCommittedValue<TModel, TInput = any>(
+export function revalidateCommittedValue<TModel, TInput = TModel>(
     state: UserInputState<TModel, TInput>,
     validators: Validator<TModel>[]) {
 
@@ -99,7 +104,7 @@ export function revalidateCommittedValue<TModel, TInput = any>(
     }
 }
 
-export function resetValueToPristine<TModel, TInput = any>(
+export function resetValueToPristine<TModel, TInput = TModel>(
     state: UserInputState<TModel, TInput>,
     resetIsTouched = true,
     clearMessages = true
@@ -114,7 +119,7 @@ export function resetValueToPristine<TModel, TInput = any>(
     }
 }
 
-export function tryCommitValue<TModel, TInput = any>(
+export function tryCommitValue<TModel, TInput = TModel>(
     state: UserInputState<TModel, TInput>,
     parseInput: (val: TInput) => {
         status: "parsed",
@@ -125,11 +130,11 @@ export function tryCommitValue<TModel, TInput = any>(
     },
     validators: Validator<TModel>[]) {
 
-    if (state.uncommittedValue === undefined) {
+    if (!state.uncommittedValue) {
         return false;
     }
 
-    let parseResult = parseInput(state.uncommittedValue);
+    let parseResult = parseInput(state.uncommittedValue.value);
 
     if (parseResult.status === "error") {
         spliceMessage(state.messages, PARSING_ERROR, {
@@ -137,7 +142,7 @@ export function tryCommitValue<TModel, TInput = any>(
             type: "error",
             message: parseResult.message
         });
-        return;
+        return false;
     }
 
     spliceMessage(state.messages, PARSING_ERROR);
@@ -145,15 +150,17 @@ export function tryCommitValue<TModel, TInput = any>(
     state.committedValue = parseResult.parsed;
     state.uncommittedValue = undefined;
     revalidateCommittedValue(state, validators);
+
+    return true;
 }
 
 export function everyUserInputStateIn(
-    target: object, 
+    target: object,
     check: (val: UserInputState<unknown, unknown>) => boolean) {
     for (const [_, value] of iterateDeep(target)) {
         if (isUserInputState(value)) {
             const res = check(value);
-            if(!res) {
+            if (!res) {
                 return false;
             }
         }
@@ -162,12 +169,12 @@ export function everyUserInputStateIn(
 }
 
 export function anyUserInputStateIn(
-    target: object, 
+    target: object,
     check: (val: UserInputState<unknown, unknown>) => boolean) {
     for (const [_, value] of iterateDeep(target)) {
         if (isUserInputState(value)) {
             const res = check(value);
-            if(res) {
+            if (res) {
                 return true;
             }
         }
@@ -179,11 +186,11 @@ type InputStateValue<T> = Pick<UserInputState<T>, '__type' | 'committedValue'>;
 
 type TryPluckCommittedValue<T> = T extends InputStateValue<infer U> ? U : T;
 
-type TryPluckFromTuple<T> = T extends [infer U, ...infer URest] 
-    ?  [TryPluckCommittedValue<U>, ...TryPluckFromTuple<URest>]
+type TryPluckFromTuple<T> = T extends [infer U, ...infer URest]
+    ? [TryPluckCommittedValue<U>, ...TryPluckFromTuple<URest>]
     : TryPluckCommittedValue<T>;
 
-export type InputStateContainerToPojo<T> = 
+export type InputStateContainerToPojo<T> =
     T extends [infer U, ...infer URest] ? TryPluckFromTuple<T> :
     T extends (infer U)[] ? InputStateContainerToPojo<U>[] :
     T extends InputStateValue<infer U> ? U :

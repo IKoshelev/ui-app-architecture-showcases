@@ -3,7 +3,7 @@ import { CarModel } from "../../../api/CarInventory.Client";
 import { financingClient, GetApprovalResult } from "../../../api/Financing.Client";
 import { multimethod } from "multimethod-type-tag-hierarchy";
 import { getUserInputState } from "../../../generic-components/input-models/UserInput.pure";
-import { DisplayMessage } from "../../../util/validAndDisabled";
+import { DisplayMessage } from "../../../util/validation-flows-messages";
 
 export const DealTag: `Deal${string}` = 'Deal';
 
@@ -93,12 +93,10 @@ export function getGeneralValidation(deal: Deal) {
     return validation;
 }
 
-export function validateDealBusinessParams(params: Deal['businessParams'])
-    : asserts params is Deal['businessParams'] & { carModelSelected: CarModel } {
+export function areDealBusinessParamsValid(params: Deal['businessParams'])
+    : params is Deal['businessParams'] & { carModelSelected: CarModel } {
 
-    if (!params.carModelSelected) {
-        throw new Error("Car model not selected.");
-    }
+   return !!params.carModelSelected.committedValue;
 }
 
 export function canBeFinalized(deal: Deal, approval: GetApprovalResult | undefined, currentDate: Date) {
@@ -120,7 +118,9 @@ export const getMinimumPossibleDownpayment = multimethod('type', DealTag, (deal:
 
 export const prepareRequestApprovalCall = multimethod('type', DealTag, (deal: Deal) => {
 
-    validateDealBusinessParams(deal.businessParams);
+    if(!areDealBusinessParamsValid(deal.businessParams)){
+        return undefined;
+    }
 
     const request =  [
         deal.businessParams.carModelSelected.committedValue!,

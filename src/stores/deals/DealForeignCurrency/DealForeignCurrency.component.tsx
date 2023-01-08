@@ -1,15 +1,15 @@
 import './DealForeignCurrency.component.scss';
-import { DealBare } from "../Deal/Deal.component";
+import { DealComponentBare } from "../Deal/Deal.component";
 import { SelectDropdown } from "../../../generic-components/SelectDropdown.component";
 import { DealForeignCurrencyVM } from "./DealForeignCurrency.vm";
 
-export const CarPurchaseWithForeignCurrency = (props: {
+export const DealWithForeignCurrencyComponent = (props: {
     vm: DealForeignCurrencyVM
 }) => {
 
     return <div class='car-purchase-deal car-purchase-deal-with-foreign-currency'>
 
-        <DealBare vm={props.vm} />
+        <DealComponentBare vm={props.vm} />
 
         <div class='car-purchase-downpayment-currency-label'>
             Please select currency

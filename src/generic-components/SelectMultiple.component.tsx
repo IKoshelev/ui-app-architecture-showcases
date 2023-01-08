@@ -1,6 +1,6 @@
 import { createMemo, For, JSX, Show } from "solid-js";
 import { createFunctionMemo } from "../util/createFunctionMemo";
-import { hasActiveFlows, isValid } from "../util/validAndDisabled";
+import { hasActiveFlows, isValid } from "../util/validation-flows-messages";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
 type SelectMultipleProps<TModel, TItem> =
@@ -49,7 +49,7 @@ export function SelectMultiple<TModel, TItem>(
         const uncommittedValue = inputState().uncommittedValue;
 
         if (uncommittedValue !== undefined) {
-            return uncommittedValue.map(x => getItemId(x));
+            return uncommittedValue.value.map(x => getItemId(x));
         }
 
         const committedValue = inputState().committedValue;
@@ -74,9 +74,9 @@ export function SelectMultiple<TModel, TItem>(
                     [...e.currentTarget.selectedOptions].map(x =>  getSelectItemFromId(x.value));
                 props.vm.setCurrentUnsavedValue(selectedItems);
                 props.onChangeAdditional?.(selectedItems);
+                props.vm.tryCommitValue();
             }}
             onBlur={(e) => {
-                props.vm.tryCommitValue();
                 props.onBlurAdditional?.();
             }}
         >

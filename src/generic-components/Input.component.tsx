@@ -1,5 +1,5 @@
 import { createMemo, For, JSX, Show } from "solid-js";
-import { hasActiveFlows, isValid } from "../util/validAndDisabled";
+import { hasActiveFlows, isValid } from "../util/validation-flows-messages";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
 export function Input(props: {
@@ -26,8 +26,9 @@ export function Input(props: {
                 pristine: inputState().committedValue === inputState().pristineValue
             }}
             value={
-                inputState().uncommittedValue
-                ?? props.vm.derivedState.displayValue()
+                inputState().uncommittedValue 
+                    ? inputState().uncommittedValue?.value
+                    : props.vm.derivedState.displayValue()
             }
             placeholder={props.placeholder}
             disabled={props.disabled ?? hasActiveFlows(inputState())}
