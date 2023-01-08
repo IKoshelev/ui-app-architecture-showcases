@@ -1,5 +1,5 @@
 import { createMemo, For, JSX, Show } from "solid-js";
-import { isDisabled, isValid } from "./input-models/UserInput.pure";
+import { isDisabled, isValid } from "../util/validAndDisabled";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
 export function InputComponent(props: {
@@ -12,7 +12,7 @@ export function InputComponent(props: {
     onBlurAdditional?: () => void,
 }) {
 
-    const inputState = createMemo(() => props.vm.getState());
+    const inputState = createMemo(() => props.vm.state());
     const _isValid = createMemo(() => isValid(inputState()));
 
     return <>
@@ -26,7 +26,7 @@ export function InputComponent(props: {
             }}
             value={
                 inputState().uncommittedValue
-                ?? props.vm.getDisplayValue()
+                ?? props.vm.derivedState.displayValue()
             }
             placeholder={props.placeholder}
             disabled={isDisabled(inputState())}

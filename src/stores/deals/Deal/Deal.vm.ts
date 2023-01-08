@@ -33,7 +33,7 @@ export function getDealVM(
     const generalValidation = createMemo(() => getGeneralValidation(getDeal()));
 
     return {
-        deal: getDeal(),
+        state: () => getDeal(),
         derivedState: {
             currentApproval,
             isCurrentApprovalLoading: () => getApprovals().reasonsToDisable[`loading:${getDeal().businessParams.dealId}`],

@@ -1,6 +1,6 @@
 import { createMemo, For, JSX, Show } from "solid-js";
 import { createFunctionMemo } from "../util/createFunctionMemo";
-import { isDisabled, isValid } from "./input-models/UserInput.pure";
+import { isDisabled, isValid } from "../util/validAndDisabled";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
 type SelectMultipleProps<TModel, TItem> =
@@ -20,7 +20,7 @@ type SelectMultipleProps<TModel, TItem> =
 export function SelectMultiple<TModel, TItem>(
     props: SelectMultipleProps<TModel, TItem>) {
 
-    const inputState = createMemo(() => props.vm.getState());
+    const inputState = createMemo(() => props.vm.state());
     const _isValid = createMemo(() => isValid(inputState()));
 
     const getItemId = createFunctionMemo(() =>

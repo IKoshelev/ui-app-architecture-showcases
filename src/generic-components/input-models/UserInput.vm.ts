@@ -1,8 +1,9 @@
-import { addReasonToDisable, Validator, UserInputState, removeReasonToDisable, resetValueToPristine, revalidateCommittedValue, setCurrentUnsavedValue, tryCommitValue } from "./UserInput.pure";
+import { SubStore } from "../../util/subStore";
+import { addReasonToDisable, removeReasonToDisable } from "../../util/validAndDisabled";
+import { Validator, UserInputState, resetValueToPristine, revalidateCommittedValue, setCurrentUnsavedValue, tryCommitValue } from "./UserInput.pure";
 
 export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
-    getState: () => UserInputState<TModel, TInput>,
-    updateState: (update: (stateDraft: UserInputState<TModel, TInput>) => void) => void,
+    store: SubStore<UserInputState<TModel, TInput>>,
     modelToDisplayValue: (val: TModel) => TDisplay,
     parseInput: (val: TInput) => { 
         status: "parsed",
@@ -11,20 +12,23 @@ export function getUserInputVM<TModel, TInput = any, TDisplay = TInput>(
         status: "error",
         message: string,
     },
-    
     validators: Validator<TModel>[] = []
 ) {
+    const [getState, setState] = store;
+
     const bindFnToState = <TRestArgs extends any[], TReturn>(
         fn: (state: UserInputState<TModel, TInput>, ...args: TRestArgs) => TReturn
     ) => (...args: TRestArgs) => {
         let ret: TReturn;
-        updateState((draft) => { ret = fn(draft, ...args); })
+        setState((draft) => { ret = fn(draft, ...args); })
         return ret!;
     };
 
     return {
-        getState: bindFnToState(getState),
-        getDisplayValue: () => modelToDisplayValue(getState().committedValue),
+        state: getState,
+        derivedState: {
+            displayValue: () => modelToDisplayValue(getState().committedValue),
+        },
         setCurrentUnsavedValue: bindFnToState(setCurrentUnsavedValue<TModel, TInput>),
         tryCommitValue: bindFnToState((draft) => tryCommitValue<TModel, TInput>(
             draft,

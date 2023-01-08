@@ -1,4 +1,5 @@
 import { expandMagnitudeShortcuts } from "../../util/numeric";
+import { SubStore } from "../../util/subStore";
 import { Validator, validator, getUserInputState, UserInputState } from "./UserInput.pure";
 import { getUserInputVM } from "./UserInput.vm";
 
@@ -32,12 +33,10 @@ export const numberValidatorFns = {
 
 
 export const getNumericInputVM = (
-    getState: () => UserInputState<number | undefined, string>,
-    updateState: (update: (stateDraft: UserInputState<number | undefined, string>) => void) => void,
+    store: SubStore<UserInputState<number | undefined, string>>,
     validators: Validator<number | undefined>[] = []
 ) => getUserInputVM(
-    getState,
-    updateState,
+    store,
     (val) => (val ?? "").toString(),
     (val) => {
         const expanded = expandMagnitudeShortcuts(val);

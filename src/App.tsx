@@ -52,7 +52,7 @@ export function appVm(state: typeof storeState, setState: typeof setStoreState) 
   return {
     // todo add vm memoization with weak map? 
     numberInput: getNumericInputVM(
-      ...getSubStoreFromStore(state, setState, x => x.form.numberInput),
+      getSubStoreFromStore(state, setState, x => x.form.numberInput),
       [
         numberValidatorFns.integer(),
         numberValidatorFns.between(10,20)
@@ -61,33 +61,33 @@ export function appVm(state: typeof storeState, setState: typeof setStoreState) 
     arrayOfNumberInputs: () => state.form.arrayOfNumberInputs.map((x, i) => {
       console.log("recreating array vms");
       return getNumericInputVM(
-        ...getSubStoreFromStore(state, setState, x => x.form.arrayOfNumberInputs[i])
+        getSubStoreFromStore(state, setState, x => x.form.arrayOfNumberInputs[i])
       )
     }),
     // in a prod project, following vms would have specialized 
     // factory functions for brevity
     wholeItemInput: getUserInputVM<ItemWithId | undefined, ItemWithId, string>(
-      ...getSubStoreFromStore(state, setState, x => x.form.wholeItemInput),
+      getSubStoreFromStore(state, setState, x => x.form.wholeItemInput),
       (m) => m?.description ?? "",
       (v) => ({ status: "parsed", parsed: v})
     ),
     itemDescriptionInput: getUserInputVM<string | undefined, ItemWithId, string>(
-      ...getSubStoreFromStore(state, setState, x => x.form.itemDescriptionInput),
+      getSubStoreFromStore(state, setState, x => x.form.itemDescriptionInput),
       (m) => m ?? "",
       (v) => ({ status: "parsed", parsed: v.id})
     ),
     stringInput: getUserInputVM<string | undefined, string, string>(
-      ...getSubStoreFromStore(state, setState, x => x.form.stringInput),
+      getSubStoreFromStore(state, setState, x => x.form.stringInput),
       (m) => m ?? "",
       (v) => ({ status: "parsed", parsed: v})
     ),
     multipleOptionsInput:  getUserInputVM<string[], ItemWithId[], any>(
-      ...getSubStoreFromStore(state, setState, x => x.form.multipleOptionsInput),
+      getSubStoreFromStore(state, setState, x => x.form.multipleOptionsInput),
       (m) => m ?? "",
       (v) => ({ status: "parsed", parsed: v.map(x => x.id)})
     ),
     multipleStringInput: getUserInputVM<string[], string[], any>(
-      ...getSubStoreFromStore(state, setState, x => x.form.multipleStringInput),
+      getSubStoreFromStore(state, setState, x => x.form.multipleStringInput),
       (m) => m ?? "",
       (v) => ({ status: "parsed", parsed: v})
     ),
