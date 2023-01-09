@@ -21,9 +21,6 @@ type SelectMultipleProps<TModel, TItem> =
 export function SelectMultiple<TModel, TItem>(
     props: SelectMultipleProps<TModel, TItem>) {
 
-    const inputState = createMemo(() => props.vm.state());
-    const _isValid = createMemo(() => isValid(inputState()));
-
     const getItemId = createFunctionMemo(() =>
         props.getItemId ?? ((x) => x?.toString() ?? "")
     );
@@ -46,13 +43,13 @@ export function SelectMultiple<TModel, TItem>(
     }
 
     const selectedIds = createMemo(() => {
-        const uncommittedValue = inputState().uncommittedValue;
+        const uncommittedValue =  props.vm.state.uncommittedValue;
 
         if (uncommittedValue !== undefined) {
             return uncommittedValue.value.map(x => getItemId(x));
         }
 
-        const committedValue = inputState().committedValue;
+        const committedValue =  props.vm.state.committedValue;
 
         return committedValue.map(x => 
             props.getModelId?.(x) ?? x?.toString() ?? "" );
@@ -63,11 +60,11 @@ export function SelectMultiple<TModel, TItem>(
             {...props.selectAttributes}
             classList={{
                 ...props.selectAttributes?.classList,
-                invalid: !_isValid(),
-                touched: inputState().isTouched,
-                pristine: inputState().committedValue === inputState().pristineValue
+                invalid: ! isValid(props.vm.state),
+                touched:  props.vm.state.isTouched,
+                pristine:  props.vm.state.committedValue === props.vm.state.pristineValue
             }}
-            disabled={ props.disabled || hasActiveFlows(inputState())}
+            disabled={ props.disabled || hasActiveFlows(props.vm.state)}
             multiple={true}
             onChange={(e) => {
                 const selectedItems =
@@ -94,11 +91,11 @@ export function SelectMultiple<TModel, TItem>(
             </For>
         </select>
         <Show
-            when={inputState().messages.length > 0}
+            when={props.vm.state.messages.length > 0}
             keyed={true}
         >
             <div {...props.messagesContainerAttributes}>
-                <For each={inputState().messages}>{(message, i) =>
+                <For each={props.vm.state.messages}>{(message, i) =>
                     <div>{message.type}: {message.message}</div>
                 }
                 </For>

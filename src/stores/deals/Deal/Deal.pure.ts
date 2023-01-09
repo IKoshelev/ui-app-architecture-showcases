@@ -83,8 +83,10 @@ export const getFinalPrice = multimethod('type', DealTag, (deal: Deal) => {
 
 export function getGeneralValidation(deal: Deal) {
 
-    const downpaymentExceedsPrice = !!(deal.businessParams.carModelSelected
-        && deal.businessParams.downpayment.committedValue > getFinalPrice(deal));
+    const finalPrice = getFinalPrice(deal);
+
+    const downpaymentExceedsPrice = !!(deal.businessParams.carModelSelected.committedValue
+        && deal.businessParams.downpayment.committedValue > finalPrice);
 
     const validation = {
         downpaymentExceedsPrice

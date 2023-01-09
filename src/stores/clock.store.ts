@@ -13,11 +13,11 @@ export function start(
     clockStore: SubStore<ClockStoreRoot>
 ) {
 
-    const [getClock, setClock] = clockStore;
+    const [clock, setClock] = clockStore;
 
-    if (getClock().tickIntervalHandle !== undefined) {
+    if (clock.tickIntervalHandle !== undefined) {
         try {
-            clearInterval(getClock().tickIntervalHandle);
+            clearInterval(clock.tickIntervalHandle);
         } catch (ex) {
 
         }
@@ -40,13 +40,13 @@ export function stop(
     clockStore: SubStore<ClockStoreRoot>
 ) {
 
-    const [getClock, setClock] = clockStore;
+    const [clock, setClock] = clockStore;
 
-    if (getClock().tickIntervalHandle === undefined) {
+    if (clock.tickIntervalHandle === undefined) {
         return 'already stopped';
     }
 
-    clearInterval(getClock().tickIntervalHandle);
+    clearInterval(clock.tickIntervalHandle);
     setClock((newState) => {
         newState.tickIntervalHandle = undefined;
     });

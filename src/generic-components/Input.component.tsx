@@ -1,4 +1,4 @@
-import { createMemo, For, JSX, Show } from "solid-js";
+import { For, JSX, Show } from "solid-js";
 import { hasActiveFlows, isValid } from "../util/validation-flows-messages";
 import { UserInputVM } from "./input-models/UserInput.vm";
 
@@ -13,25 +13,22 @@ export function Input<T>(props: {
     disabled?: boolean
 }) {
 
-    const inputState = createMemo(() => props.vm.state());
-    const _isValid = createMemo(() => isValid(inputState()));
-
     return <>
         <input
             {...props.inputAttributes}
             classList={{
                 ...props.inputAttributes?.classList,
-                invalid: !_isValid(),
-                touched: inputState().isTouched,
-                pristine: inputState().committedValue === inputState().pristineValue
+                invalid: !isValid(props.vm.state),
+                touched: props.vm.state.isTouched,
+                pristine: props.vm.state.committedValue === props.vm.state.pristineValue
             }}
             value={
-                inputState().uncommittedValue 
-                    ? inputState().uncommittedValue?.value
+                props.vm.state.uncommittedValue 
+                    ? props.vm.state.uncommittedValue?.value
                     : props.vm.derivedState.customStringValue()
             }
             placeholder={props.placeholder}
-            disabled={props.disabled ?? hasActiveFlows(inputState())}
+            disabled={props.disabled ?? hasActiveFlows(props.vm.state)}
             onChange={(e) => {
                 props.vm.setCurrentUncommittedValue(e.currentTarget.value);
                 props.onChangeAdditional?.(e.currentTarget.value);
@@ -44,11 +41,11 @@ export function Input<T>(props: {
             }}
         ></input>
         <Show
-            when={inputState().messages.length > 0}
+            when={props.vm.state.messages.length > 0}
             keyed={true}
         >
             <div {...props.messageAttributes}>
-                <For each={inputState().messages}>{(message, i) =>
+                <For each={props.vm.state.messages}>{(message, i) =>
                         <div>{message.type}: {message.message}</div>
                     }
                 </For>

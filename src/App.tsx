@@ -4,22 +4,22 @@ import { ClockStoreRoot, start } from './stores/clock.store';
 import { SubStore } from './util/subStore';
 import { diffSeconds } from './util/diffSeconds';
 import { approvalsStore, clockStore, dealsStore } from './App.stores';
-import { DealsStoreRoot, loadNewDeal, loadNewDealForeignCurrency, removeDeal, getDealSubstoreById, isDealForeignCurrencyStore, getActiveDealSubstore } from './stores/deals.store';
+import { DealsStoreRoot, loadNewDeal, loadNewDealForeignCurrency, removeDeal, dealSubstoreById, isDealForeignCurrencyStore, getActiveDealSubstore } from './stores/deals.store';
 import { Deal, getDealProgressState, getHeaderAdditionalDescription } from './stores/deals/Deal/Deal.pure';
 import { ApprovalsStoreRoot, getLatestMatchingApproval } from './stores/approval.store';
 import { DealWithForeignCurrencyComponent } from './stores/deals/DealForeignCurrency/DealForeignCurrency.component';
 import { DealComponent } from './stores/deals/Deal/Deal.component';
-import { getDealForeignCurrencyVM } from './stores/deals/DealForeignCurrency/DealForeignCurrency.vm';
-import { getDealVM } from './stores/deals/Deal/Deal.vm';
+import { dealForeignCurrencyVM } from './stores/deals/DealForeignCurrency/DealForeignCurrency.vm';
+import { dealVM } from './stores/deals/Deal/Deal.vm';
 import { unwrap } from 'solid-js/store';
 import { cloneWithoutSymbols } from './util/walkers';
 
-(window as any).getDealsStore = () => console.log(
-  unwrap(dealsStore[0]())
+(window as any).dealsStore = () => console.log(
+  unwrap(dealsStore[0])
 );
 
 (window as any).getApprovalsStore = () => console.log(
-  unwrap(approvalsStore[0]())
+  unwrap(approvalsStore[0])
 );
 
 start(clockStore);
@@ -28,7 +28,7 @@ let savedStores: any = {};
 
 const App: Component = () => {
 
-  const [getDeals, setDeals] = dealsStore;
+  const [deals, setDeals] = dealsStore;
 
   return <div id='app-root'>
 
@@ -36,8 +36,8 @@ const App: Component = () => {
       Hetman Motors (SolidJS)
       <button
         onClick={() => {
-          savedStores.deals = cloneWithoutSymbols(unwrap(dealsStore[0]())),
-          savedStores.approvals = cloneWithoutSymbols(unwrap(approvalsStore[0]()))
+          savedStores.deals = cloneWithoutSymbols(unwrap(dealsStore[0])),
+          savedStores.approvals = cloneWithoutSymbols(unwrap(approvalsStore[0]))
         }}
       >Save stores</button>
       <button
@@ -52,7 +52,7 @@ const App: Component = () => {
       <div class='tabs'>
         <button
           class='button-add-new-deal'
-          disabled={getDeals().newDealIsLoading}
+          disabled={deals.newDealIsLoading}
           onClick={() => loadNewDeal(dealsStore)}
         >
           Add deal
@@ -60,14 +60,14 @@ const App: Component = () => {
 
         <button
           class="button-add-new-deal"
-          disabled={getDeals().newDealIsLoading}
+          disabled={deals.newDealIsLoading}
           onClick={() => loadNewDealForeignCurrency(dealsStore)}
         >
           Add foreign currency deal
         </button>
 
-        <For each={getDeals().deals.filter(x => !x.isClosed)}>{(deal) => (<TabHeader
-          dealStore={getDealSubstoreById(dealsStore, deal.businessParams.dealId)}
+        <For each={deals.deals.filter(x => !x.isClosed)}>{(deal) => (<TabHeader
+          dealStore={dealSubstoreById(dealsStore, deal.businessParams.dealId)}
           dealsStore={dealsStore}
           approvalsStore={approvalsStore}
           clockStore={clockStore} 
@@ -94,14 +94,14 @@ const App: Component = () => {
     approvalsStore: SubStore<ApprovalsStoreRoot>,
     clockStore: SubStore<ClockStoreRoot>) {
 
-    const [getDeal, setDeal] = dealStore;
+    const [deal, setDeal] = dealStore;
 
-    if (typeof getDeal()?.businessParams.dealId === 'undefined') {
+    if (typeof deal?.businessParams.dealId === 'undefined') {
       return <></>;
     }
 
     if (isDealForeignCurrencyStore(dealStore)) {
-      const vm = getDealForeignCurrencyVM(
+      const vm = dealForeignCurrencyVM(
         dealStore,
         dealsStore,
         approvalsStore,
@@ -110,7 +110,7 @@ const App: Component = () => {
       return <DealWithForeignCurrencyComponent vm={vm} />;
     }
 
-    const vm = getDealVM(
+    const vm = dealVM(
       dealStore,
       dealsStore,
       approvalsStore,
@@ -130,17 +130,17 @@ const TabHeader = (props: {
   clockStore: SubStore<ClockStoreRoot> 
 }) => {
 
-  const [getDeal, setDeal] = props.dealStore;
-  const [getDeals, setDeals] = props.dealsStore;
-  const [getApprovals, setApprovals] = props.approvalsStore;
-  const [getClock, setClock] = props.clockStore;
+  const [deal, setDeal] = props.dealStore;
+  const [deals, setDeals] = props.dealsStore;
+  const [approvals, setApprovals] = props.approvalsStore;
+  const [clock, setClock] = props.clockStore;
 
   const headerText = createMemo(() => {
-    const dealState = getDeal();
+    const dealState = deal;
     const progressState = getDealProgressState(
-      getDeal(),
-      getLatestMatchingApproval(getApprovals(), getDeal()),
-      getClock().currentDate,
+      deal,
+      getLatestMatchingApproval(approvals, deal),
+      clock.currentDate,
     )
 
     if (!dealState.businessParams.carModelSelected) {
@@ -153,29 +153,29 @@ const TabHeader = (props: {
     } else if (progressState === 'approval-perpetual') {
       text = 'approved'
     } else if (typeof progressState !== 'string') {
-      text = `${diffSeconds(progressState.approvalExpiresAt, getClock().currentDate)} sec`;
+      text = `${diffSeconds(progressState.approvalExpiresAt, clock.currentDate)} sec`;
     }
 
     return `${dealState.businessParams.carModelSelected.committedValue?.description ?? "No model selected"} ` +
-      `${getHeaderAdditionalDescription(getDeal())}${text}`;
+      `${getHeaderAdditionalDescription(deal)}${text}`;
   });
 
   return <div
     classList={{
       'deal-tab-header': true,
-      'active': getDeal().businessParams.dealId === getDeals().activeDealId
+      'active': deal.businessParams.dealId === deals.activeDealId
     }}
   >
     <div
       class='header-text'
-      onClick={() => setDeals(x => x.activeDealId = getDeal().businessParams.dealId)}
+      onClick={() => setDeals(x => x.activeDealId = deal.businessParams.dealId)}
     >
       {headerText}
     </div>
 
     <button
       class='close-button'
-      onClick={() => setDeals((x) => removeDeal(x, getDeal().businessParams.dealId))}
+      onClick={() => setDeals((x) => removeDeal(x, deal.businessParams.dealId))}
     >
       X
     </button>

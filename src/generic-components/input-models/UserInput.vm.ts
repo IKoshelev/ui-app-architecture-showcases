@@ -22,7 +22,7 @@ export function getUserInputVM<TModel, TInput = TModel>(
     onSuccessfulCommit?: (val: UserInputState<TModel, TInput>) => void,
     validators: Validator<TModel>[] = []
 ) {
-    const [getState, setState] = store;
+    const [state, setState] = store;
 
     const bindFnToState = <TRestArgs extends any[], TReturn>(
         fn: (state: UserInputState<TModel, TInput>, ...args: TRestArgs) => TReturn
@@ -33,9 +33,9 @@ export function getUserInputVM<TModel, TInput = TModel>(
     };
 
     return {
-        state: getState,
+        state,
         derivedState: {
-            customStringValue: () => modelToCustomStringValue(getState().committedValue),
+            customStringValue: () => modelToCustomStringValue(state.committedValue),
         },
         setCurrentUncommittedValue: bindFnToState(setCurrentUncommittedValue<TModel, TInput>),
         tryCommitValue: bindFnToState((draft) => {

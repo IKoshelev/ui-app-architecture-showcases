@@ -18,9 +18,9 @@ export const DealWithForeignCurrencyComponent = (props: {
         <SelectDropdown
             selectAttributes={{ class: 'car-purchase-downpayment-currency' }}
             hasEmptyOption={false}
-            availableItems={props.vm.state().currenciesAvailable}
+            availableItems={props.vm.state.currenciesAvailable}
             vm={props.vm.subVMS.downpaymentCurrency}
-            disabled={props.vm.derivedState.isLoading() || props.vm.state().businessParams.isDealFinalized}
+            disabled={props.vm.derivedState.isLoading() || props.vm.state.businessParams.isDealFinalized}
         />
 
     </div>;

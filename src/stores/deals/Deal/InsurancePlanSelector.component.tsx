@@ -9,12 +9,12 @@ export const InsurancePlanSelector = (props:{
 
     return <>
         <Show
-            when={!props.vm.state().activeFlows["loading:insurance-plans"]}
+            when={!props.vm.state.activeFlows["loading:insurance-plans"]}
             fallback={<div class='insurance-plan-selector-select'>Loading</div>}
         >
             <SelectMultiple
                 selectAttributes={{ class: 'insurance-plan-selector-select' }}
-                availableItems={props.vm.state().insurancePlansAvailable}
+                availableItems={props.vm.state.insurancePlansAvailable}
                 vm={props.vm.subVMS.insurancePlansSelected}
                 disabled={props.vm.derivedState.isLoading()}
                 getItemId={(item) => item.type.toString()}
@@ -25,7 +25,7 @@ export const InsurancePlanSelector = (props:{
         <button
             class='insurance-plan-selector-refresh-btn'
             onClick={() => props.vm.reloadAvailableInsurancePlans()}
-            disabled={props.vm.derivedState.isLoading() || props.vm.state().businessParams.isDealFinalized}
+            disabled={props.vm.derivedState.isLoading() || props.vm.state.businessParams.isDealFinalized}
         >
             Refresh available plans
         </button>

@@ -13,49 +13,50 @@ import { acceptAllParser, getUserInputVM } from "../../../generic-components/inp
 import { getNumericInputVM, numberValidatorFns } from "../../../generic-components/input-models/NumericUserInput.vm";
 import { DealsStoreRoot, removeDeal } from "../../deals.store";
 
-export function getDealVM<T extends Deal>(
+export function dealVM<T extends Deal>(
     dealStore: SubStore<T>,
     dealsStore: SubStore<DealsStoreRoot>,
     approvalStore: SubStore<ApprovalsStoreRoot>,
     clockStore: SubStore<ClockStoreRoot>) {
 
-    const [getDeal, setDeal] = dealStore;
-    const [getDeals, setDeals] = dealsStore;
-    const [getApprovals, setApprovals] = approvalStore;
-    const [getClock, setClock] = clockStore;
+    const [deal, setDeal] = dealStore;
+    const [deals, setDeals] = dealsStore;
+    const [approvals, setApprovals] = approvalStore;
+    const [clock, setClock] = clockStore;
+
+    console.log(`Creating dealVM for ${deal.businessParams.dealId}`);
 
     const currentApproval = createMemo(() => getLatestMatchingApproval(
-        getApprovals(),
-        getDeal()
+        approvals,
+        deal
     ));
 
     const dealProgressState = createMemo(() => getDealProgressState(
-        getDeal(),
+        deal,
         currentApproval(),
-        getClock().currentDate
+        clock.currentDate
     ));
 
-    const generalValidation = createMemo(() => getGeneralValidation(getDeal()));
+    const generalValidation = createMemo(() => getGeneralValidation(deal));
 
     return {
-        state: () => getDeal(),
+        state: deal,
         derivedState: {
-            currentDate: () => getClock().currentDate,
+            currentDate: () => clock.currentDate,
             currentApproval,
-            isCurrentApprovalLoading: () => getApprovals().activeFlows[`loading:${getDeal().businessParams.dealId}`],
-            canRequestMinimumDownpayment: () => canRequestMinimumDownpayment(getDeal().businessParams),
-            finalPrice: () => getFinalPrice(getDeal()),
+            isCurrentApprovalLoading: () =>approvals.activeFlows[`loading:${deal.businessParams.dealId}`],
+            canRequestMinimumDownpayment: () => canRequestMinimumDownpayment(deal.businessParams),
+            finalPrice: () => getFinalPrice(deal),
             generalValidation,
             dealProgressState,
             canBeFinalized: () => canBeFinalized(
-                getDeal(),
+                deal,
                 currentApproval(),
-                getClock().currentDate
+                clock.currentDate
             ),
-            isLoading: () => isLoading(getDeal()),
-            isActiveDeal: () => getDeals().activeDealId === getDeal().businessParams.dealId,
+            isLoading: () => isLoading(deal),
+            isActiveDeal: () => deals.activeDealId === deal.businessParams.dealId,
             canRequestApproval: () => {
-                const deal = getDeal();
                 return deal.businessParams.carModelSelected.committedValue
                     && deal.businessParams.isDealFinalized === false
                     && isValid(deal.businessParams.downpayment)
@@ -78,22 +79,22 @@ export function getDealVM<T extends Deal>(
                     numberValidatorFns.positive()
                 ]),
         },
-        setThisDealAsActive: () => setDeals(x => x.activeDealId = getDeal().businessParams.dealId),
+        setThisDealAsActive: () => setDeals(x => x.activeDealId = deal.businessParams.dealId),
         reloadAvailableCarModels: () => reloadAvailableCarModels(dealStore),
         reloadAvailableInsurancePlans: () => reloadAvailableInsurancePlans(dealStore),
         setMinimumPossibleDownpayment: () => setMinimumPossibleDownpayment(dealStore),
         requestApproval: () => requestApproval(dealStore, approvalStore),
         finalizeDeal: () => finalizeDeal(dealStore, approvalStore),
-        removeThisDeal: () => setDeals(x => removeDeal(x, getDeal().businessParams.dealId))
+        removeThisDeal: () => setDeals(x => removeDeal(x, deal.businessParams.dealId))
     };
 };
 
-export type DealVM = ReturnType<typeof getDealVM>;
+export type DealVM = ReturnType<typeof dealVM>;
 
 export async function reloadAvailableCarModels(
     dealStore: SubStore<Deal>) {
 
-    const [getDeal, setDeal] = dealStore;
+    const [deal, setDeal] = dealStore;
 
     runFlow(setDeal, 'loading:car-models', async () => {
         const carModels = await carInventoryClient.getAvailableCarModels();
@@ -104,7 +105,7 @@ export async function reloadAvailableCarModels(
 export async function reloadAvailableInsurancePlans(
     dealStore: SubStore<Deal>) {
 
-    const [getDeal, setDeal] = dealStore;
+    const [deal, setDeal] = dealStore;
 
     runFlow(setDeal, 'loading:insurance-plans', async () => {
         const insurancePlans = await carInsuranceClient.getAvailableInsurancePlans();
@@ -115,14 +116,14 @@ export async function reloadAvailableInsurancePlans(
 export async function setMinimumPossibleDownpayment(
     dealStore: SubStore<Deal>) {
 
-    const [getDeal, setDeal] = dealStore;
+    const [deal, setDeal] = dealStore;
 
     runFlow(setDeal, 'loading:downpayment', async () => {
-        if (!areDealBusinessParamsValid(getDeal().businessParams)) {
+        if (!areDealBusinessParamsValid(deal.businessParams)) {
             return;
         }
 
-        const minPayment = await getMinimumPossibleDownpayment(getDeal());
+        const minPayment = await getMinimumPossibleDownpayment(deal);
 
         setDeal(x => {
             x.businessParams.downpayment.pristineValue = minPayment;
@@ -135,16 +136,16 @@ export async function requestApproval(
     dealStore: SubStore<Deal>,
     approvalStore: SubStore<ApprovalsStoreRoot>) {
 
-    const [getDeal, setDeal] = dealStore;
-    const [getApprovals, setApprovals] = approvalStore;
+    const [deal, setDeal] = dealStore;
+    const [approvals, setApprovals] = approvalStore;
 
     runFlow(setDeal, 'loading:approval', async () => {
-        if (!areDealBusinessParamsValid(getDeal().businessParams)) {
+        if (!areDealBusinessParamsValid(deal.businessParams)) {
             return;
         }
 
-        runFlow(setApprovals, `loading:${getDeal().businessParams.dealId}`, async () => {
-            const call = prepareRequestApprovalCall(getDeal());
+        runFlow(setApprovals, `loading:${deal.businessParams.dealId}`, async () => {
+            const call = prepareRequestApprovalCall(deal);
 
             if (!call) {
                 return;
@@ -153,7 +154,7 @@ export async function requestApproval(
             const resp = await call.makeCall();
 
             setApprovals((draft) => {
-                storeApprovalReqStatus(draft, getDeal().businessParams.dealId, {
+                storeApprovalReqStatus(draft, deal.businessParams.dealId, {
                     request: call.request,
                     result: resp,
                     timestamp: new Date()
@@ -167,12 +168,12 @@ export async function finalizeDeal(
     dealStore: SubStore<Deal>,
     approvalStore: SubStore<ApprovalsStoreRoot>) {
 
-    const [getDeal, setDeal] = dealStore;
-    const [getApprovals, setApprovals] = approvalStore;
+    const [deal, setDeal] = dealStore;
+    const [approvals, setApprovals] = approvalStore;
 
     const approval = getLatestMatchingApproval(
-        getApprovals(),
-        getDeal()
+       approvals,
+        deal
     );
 
     if (approval?.isApproved !== true) {

@@ -136,6 +136,8 @@ export function tryCommitValue<TModel, TInput = any>(
 
     let parseResult = parseInput(state.uncommittedValue.value);
 
+    state.messages.length = 0;
+
     if (parseResult.status === "error") {
         spliceMessage(state.messages, PARSING_ERROR, {
             code: PARSING_ERROR,

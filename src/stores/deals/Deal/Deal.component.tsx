@@ -18,10 +18,8 @@ export const DealComponentBare = (props: {
     vm: DealVM
 }) => {
 
-    const dealState = createMemo(() => props.vm.state());
-
     const messages = createMemo(() => {
-        const messages = [...dealState().messages];
+        const messages = [...props.vm.state.messages];
 
         if (props.vm.derivedState.generalValidation().downpaymentExceedsPrice) {
             addError(
@@ -58,8 +56,8 @@ export const DealComponentBare = (props: {
             inputAttributes={{ class: 'car-purchase-downpayment' }}
             messageAttributes={{ class: 'car-purchase-downpayment-messages' }}
             vm={props.vm.subVMS.downpayment}
-            disabled={props.vm.state().activeFlows["loading:downpayment"]
-                || props.vm.state().businessParams.isDealFinalized}
+            disabled={props.vm.state.activeFlows["loading:downpayment"]
+                || props.vm.state.businessParams.isDealFinalized}
         />
         <button
             class='button-set-minimum-possible-downpayment'
@@ -97,7 +95,7 @@ export const DealComponentBare = (props: {
         </button>
         <button
             class='button-finalize-deal'
-            disabled={props.vm.state().activeFlows["loading:finalizing"]
+            disabled={props.vm.state.activeFlows["loading:finalizing"]
                 || !props.vm.derivedState.canBeFinalized()}
             onClick={() => props.vm.finalizeDeal()}
         >
@@ -119,7 +117,7 @@ function DealDescription(props: {
     vm: DealVM
 }) {
 
-    const text = createMemo(() => getDealStateDescription(
+    const text = createMemo(() => dealStateDescription(
         props.vm.derivedState.dealProgressState(),
         props.vm.derivedState.currentDate()
     ));
@@ -128,7 +126,7 @@ function DealDescription(props: {
         {text}
     </div>;
 
-    function getDealStateDescription(state: DealProgressState, currentDate: Date) {
+    function dealStateDescription(state: DealProgressState, currentDate: Date) {
         if (state === 'deal-finalized') {
             return 'Congratulations! Deal is finalized.';
         }

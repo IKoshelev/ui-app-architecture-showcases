@@ -16,7 +16,7 @@ export function getDefaultDealsStoreRoot(){
 
 export type DealsStoreRoot = ReturnType<typeof getDefaultDealsStoreRoot>;
 
-export function getDealSubstoreById(
+export function dealSubstoreById(
   store: SubStore<DealsStoreRoot>,
   dealId: number){
   return getDeeperSubStore(store, 
@@ -56,13 +56,13 @@ export function removeDeal(state: DealsStoreRoot, dealId: number) {
 export async function loadNewDeal(
   dealsStore: SubStore<DealsStoreRoot>) {
 
-  const [getApprovals, setApprovals] = dealsStore;
+  const [approvals, setApprovals] = dealsStore;
   
   setApprovals(x => x.newDealIsLoading = true);
 
   const newDeal = createBlankDeal();
 
-  newDeal.businessParams.dealId = getApprovals().nextDealId;
+  newDeal.businessParams.dealId =approvals.nextDealId;
 
   setApprovals(x => x.nextDealId += 1);
 
@@ -80,13 +80,13 @@ export async function loadNewDeal(
 export async function loadNewDealForeignCurrency(
   dealsStore: SubStore<DealsStoreRoot>) {
 
-  const [getApprovals, setApprovals] = dealsStore;
+  const [approvals, setApprovals] = dealsStore;
 
   setApprovals(x => x.newDealIsLoading = true);
 
   const newDeal = createBlankDealForeignCurrency();
 
-  newDeal.businessParams.dealId = getApprovals().nextDealId;
+  newDeal.businessParams.dealId =approvals.nextDealId;
 
   setApprovals(x => x.nextDealId += 1);
 
@@ -106,5 +106,5 @@ export async function loadNewDealForeignCurrency(
 export function isDealForeignCurrencyStore(
   store: SubStore<Deal>
 ): store is SubStore<DealForeignCurrency> {
-  return store[0]().type.startsWith(DealForeignCurrencyTag);
+  return store[0].type.startsWith(DealForeignCurrencyTag);
 }
