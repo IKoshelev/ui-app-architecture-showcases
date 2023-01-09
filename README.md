@@ -65,9 +65,9 @@ When timer runs out - "Approval expired message" is shown inside tab:
 
 ![](/requirments-sketches/7.png)
 
-Approval may be granted without expiration, in which case - it is perpetual (perpetual approvals are granted if AssetProtection ensurance is selected). 
+Approval may be granted without expiration, in which case - it is perpetual (perpetual approvals are granted if AssetProtection insurance is selected). 
 
-8.	Approvals must be cached for a combination of car model, ensurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. User can have approvals for several valid combinations within 1 deal. Given approval is used as long as current deal params match the ones for which it was given. Approvals are not shared between deals. 
+8.	Approvals must be cached for a combination of car model, insurance plans and downpayment. If a user changes any parameter – approval is removed, but if the user reverts changes – existing approval is used again automatically. User can have approvals for several valid combinations within 1 deal. Given approval is used as long as current deal params match the ones for which it was given. Approvals are not shared between deals. 
 
 9.	If user has valid approval – they can finalize deal via `finalizeFinancing`. If not successful – received error message must be shown. Otherwise:
 
@@ -78,30 +78,3 @@ Approval may be granted without expiration, in which case - it is perpetual (per
 # App basis
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app). If you are working on a case that does not use React at all - the setup is up to you. Consult whoever gave you the task for additional constraints / expectations in terms of frameworks / libraries / patterns. 
-
-## Available Scripts
-
-In the project directory, you can run:
-
-### `npm start`
-
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
