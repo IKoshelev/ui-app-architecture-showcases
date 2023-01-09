@@ -8,13 +8,13 @@ Individual implementations are contained in branches. To make your own - start i
 
 # Successful implementations
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/svelte) | [demo](https://uiappashowcases.blob.core.windows.net/$web/svelte/index.html) Svelte
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/solidjs) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/solidjs/) | Svelte
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2) | [demo](https://uiappashowcases.blob.core.windows.net/$web/rematch2/index.html) Rematch2 (Redux)
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/svelte) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/svelte/) | Svelte
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2-advanced) | [demo](https://uiappashowcases.blob.core.windows.net/$web/rematch2-advanced/index.html) Rematch2 advanced, with different deal types and Clojure inspired multimethods
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2-advanced) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/rematch/) | Rematch2
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/mobx-mvvm) | [demo](https://uiappashowcases.blob.core.windows.net/$web/mobx-mvvm/index.html) MobX MVVM, classes and observable decorators
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/mobx-mvvm) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/mobx/) | MobX MVVM, classes and observable decorators
 
 # Requirments
 
