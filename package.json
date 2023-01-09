@@ -5,7 +5,7 @@
   "scripts": {
     "start": "vite",
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node set-base-tag-after-build.js",
     "serve": "vite preview"
   },
   "license": "MIT",
