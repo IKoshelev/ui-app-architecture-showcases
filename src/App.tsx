@@ -19,7 +19,7 @@ const AppRoot = () => {
   return <div id='app-root'>
 
     <div className='main-logo'>
-      Crazy Ivan Motors (Rematch 2 advanced)
+      Hetman Motors (Rematch 2 advanced)
     </div>
 
     <div className='screens'>

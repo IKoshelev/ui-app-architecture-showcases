@@ -4,6 +4,6 @@ import { App } from './App';
 
 test('renders learn react link', () => {
   const { getByText } = render(<App />);
-  const logoElem = getByText(/Crazy Ivan Motors/i);
+  const logoElem = getByText(/Hetman Motors/i);
   expect(logoElem).toBeInTheDocument();
 });
