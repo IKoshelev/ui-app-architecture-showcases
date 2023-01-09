@@ -13,7 +13,7 @@ export const App = observer(() => {
   return <div id='app-root'>
 
     <div className='main-logo'>
-      Welcome to Crazy Ivan Motors (MVVM)
+      Welcome to Hetman Motors (MobX)
     </div>
 
     <div className='screens'>
