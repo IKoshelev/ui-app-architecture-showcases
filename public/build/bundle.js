@@ -10685,17 +10685,17 @@ var app = (function () {
             return [
                 {
                     id: 1,
-                    description: 'Ford Mustang',
+                    description: 'Hetman Speedster',
                     basePriceUSD: 100000
                 },
                 {
                     id: 2,
-                    description: 'Kia Sorento',
+                    description: 'Hetman Workhorse',
                     basePriceUSD: 26000
                 },
                 {
                     id: 3,
-                    description: 'Porsche Cayene',
+                    description: 'Hetman Luxury',
                     basePriceUSD: 90000
                 }
             ];
