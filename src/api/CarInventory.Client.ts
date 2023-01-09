@@ -8,23 +8,23 @@ export type CarModel = {
 
 class CarInventoryClient {
 
-    public async getAvaliableCarModels(): Promise<CarModel[]> {
-        console.log(`server call getAvaliableCarModels`);
+    public async getAvailableCarModels(): Promise<CarModel[]> {
+        console.log(`server call getAvailableCarModels`);
         await delay(500);
         return [
             {
                 id: 1,
-                description: 'Ford Mustang',
+                description: 'Hetman Speedster',
                 basePriceUSD: 100000
             },
             {
                 id: 2,
-                description: 'Kia Sorento',
+                description: 'Hetman Workhorse',
                 basePriceUSD: 26000
             },
             {
                 id: 3,
-                description: 'Porsche Cayene',
+                description: 'Hetman Luxury',
                 basePriceUSD: 90000
             }
         ]
@@ -32,4 +32,4 @@ class CarInventoryClient {
 }
 
 
-export const carInvenotryClient = new CarInventoryClient();
+export const carInventoryClient = new CarInventoryClient();

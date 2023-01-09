@@ -6,7 +6,7 @@ export const App = () => {
   return <div id='app-root'>
 
     <div className='main-logo'>
-      Welcome to Crazy Ivan Motors
+      Welcome to Hetman Motors
     </div>
 
     <div className='screens'>
