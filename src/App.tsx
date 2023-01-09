@@ -42,8 +42,8 @@ const App: Component = () => {
       >Save stores</button>
       <button
         onClick={() => {
-          dealsStore[1](x => Object.assign(x, savedStores.deals));
-          approvalsStore[1](x => Object.assign(x, savedStores.approvals));
+          dealsStore[1](x => Object.assign(x, cloneWithoutSymbols(savedStores.deals)));
+          approvalsStore[1](x => Object.assign(x, cloneWithoutSymbols(savedStores.approvals)));
         }}
       >Load stores</button>
     </div>
