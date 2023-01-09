@@ -1,5 +1,3 @@
-
-(function(l, r) { if (!l || l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (self.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(self.document);
 var app = (function () {
     'use strict';
 
@@ -14166,7 +14164,7 @@ var app = (function () {
     		c: function create() {
     			div4 = element("div");
     			div0 = element("div");
-    			div0.textContent = "Crazy Ivan Motors (Svelte)";
+    			div0.textContent = "Hetman Motors (Svelte)";
     			t1 = space();
     			div3 = element("div");
     			div1 = element("div");
@@ -14188,16 +14186,16 @@ var app = (function () {
     			add_location(div0, file, 15, 4, 760);
     			attr_dev(button0, "class", "button-add-new-deal");
     			button0.disabled = button0_disabled_value = /*$dealsStore*/ ctx[1].newDealIsLoading;
-    			add_location(button0, file, 19, 12, 886);
+    			add_location(button0, file, 19, 12, 882);
     			attr_dev(button1, "class", "button-add-new-deal");
     			button1.disabled = button1_disabled_value = /*$dealsStore*/ ctx[1].newDealIsLoading;
-    			add_location(button1, file, 27, 12, 1146);
+    			add_location(button1, file, 27, 12, 1142);
     			attr_dev(div1, "class", "tabs svelte-1nwcwin");
-    			add_location(div1, file, 18, 8, 854);
+    			add_location(div1, file, 18, 8, 850);
     			attr_dev(div2, "class", "" + (null_to_empty(`active-tab`) + " svelte-1nwcwin"));
-    			add_location(div2, file, 41, 8, 1637);
+    			add_location(div2, file, 41, 8, 1633);
     			attr_dev(div3, "class", "screens svelte-1nwcwin");
-    			add_location(div3, file, 17, 4, 823);
+    			add_location(div3, file, 17, 4, 819);
     			attr_dev(div4, "id", "app-root");
     			attr_dev(div4, "class", "svelte-1nwcwin");
     			add_location(div4, file, 14, 0, 735);

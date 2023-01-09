@@ -18,7 +18,7 @@
 </script>
 
 <div id="app-root">
-    <div class="main-logo">Crazy Ivan Motors (Svelte)</div>
+    <div class="main-logo">Hetman Motors (Svelte)</div>
 
     <div class="screens">
         <div class="tabs">
