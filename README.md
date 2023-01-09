@@ -1,6 +1,6 @@
 # Welcome to UI app architecture showcase
 
-It is customary in frontend world to demonstrate different architecutres by implementing a simple counter and then a TODO list app. The problem is, both cases are quite simple and neither showcase nor test a given apporach against real world requirments. This project attempts to bridge the gap by implementing a minimal set of requirments such as tabbed ui, user input validation, derived fields, timed actions etc. that you are likely to have in the real world. The goal is to provide standrtised prooving ground, where same app implementations can be compared (much like TODO list apps projecs) and people looking for hints at code organization can study them. My initial personal goal was to have a set of requirments to test new frameworks before using them in my proffesional projects.
+It is customary in frontend world to demonstrate different architecutres by implementing a simple counter and then a TODO list app. The problem is, both cases are quite simple and neither showcase nor test a given apporach against real world requirments. This project attempts to bridge the gap by implementing a minimal set of requirments such as tabbed ui, user input validation, derived fields, timed actions etc. that you are likely to have in the real world. The goal is to provide standrtised prooving ground, where same app implementations can be compared (much like TODO list apps projects) and people looking for hints at code organization can study them. My initial personal goal was to have a set of requirments to test new frameworks before using them in my proffesional projects.
 
 Set of requirments provided can also be used for learning purposes. I made them highly representative of enterprise app development process. 
 
@@ -8,13 +8,13 @@ Individual implementations are contained in branches. To make your own - start i
 
 # Successful implementations
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/svelte) [demo](https://uiappashowcases.blob.core.windows.net/$web/svelte/index.html) Svelte
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/svelte) | [demo](https://uiappashowcases.blob.core.windows.net/$web/svelte/index.html) Svelte
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2) [demo](https://uiappashowcases.blob.core.windows.net/$web/rematch2/index.html) Rematch2 (Redux)
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2) | [demo](https://uiappashowcases.blob.core.windows.net/$web/rematch2/index.html) Rematch2 (Redux)
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2-advanced) [demo](https://uiappashowcases.blob.core.windows.net/$web/rematch2-advanced/index.html) Rematch2 advanced, with different deal types and Clojure inspired multimethods
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2-advanced) | [demo](https://uiappashowcases.blob.core.windows.net/$web/rematch2-advanced/index.html) Rematch2 advanced, with different deal types and Clojure inspired multimethods
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/mobx-mvvm) [demo](https://uiappashowcases.blob.core.windows.net/$web/mobx-mvvm/index.html) MobX MVVM, classes and observable decorators
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/mobx-mvvm) | [demo](https://uiappashowcases.blob.core.windows.net/$web/mobx-mvvm/index.html) MobX MVVM, classes and observable decorators
 
 # Requirments
 
