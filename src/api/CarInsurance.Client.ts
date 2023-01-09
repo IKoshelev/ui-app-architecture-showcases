@@ -2,7 +2,7 @@ import { delay } from "../util/delay";
 
 
 export enum InsurancePlanType {
-    base, thridParty, assetProtection
+    base, thirdParty, assetProtection
 }
 
 export type InsurancePlan = {
@@ -12,15 +12,15 @@ export type InsurancePlan = {
 }
 
 class CarInsuranceClient {
-    public async getAvaliableInsurancePlans(): Promise<InsurancePlan[]> {
-        console.log(`server call getAvaliableInsurancePlans`);
+    public async getAvailableInsurancePlans(): Promise<InsurancePlan[]> {
+        console.log(`server call getAvailableInsurancePlans`);
         await delay(1500);
         return [{
             type: InsurancePlanType.base,
             description: 'base plan',
             rate: 0.05
         }, {
-            type: InsurancePlanType.thridParty,
+            type: InsurancePlanType.thirdParty,
             description: '3rd-party liability',
             rate: 0.05
         }, {
