@@ -30,7 +30,7 @@ describe('Deal.vm', () => {
       });
       
     // Typical VM contains almost no business logic, 
-    // and doesn't really require unit testing 
+    // and only requires minimal testing 
     test(dealVM.name.toString(), () => {
  
         (createMemo as any as SpyInstance<any>).mockReturnValue(() => ({}) as any);
