@@ -1,6 +1,6 @@
 import { Currency, currencyExchangeClient } from "../../../api/CurrencyExchange.Client";
 import { SubStore } from "../../../util/subStore";
-import { DealForeignCurrency, validateIsDealForeignCurrency } from "./DealForeignCurrency.pure";
+import { DealForeignCurrency, validateIsDealForeignCurrency } from "./DealForeignCurrency";
 import { runFlow } from "../../../util/validation-flows-messages";
 import { ApprovalsStoreRoot } from "../../approval.store";
 import { ClockStoreRoot } from "../../clock.store";

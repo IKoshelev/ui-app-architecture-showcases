@@ -1,6 +1,6 @@
 import isEqual from 'lodash.isequal';
 import { GetApprovalResult } from '../api/Financing.Client';
-import { Deal, prepareRequestApprovalCall } from './deals/Deal/Deal.pure';
+import { Deal, prepareRequestApprovalCall } from './deals/Deal/Deal';
 
 type ApprovalRequestStatus = {
     request: any,

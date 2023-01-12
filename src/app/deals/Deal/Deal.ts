@@ -3,7 +3,7 @@ import type { CarModel } from "../../../api/CarInventory.Client";
 import { financingClient, GetApprovalResult } from "../../../api/Financing.Client";
 import { multimethod } from "multimethod-type-tag-hierarchy";
 import { getUserInputState } from "../../../generic-components/input-models/UserInput.pure";
-import { DisplayMessage } from "../../../util/validation-flows-messages";
+import { DisplayMessage, isValid } from "../../../util/validation-flows-messages";
 
 export const DealTag: `Deal${string}` = 'Deal';
 
@@ -107,6 +107,13 @@ export function canBeFinalized(deal: Deal, approval: GetApprovalResult | undefin
         && (!approval.expiration || approval.expiration >= currentDate);
 }
 
+export function canRequestApproval(deal: Deal) {
+    return deal.businessParams.carModelSelected.committedValue
+        && deal.businessParams.isDealFinalized === false
+        && isValid(deal.businessParams.downpayment)
+        && getGeneralValidation(deal).downpaymentExceedsPrice === false
+}
+
 export const getHeaderAdditionalDescription = multimethod('type', DealTag, (deal: Deal) => {
     return '';
 });
@@ -135,3 +142,4 @@ export const prepareRequestApprovalCall = multimethod('type', DealTag, (deal: De
         makeCall: () => financingClient.getApproval(...request)
     }
 });
+

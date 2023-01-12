@@ -1,7 +1,7 @@
-import { createBlankDeal, Deal } from './deals/Deal/Deal.pure';
+import { createBlankDeal, Deal } from './deals/Deal/Deal';
 import { carInventoryClient } from '../api/CarInventory.Client';
 import { carInsuranceClient } from '../api/CarInsurance.Client';
-import { createBlankDealForeignCurrency, DealForeignCurrency, DealForeignCurrencyTag } from './deals/DealForeignCurrency/DealForeignCurrency.pure';
+import { createBlankDealForeignCurrency, DealForeignCurrency, DealForeignCurrencyTag } from './deals/DealForeignCurrency/DealForeignCurrency';
 import { currencyExchangeClient } from '../api/CurrencyExchange.Client';
 import { getDeeperSubStore, SubStore } from '../util/subStore';
 

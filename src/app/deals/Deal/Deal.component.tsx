@@ -1,5 +1,5 @@
 import { CarModelsSelector } from "./CarModelSelector.component";
-import { DealProgressState } from "./Deal.pure";
+import { DealProgressState } from "./Deal";
 import './Deal.component.scss';
 import { InsurancePlanSelector } from "./InsurancePlanSelector.component";
 import { diffSeconds } from "../../../util/diffSeconds";

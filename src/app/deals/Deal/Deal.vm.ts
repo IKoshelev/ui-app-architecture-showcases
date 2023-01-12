@@ -1,5 +1,5 @@
 import { getDeeperSubStore, SubStore } from "../../../util/subStore";
-import { canRequestMinimumDownpayment, Deal, getDealProgressState, getFinalPrice, getGeneralValidation, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, areDealBusinessParamsValid } from "./Deal.pure";
+import { canRequestMinimumDownpayment, Deal, getDealProgressState, getFinalPrice, getGeneralValidation, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, areDealBusinessParamsValid, canRequestApproval } from "./Deal";
 import { runFlow, isLoading, isValid } from '../../../util/validation-flows-messages';
 import { carInventoryClient, CarModel } from "../../../api/CarInventory.Client";
 import { carInsuranceClient, InsurancePlan } from "../../../api/CarInsurance.Client";
@@ -8,7 +8,7 @@ import { financingClient } from "../../../api/Financing.Client";
 import { ApprovalsStoreRoot, getLatestMatchingApproval, storeApprovalReqStatus } from "../../approval.store";
 import { createMemo } from "solid-js";
 import { ClockStoreRoot } from "../../clock.store";
-import { canBeFinalized, prepareRequestApprovalCall } from "./Deal.pure";
+import { canBeFinalized, prepareRequestApprovalCall } from "./Deal";
 import { acceptAllParser, getUserInputVM } from "../../../generic-components/input-models/UserInput.vm";
 import { getNumericInputVM, numberValidatorFns } from "../../../generic-components/input-models/NumericUserInput.vm";
 import { DealsStoreRoot, removeDeal } from "../../deals.store";
@@ -44,7 +44,7 @@ export function dealVM<T extends Deal>(
         derivedState: {
             currentDate: () => clock.currentDate,
             currentApproval,
-            isCurrentApprovalLoading: () =>approvals.activeFlows[`loading:${deal.businessParams.dealId}`],
+            isCurrentApprovalLoading: () => approvals.activeFlows[`loading:${deal.businessParams.dealId}`],
             canRequestMinimumDownpayment: () => canRequestMinimumDownpayment(deal.businessParams),
             finalPrice: () => getFinalPrice(deal),
             generalValidation,
@@ -56,12 +56,7 @@ export function dealVM<T extends Deal>(
             ),
             isLoading: () => isLoading(deal),
             isActiveDeal: () => deals.activeDealId === deal.businessParams.dealId,
-            canRequestApproval: () => {
-                return deal.businessParams.carModelSelected.committedValue
-                    && deal.businessParams.isDealFinalized === false
-                    && isValid(deal.businessParams.downpayment)
-                    && generalValidation().downpaymentExceedsPrice === false
-            }
+            canRequestApproval: () => canRequestApproval(deal)
         },
         subVMS: {
             insurancePlansSelected: getUserInputVM<InsurancePlan[]>(

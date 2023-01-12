@@ -1,4 +1,4 @@
-import { createBlankDeal, Deal, getFinalPrice, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, prepareRequestApprovalCall, areDealBusinessParamsValid } from "../Deal/Deal.pure";
+import { createBlankDeal, Deal, getFinalPrice, getHeaderAdditionalDescription, getMinimumPossibleDownpayment, prepareRequestApprovalCall, areDealBusinessParamsValid } from "../Deal/Deal";
 import merge from 'lodash.merge';
 import { Currency } from "../../../api/CurrencyExchange.Client";
 import { financingClient } from "../../../api/Financing.Client";

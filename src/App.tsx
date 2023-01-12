@@ -1,16 +1,16 @@
 import { Component, createMemo, For } from 'solid-js';
 import './App.component.scss';
-import { ClockStoreRoot, start } from './stores/clock.store';
+import { ClockStoreRoot, start } from './app/clock.store';
 import { SubStore } from './util/subStore';
 import { diffSeconds } from './util/diffSeconds';
 import { approvalsStore, clockStore, dealsStore } from './App.stores';
-import { DealsStoreRoot, loadNewDeal, loadNewDealForeignCurrency, removeDeal, dealSubstoreById, isDealForeignCurrencyStore, getActiveDealSubstore } from './stores/deals.store';
-import { Deal, getDealProgressState, getHeaderAdditionalDescription } from './stores/deals/Deal/Deal.pure';
-import { ApprovalsStoreRoot, getLatestMatchingApproval } from './stores/approval.store';
-import { DealWithForeignCurrencyComponent } from './stores/deals/DealForeignCurrency/DealForeignCurrency.component';
-import { DealComponent } from './stores/deals/Deal/Deal.component';
-import { dealForeignCurrencyVM } from './stores/deals/DealForeignCurrency/DealForeignCurrency.vm';
-import { dealVM } from './stores/deals/Deal/Deal.vm';
+import { DealsStoreRoot, loadNewDeal, loadNewDealForeignCurrency, removeDeal, dealSubstoreById, isDealForeignCurrencyStore, getActiveDealSubstore } from './app/deals.store';
+import { Deal, getDealProgressState, getHeaderAdditionalDescription } from './app/deals/Deal/Deal';
+import { ApprovalsStoreRoot, getLatestMatchingApproval } from './app/approval.store';
+import { DealWithForeignCurrencyComponent } from './app/deals/DealForeignCurrency/DealForeignCurrency.component';
+import { DealComponent } from './app/deals/Deal/Deal.component';
+import { dealForeignCurrencyVM } from './app/deals/DealForeignCurrency/DealForeignCurrency.vm';
+import { dealVM } from './app/deals/Deal/Deal.vm';
 import { unwrap } from 'solid-js/store';
 import { cloneWithoutSymbols } from './util/walkers';
 

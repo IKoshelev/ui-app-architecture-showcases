@@ -1,7 +1,7 @@
 import { createStore } from "solid-js/store";
-import { getDefaultClockStoreRoot } from "./stores/clock.store";
-import { getDefaultDealsStoreRoot } from "./stores/deals.store";
-import { getDefaultApprovalsStoreRoot } from "./stores/approval.store";
+import { getDefaultClockStoreRoot } from "./app/clock.store";
+import { getDefaultDealsStoreRoot } from "./app/deals.store";
+import { getDefaultApprovalsStoreRoot } from "./app/approval.store";
 import { getSubStoreFromStore } from "./util/subStore";
 
 export const clockStore = getSubStoreFromStore(createStore(getDefaultClockStoreRoot()), x => x);
