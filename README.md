@@ -12,7 +12,7 @@ Individual implementations are contained in branches. To make your own - start i
 
 [branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/svelte) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/svelte/) | Svelte
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2-advanced) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/rematch/) | Rematch2
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/rematch2-advanced) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/rematch/) | Rematch2 (Redux)
 
 [branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/mobx-mvvm) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/mobx/) | MobX MVVM, classes and observable decorators
 
