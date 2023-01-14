@@ -8,7 +8,7 @@ Individual implementations are contained in branches. To make your own - start i
 
 # Successful implementations
 
-[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/solidjs) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/solidjs/) | Svelte
+[branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/solidjs) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/solidjs/) | SolidJS
 
 [branch](https://github.com/IKoshelev/ui-app-architecture-showcases/tree/svelte) | [demo](https://ikoshelev.github.io/ui-app-architecture-showcases/svelte/) | Svelte
 
