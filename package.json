@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build && node set-base-tag-after-build.js",
     "serve": "vite preview",
-    "test": "vitest",
+    "test": "vitest --outputDiffMaxSize 1000",
     "coverage": "vitest run --coverage"
   },
   "license": "MIT",

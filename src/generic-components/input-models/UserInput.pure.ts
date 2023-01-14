@@ -147,8 +147,6 @@ export function tryCommitValue<TModel, TInput = any>(
         return false;
     }
 
-    spliceMessage(state.messages, PARSING_ERROR);
-
     state.committedValue = parseResult.parsed;
     state.uncommittedValue = undefined;
     revalidateCommittedValue(state, validators);

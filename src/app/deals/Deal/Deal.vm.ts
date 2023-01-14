@@ -91,7 +91,7 @@ export async function reloadAvailableCarModels(
 
     const [deal, setDeal] = dealStore;
 
-    runFlow(setDeal, 'loading:car-models', async () => {
+    await runFlow(setDeal, 'loading:car-models', async () => {
         const carModels = await carInventoryClient.getAvailableCarModels();
         setDeal(x => x.carModelsAvailable = carModels);
     });
@@ -102,7 +102,7 @@ export async function reloadAvailableInsurancePlans(
 
     const [deal, setDeal] = dealStore;
 
-    runFlow(setDeal, 'loading:insurance-plans', async () => {
+    await runFlow(setDeal, 'loading:insurance-plans', async () => {
         const insurancePlans = await carInsuranceClient.getAvailableInsurancePlans();
         setDeal(x => x.insurancePlansAvailable = insurancePlans);
     });
@@ -113,7 +113,7 @@ export async function setMinimumPossibleDownpayment(
 
     const [deal, setDeal] = dealStore;
 
-    runFlow(setDeal, 'loading:downpayment', async () => {
+    await runFlow(setDeal, 'loading:downpayment', async () => {
         if (!areDealBusinessParamsValid(deal.businessParams)) {
             return;
         }
@@ -134,12 +134,12 @@ export async function requestApproval(
     const [deal, setDeal] = dealStore;
     const [approvals, setApprovals] = approvalStore;
 
-    runFlow(setDeal, 'loading:approval', async () => {
+    await runFlow(setDeal, 'loading:approval', async () => {
         if (!areDealBusinessParamsValid(deal.businessParams)) {
             return;
         }
 
-        runFlow(setApprovals, `loading:${deal.businessParams.dealId}`, async () => {
+        await runFlow(setApprovals, `loading:${deal.businessParams.dealId}`, async () => {
             const call = prepareRequestApprovalCall(deal);
 
             if (!call) {
@@ -167,15 +167,15 @@ export async function finalizeDeal(
     const [approvals, setApprovals] = approvalStore;
 
     const approval = getLatestMatchingApproval(
-       approvals,
+        approvals,
         deal
     );
 
-    if (approval?.isApproved !== true) {
+    if (approval?.isApproved !== true) { 
         throw new Error("Attempt to finalize deal without approval.");
     }
 
-    runFlow(setDeal, "loading:finalizing", async () => {
+    await runFlow(setDeal, "loading:finalizing", async () => { 
         const res = await financingClient.finalizeFinancing(approval.approvalToken);
 
         setDeal(x => x.businessParams.isDealFinalized = res);

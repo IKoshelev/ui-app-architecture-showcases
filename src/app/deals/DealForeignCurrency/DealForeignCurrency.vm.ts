@@ -45,7 +45,7 @@ export async function setCurrencyAndReloadExchangeRate(
         x.businessParams.downpaymentCurrency.committedValue = currency;
     });
 
-    runFlow(setDeal, 'loading:exchange-rate', async () => {
+    await runFlow(setDeal, 'loading:exchange-rate', async () => {
         const exchangeRate = await currencyExchangeClient.getExchangeRate(currency);
 
         setDeal(x => {

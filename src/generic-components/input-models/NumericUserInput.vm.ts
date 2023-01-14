@@ -31,7 +31,8 @@ export const numberValidatorFns = {
     // many more...
 } as const;
 
-
+// This is an example of factory function 
+// for specialized userInputVM
 export const getNumericInputVM = (
     store: SubStore<UserInputState<number | undefined, string>>,
     validators: Validator<number | undefined>[] = []

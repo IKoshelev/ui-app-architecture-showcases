@@ -79,9 +79,10 @@ export async function runFlow<TRes, T extends string>(
 
     setStore(x => addActiveFlow(x, reason));
 
+    let res: any;
     try {
         return await fn();
     } finally {
-        setStore(x => removeActiveFlow(x, reason));
+        setStore(x => removeActiveFlow(x, reason)); 
     }
 }

@@ -16,7 +16,8 @@ export const InsurancePlanSelector = (props:{
                 selectAttributes={{ class: 'insurance-plan-selector-select' }}
                 availableItems={props.vm.state.insurancePlansAvailable}
                 vm={props.vm.subVMS.insurancePlansSelected}
-                disabled={props.vm.derivedState.isLoading()}
+                disabled={props.vm.derivedState.isLoading()
+                            || props.vm.state.businessParams.isDealFinalized}
                 getItemId={(item) => item.type.toString()}
                 getItemDescription={(item) => item.description}
                 getModelId={(model) => model.type.toString()}
