@@ -95,8 +95,8 @@ export function getGeneralValidation(deal: Deal) {
     return validation;
 }
 
-export function areDealBusinessParamsValid(params: Deal['businessParams'])
-    : params is Deal['businessParams'] & { carModelSelected: CarModel } {
+export function areDealBusinessParamsValid(params: DealBusinessParams)
+    : params is DealBusinessParams & { carModelSelected: CarModel } {
 
    return !!params.carModelSelected.committedValue;
 }
