@@ -59,7 +59,7 @@ export function getDealProgressState(deal: Deal, approval: GetApprovalResult | u
 export type DealProgressState = ReturnType<typeof getDealProgressState>;
 
 export function canRequestMinimumDownpayment(deal: DealBusinessParams) {
-    return deal.carModelSelected
+    return deal.carModelSelected.committedValue
         && deal.isDealFinalized === false;
 }
 
